@@ -2,6 +2,10 @@
 
 namespace CPPParser {
 
+/** Generally, all tryBuild() methods defined here should return false if no match was possible, and throw a ParseError if 
+	they modified the token list before finding out no match was possible. If this happens, the parsing has failed.
+*/
+
 /** Returns the first element from the list, and removes that element
 */
 Token pop(TokenList& tokens) {
@@ -105,10 +109,14 @@ bool While::tryBuild(TokenList& tokens) {
 	if (tokens[0].name.compare("while") != 0) return false; // 'Safe' return
 	pop(tokens); // while
 	
-	condition = new Condition();
+	condition = new RelationalCondition();
 	if (!condition->tryBuild(tokens)) {
-		throw ParseError("Expected Condition in While");
-		return false;
+		delete condition;
+		condition = new ConstantCondition();
+		if (!condition->tryBuild(tokens)) {
+			throw ParseError("Expected Condition in While");
+			return false;
+		}
 	}
 
 	statement = tryStatement(tokens);
@@ -124,10 +132,14 @@ bool If::tryBuild(TokenList& tokens) {
 	if (tokens[0].name.compare("if") != 0) return false; // 'Safe' return
 	pop(tokens); // if
 	
-	condition = new Condition();
+	condition = new RelationalCondition();
 	if (!condition->tryBuild(tokens)) {
-		throw ParseError("Expected Condition in If");
-		return false;
+		delete condition;
+		condition = new ConstantCondition();
+		if (!condition->tryBuild(tokens)) {
+			throw ParseError("Expected Condition in While");
+			return false;
+		}
 	}
 
 	statement = tryStatement(tokens);
@@ -141,7 +153,7 @@ bool If::tryBuild(TokenList& tokens) {
 bool VariableDeclaration::tryBuild(TokenList& tokens) {
 	if (tokens.size() == 0) return false;
 	dataType = new DataType();
-	if (!dataType->tryBuild(tokens)) return false; // 'Safe' return: If dataType->tryBuild returns false it's been A safe return.
+	if (!dataType->tryBuild(tokens)) return false; // 'Safe' return: If dataType->tryBuild returns false it's been a safe return.
 	
 	name = pop(tokens).name;
 
@@ -166,7 +178,7 @@ bool VariableDeclaration::tryBuild(TokenList& tokens) {
 	If the function throws an error, it may have.
 */
 bool VariableAssignment::tryBuild(TokenList& tokens) {
-	if (tokens.size() == 0) return false;
+	if (tokens.size() < 2) return false;
 	if (tokens[1].name.compare("=") != 0) return false; // 'Safe' return
 	name = pop(tokens).name;
 	pop(tokens); // '='
@@ -251,9 +263,53 @@ bool Include::tryBuild(TokenList& tokens) {
 	}
 	return false;
 }
-bool Condition::tryBuild(TokenList& tokens) {
+
+
+
+bool RelationalCondition::tryBuild(TokenList& tokens) {
 	if (tokens.size() == 0) return false;
-	value = pop(tokens).name;
+	// This is one token, always starting with '(' and ending in ')'. There must be at least one conditional in it.
+	String str = tokens[0].name;
+	if (str[0] != '(' || str[str.size()-1] != ')') {
+		// Illegal token
+		return false;
+	}
+
+	for (unsigned int i = 1; i < str.size() - 1; i++) {
+		for (int j = 0; j < nRelationals; j++) {
+			if (str[i] == relationals[j][0]) {
+				// First letters match
+				bool match = true;
+				int k = 1;
+				for (; k < relationals[j].size(); k++)
+					if (str[i+k] != relationals[j][k]) {
+						match = false;
+						break;
+					}
+				if (match) {
+					// k is the length of the found match
+					this->conditional = str.substr(i, k);
+					this->value1 = str.substr(1, i-1);
+					this->value2 = str.substr(i+k, str.size() - (i+k) - 1);
+					pop(tokens);
+					return true;
+				}
+			}
+		}
+	}
+	return false; // Safe return
+}
+
+bool ConstantCondition::tryBuild(TokenList& tokens) {
+	if (tokens.size() == 0) return false;
+	// This is one token, always starting with '(' and ending in ')'.
+	value = tokens[0].name;
+	if (value[0] != '(' || value[value.size()-1] != ')') {
+		// Illegal token
+		return false;
+	}
+	value = value.substr(1, value.size() - 2);
+	pop(tokens);
 	return true;
 }
 

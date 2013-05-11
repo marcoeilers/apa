@@ -18,6 +18,8 @@ struct CodeBlock;
 struct FunctionDeclaration;
 struct Include;
 struct Condition;
+struct RelationalCondition;
+struct ConstantCondition;
 
 typedef std::string String; // From now on we can call std::string 'String'.
 
@@ -55,6 +57,8 @@ public:
 // [functionDecl] = [type] fName() [codeBlock]
 // [codeBlock] = { [Statement]* }
 // [include] = #include "[filename]"
+// [relational] = < | > | <= | >= | == | != | && | ||
+// [condition] = varName [relational] varName | varName
 
 struct Program {
 	std::vector<Include> includes;
@@ -63,6 +67,8 @@ struct Program {
 };
 const int nAllowedTypes = 5;
 const std::string allowedTypes[] = {"int", "long", "char", "float", "double"};
+const int nRelationals = 8;
+const std::string relationals[] = {">", "<", ">=", "<=", "==", "!=", "&&", "||"};
 struct DataType {
 	std::string name;
 	int pointerDepth; // 0: 'no' pointer, 1: pointer, 2: pointer to pointer, etc
@@ -122,8 +128,19 @@ struct Include {
 };
 
 struct Condition {
-	String value; // Todo, this needs to be different
-	bool tryBuild(TokenList& tokens);
+	virtual bool tryBuild(TokenList& tokens) = NULL;
+};
+
+struct RelationalCondition : Condition {
+	String value1;
+	String value2;
+	String conditional;
+	virtual bool tryBuild(TokenList& tokens);
+};
+
+struct ConstantCondition : Condition {
+	String value;
+	virtual bool tryBuild(TokenList& tokens);
 };
 
 }

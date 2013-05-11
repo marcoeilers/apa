@@ -2,7 +2,7 @@
 #include "MyOtherHeader.h"
 
 // This is a comment
-// Note: Only simple comments are allowed right now, so no /* */ comments.
+// Only simple condition are allowed now: if (i < 4), while (false), etc. No things like if (i > 9 && a > b)
 
 int main() {
 	int i = 8; // Comment behind vars
@@ -13,6 +13,7 @@ int main() {
 	while(i > 8) {
 		i = i - 1;
 	}
-	if (true && (i == 1 && i != 0)) i = 0;
+	while (true) sayHi();
+	if (false != true) i = 0;
 	func120(i);
 }
