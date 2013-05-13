@@ -238,12 +238,17 @@ bool FunctionDeclaration::tryBuild(TokenList& tokens) {
 	name = pop(tokens).name;
 
 	// Function arguments:
-	std::string args = pop(tokens).name;
-	if (args.size() < 2) {
-		throw ParseError("Expected function arguments");
-		return false;
+	pop(tokens); // (
+
+	arguments = "";
+	Token token = pop(tokens);
+	while (token.name.compare(")") != 0) {
+		arguments += token.name;
+		token = pop(tokens);
+		if (token.name.compare(")") != 0)
+			arguments += " ";
+		else break;
 	}
-	arguments = args.substr(1, args.size()-2); // The string should be at least ()
 
 	// Function body:
 	codeBlock = new CodeBlock();
@@ -308,7 +313,10 @@ bool ConstantCondition::tryBuild(TokenList& tokens) {
 		// Illegal token
 		return false;
 	}
-	value = value.substr(1, value.size() - 2);
+	if (value[1] == '!') {
+		negative = true;
+		value = value.substr(2, value.size() - 3);
+	} else value = value.substr(1, value.size() - 2);
 	pop(tokens);
 	return true;
 }
