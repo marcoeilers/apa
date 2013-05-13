@@ -32,15 +32,23 @@ std::vector<std::string> split(std::string string) {
 
 	r1.assign("\\s*(\\*+)\\s*"); // Matches any sequential '*' symbols, and spaces around them
 
-	string = boost::regex_replace(string, r1, " $2 "); // Replaces just the * symbols, and one space before and after.
+	string = boost::regex_replace(string, r1, " $1 "); // Replaces just the * symbols, and one space before and after.
 
-	r1.assign("(?<=[a-zA-Z0-9])\\("); // Find any '(' without a space preceding it
+	//r1.assign("(?<=[a-zA-Z0-9])\\("); // Find any '(' without a space preceding it
 	
-	string = boost::regex_replace(string, r1, " (");
+	//string = boost::regex_replace(string, r1, " (");
 
-	r1.assign("(?<=[^=!]=[^=])(.*?)(?= *;)"); // Match any assignment (from i = i - 1, [i - 1] is returned.)
+	//r1.assign("(?<=[^=!<>]=[^=])(.*?)(?= *;)"); // Match any assignment (from i = i - 1, [i - 1] is returned.)
 
-	string = boost::regex_replace(string, r1, "($1)"); // Surround any assignments with (): i = i + 1; becomes i = (i + 1);  The reason we do this is that it'll be grouped before it's tokenized.
+	//string = boost::regex_replace(string, r1, "($1)"); // Surround any assignments with (): i = i + 1; becomes i = (i + 1);  The reason we do this is that it'll be grouped before it's tokenized.
+
+	r1.assign(" *\\( *");
+
+	string = boost::regex_replace(string, r1, " ( ");
+
+	r1.assign(" *\\) *");
+
+	string = boost::regex_replace(string, r1, " ) ");
 
 	r1.assign("\\s\\s+"); // Match any group of spaces, or tabs (2+)
 
@@ -52,7 +60,7 @@ std::vector<std::string> split(std::string string) {
 
 	// Next, we group together anything within ( ) symbols by removing spaces within those groups:
 	int index1 = -1; // The location of the first (
-	while (true) {
+	/*while (true) {
 		index1 = string.find("(", index1+1);
 		if (index1 == -1) break;
 		int index2 = index1;
@@ -64,7 +72,7 @@ std::vector<std::string> split(std::string string) {
 			else if (string[index2] == ')') depth--;
 		}
 		index1 = index2;
-	}
+	}*/
 	//printf("'%s'\n", string.c_str());
 	// Find next space:
 	index1 = 0;

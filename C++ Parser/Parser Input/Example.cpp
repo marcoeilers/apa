@@ -10,7 +10,7 @@ int main() {
 	int * pointer; // Integer pointer
 	float ** pointer; // Pointer to pointer
 	// int * * pointer; // This is illegal, * symbols must be sequential
-	while(i > 8) {
+	while(i                            +                                      2 > 9) {
 		i = i - 1;
 	}
 	while (true) sayHi();
