@@ -137,7 +137,7 @@ bool If::tryBuild(TokenList& tokens) {
 		delete condition;
 		condition = new ConstantCondition();
 		if (!condition->tryBuild(tokens)) {
-			throw ParseError("Expected Condition in While");
+			throw ParseError("Expected Condition in If");
 			return false;
 		}
 	}
@@ -159,11 +159,25 @@ bool VariableDeclaration::tryBuild(TokenList& tokens) {
 
 	Token token = pop(tokens); // '=' or ';'
 	if (token.name.compare(";") == 0) {
-		value = "";
+		value = new Unknown(); // Undefined variable value
 		return true;
 	}
 
-	value = pop(tokens).name;
+	// Try all possible variable value types:
+	value = new Allocation();
+	if (!value->tryBuild(tokens)) {
+		delete value;
+		value = new Combination();
+		if (!value->tryBuild(tokens)) {
+			delete value;
+			value = new Variable();
+			if (!value->tryBuild(tokens)) {
+				delete value;
+				value = new Unknown(); // No need to try build
+			}
+		}
+	}
+
 
 	token = pop(tokens); // ';'
 
@@ -182,7 +196,21 @@ bool VariableAssignment::tryBuild(TokenList& tokens) {
 	if (tokens[1].name.compare("=") != 0) return false; // 'Safe' return
 	name = pop(tokens).name;
 	pop(tokens); // '='
-	value = pop(tokens).name;
+	
+	// Try all possible variable value types:
+	value = new Allocation();
+	if (!value->tryBuild(tokens)) {
+		delete value;
+		value = new Combination();
+		if (!value->tryBuild(tokens)) {
+			delete value;
+			value = new Variable();
+			if (!value->tryBuild(tokens)) {
+				delete value;
+				value = new Unknown(); // No need to try build
+			}
+		}
+	}
 
 	if (pop(tokens).name.compare(";") != 0) {
 		throw ParseError("Expected \';\' in VariableAssignment");
@@ -195,9 +223,21 @@ bool VariableAssignment::tryBuild(TokenList& tokens) {
 */
 bool FunctionCall::tryBuild(TokenList& tokens) {
 	if (tokens.size() == 0) return false;
-	if (tokens[1].name[0] != '(' || tokens[2].name.compare(";") != 0) return false;
+	if (tokens[1].name[0] != '(') return false;
 	name = pop(tokens).name;
-	arguments = pop(tokens).name;
+
+	pop(tokens); // (
+
+	arguments = "";
+	Token token = pop(tokens);
+	while (token.name.compare(")") != 0) {
+		arguments += token.name;
+		token = pop(tokens);
+		if (token.name.compare(")") != 0)
+			arguments += " ";
+		else break;
+	}
+	
 	pop(tokens); // ';'
 	return true;
 }
@@ -226,6 +266,40 @@ bool CodeBlock::tryBuild(TokenList& tokens) {
 
 	return true;
 }
+
+bool Variable::tryBuild(TokenList& tokens) {
+	if (tokens.size() == 0 || tokens[0].name.compare(";") == 0) return false;
+	value = pop(tokens).name;
+	return true;
+}
+bool Combination::tryBuild(TokenList& tokens) {
+	return false;
+}
+bool Allocation::tryBuild(TokenList& tokens) {
+	if (tokens.size() < 5) return false;
+	if (tokens[0].name.compare("new") != 0) return false;
+	pop(tokens); // new
+
+	type = new DataType();
+	if (!type->tryBuild(tokens)) throw ParseError("Expected datatype in Allocation");
+
+	if (tokens[0].name.compare("(") != 0) throw ParseError("Expected ( in Allocation");
+	pop(tokens); // (
+	
+	if (tokens[0].name.compare(")") == 0) value = new Unknown();
+	else {
+		value = new Variable();
+		value->tryBuild(tokens);
+	}
+	if (tokens[0].name.compare(")") != 0) throw ParseError("Expected ) in Allocation");
+	pop(tokens); // )
+
+	return true;
+}
+bool Unknown::tryBuild(TokenList& tokens) {
+	return true; // Always succeeds
+}
+
 bool FunctionDeclaration::tryBuild(TokenList& tokens) {
 	if (tokens.size() == 0) return false;
 	// Function datatype:
@@ -272,52 +346,50 @@ bool Include::tryBuild(TokenList& tokens) {
 
 
 bool RelationalCondition::tryBuild(TokenList& tokens) {
-	if (tokens.size() == 0) return false;
-	// This is one token, always starting with '(' and ending in ')'. There must be at least one conditional in it.
-	String str = tokens[0].name;
-	if (str[0] != '(' || str[str.size()-1] != ')') {
-		// Illegal token
-		return false;
-	}
+	if (tokens.size() < 3) return false;
+	
+	if (tokens[0].name.compare("(") != 0) return false;
 
-	for (unsigned int i = 1; i < str.size() - 1; i++) {
-		for (int j = 0; j < nRelationals; j++) {
-			if (str[i] == relationals[j][0]) {
-				// First letters match
-				bool match = true;
-				int k = 1;
-				for (; k < relationals[j].size(); k++)
-					if (str[i+k] != relationals[j][k]) {
-						match = false;
-						break;
-					}
-				if (match) {
-					// k is the length of the found match
-					this->conditional = str.substr(i, k);
-					this->value1 = str.substr(1, i-1);
-					this->value2 = str.substr(i+k, str.size() - (i+k) - 1);
-					pop(tokens);
-					return true;
-				}
-			}
+	value1 = tokens[1].name;
+
+	conditional = tokens[2].name;
+
+	bool found = false;
+	for (int i = 0; i < nRelationals; i++)
+		if (relationals[i].compare(conditional) == 0) {
+			found = true;
+			break;
 		}
-	}
-	return false; // Safe return
+	if (!found) return false; // Safe return
+
+	pop(tokens); // (
+	pop(tokens); // Value1
+	pop(tokens); // Conditional
+
+	value2 = pop(tokens).name;
+
+	if (tokens[0].name.compare(")") != 0) throw ParseError("Expected ) in RelationalCondition");
+	pop(tokens);
+
+	return true; // Safe return
 }
 
 bool ConstantCondition::tryBuild(TokenList& tokens) {
-	if (tokens.size() == 0) return false;
-	// This is one token, always starting with '(' and ending in ')'.
+	if (tokens.size() < 3) return false;
+	if (tokens[0].name.compare("(") != 0 || tokens[2].name.compare(")") != 0) return false;
+	
+	pop(tokens); // (
+
 	value = tokens[0].name;
-	if (value[0] != '(' || value[value.size()-1] != ')') {
-		// Illegal token
-		return false;
-	}
-	if (value[1] == '!') {
+
+	if (value[0] == '!') {
 		negative = true;
-		value = value.substr(2, value.size() - 3);
-	} else value = value.substr(1, value.size() - 2);
+		value = value.substr(1);
+	}
 	pop(tokens);
+
+	pop(tokens); // )
+
 	return true;
 }
 
