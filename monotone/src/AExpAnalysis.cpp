@@ -1,7 +1,7 @@
 #include "AExpAnalysis.h"
 
 using namespace std;
-AExpAnalysis::AExpAnalysis(ControlFlow<CPPParser::Statement>& cf)
+AExpAnalysis::AExpAnalysis(ControlFlow& cf)
 {
     // initialize
     vector<CPPParser::Statement*>::iterator it;

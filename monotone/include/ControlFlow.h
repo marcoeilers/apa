@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 #include <../../C++ Parser/ParserSemantics.h>
 
 // This class stores all the information about a program
@@ -21,6 +22,7 @@ class ControlFlow
 
     protected:
     private:
+        int addStatement(CPPParser::Statement*, int);
         std::vector<CPPParser::Statement*> labels;
         std::map<int, std::set<int> > transitions;
         std::set<int> extremals;
