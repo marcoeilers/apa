@@ -176,7 +176,7 @@ struct Include {
 };
 
 struct Condition {
-	virtual bool tryBuild(TokenList& tokens) = NULL;
+	virtual bool tryBuild(TokenList& tokens) = 0;
 };
 
 struct RelationalCondition : Condition {
