@@ -6,8 +6,10 @@ ControlFlow::ControlFlow(CPPParser::FunctionDeclaration& f)
 {
     vector<CPPParser::Statement*>::iterator it;
     int index = 0;
-
+    last = -1;
     index = addStatement(f.codeBlock, index);
+
+    // for all jumps to index, remove jumps, sources are end states
 }
 
 ControlFlow::~ControlFlow()
@@ -17,21 +19,31 @@ ControlFlow::~ControlFlow()
 
 int ControlFlow::addStatement(CPPParser::Statement* s, int label)
 {
+    // TODO: find final statements
     switch (s->getType())
         {
             case CPPParser::TYPE_WHILE :
             {
                 CPPParser::While* w = (CPPParser::While*) s;
+                int startLabel = label;
                 labels.insert(labels.begin()+label, w);
-                label++;
-                return addStatement(w->statement, label);
+                addTransition(last, label);
+                last=label++;
+                label = addStatement(w->statement, label);
+                addTransition(startLabel, label);
+                addTransition(label-1, startLabel);
+                return label;
             }
             case CPPParser::TYPE_IF : return label;
             {
                 CPPParser::If* i = (CPPParser::If*) s;
+                int startLabel = label;
                 labels.insert(labels.begin()+label, s);
-                label++;
-                return addStatement(i->statement, label);
+                addTransition(last, label);
+                last=label++;
+                label =  addStatement(i->statement, label);
+                addTransition(startLabel, label);
+                return label;
             }
             case CPPParser::TYPE_CODEBLOCK:
             {
@@ -46,10 +58,16 @@ int ControlFlow::addStatement(CPPParser::Statement* s, int label)
             default:
             {
                 labels.insert(labels.begin()+label, s);
-                label++;
+                addTransition(last, label);
+                last=label++;
                 return label;
             }
         }
+}
+
+void ControlFlow::addTransition(int from, int to)
+{
+    // TODO
 }
 
 vector<CPPParser::Statement*> ControlFlow::getLabels()

@@ -23,9 +23,11 @@ class ControlFlow
     protected:
     private:
         int addStatement(CPPParser::Statement*, int);
+        void addTransition(int, int);
         std::vector<CPPParser::Statement*> labels;
         std::map<int, std::set<int> > transitions;
         std::set<int> extremals;
+        int last;
 };
 
 #endif // CONTROLFLOW_H
