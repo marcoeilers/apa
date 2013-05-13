@@ -45,7 +45,7 @@ public:
 // Definitions of the semantics:
 /////////////////////////////////////
 
-// These are the possible semantics: 
+// These are the possible semantics:
 //
 // [program] = [include]* main() [functionDecl]+
 // [statement] = [while] | [if] | [varDecl] | [varAssignment] | [functionCall] | [codeBlock]
@@ -128,7 +128,7 @@ struct Include {
 };
 
 struct Condition {
-	virtual bool tryBuild(TokenList& tokens) = NULL;
+	virtual bool tryBuild(TokenList& tokens) = 0;
 };
 
 struct RelationalCondition : Condition {

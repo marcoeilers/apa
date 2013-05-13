@@ -1,10 +1,14 @@
 #include "AExpAnalysis.h"
 
 using namespace std;
-// TODO: This class currently only has dummy functions
-AExpAnalysis::AExpAnalysis()
+AExpAnalysis::AExpAnalysis(ControlFlow<CPPParser::Statement>& cf)
 {
-    //ctor
+    // initialize
+    vector<CPPParser::Statement*>::iterator it;
+    for (it = cf.getLabels().begin(); it != cf.getLabels().end(); it++)
+    {
+        // TODO: add expressions to aexp
+    }
 }
 
 AExpAnalysis::~AExpAnalysis()
@@ -14,40 +18,52 @@ AExpAnalysis::~AExpAnalysis()
 
 set<string> AExpAnalysis::top()
 {
+    // empty set
     set<string> result;
-    result.insert("tralala");
     return result;
 }
 
 set<string> AExpAnalysis::bottom()
 {
+    // set of all subexpressions
+    return aexp;
+}
+
+bool AExpAnalysis::lessThan(set<string>& first, set<string>& second)
+{
+    set<string>::iterator it;
+    bool result = true;
+    for (it = first.begin(); it != first.end(); it++)
+    {
+        result = result && (second.find(*it) != second.end());
+    }
+    return result;
+}
+
+set<string> AExpAnalysis::f(set<string>& current, CPPParser::Statement* s)
+{
+    //TODO
     set<string> result;
     result.insert("tralala");
     return result;
 }
 
-bool AExpAnalysis::lessThan(set<string> first, set<string> second)
+set<string> AExpAnalysis::join(set<string>& first, set<string>& second)
 {
-    return false;
-}
-
-set<string> AExpAnalysis::f(set<string> current, Statement s)
-{
+    // compute the intersection
     set<string> result;
-    result.insert("tralala");
-    return result;
-}
-
-set<string> AExpAnalysis::join(set<string> first, set<string> second)
-{
-    set<string> result;
-    result.insert("tralala");
+    set<string>::iterator it;
+    for (it = first.begin(); it != first.end(); it++)
+    {
+        if (second.find(*it) != second.end())
+            result.insert(*it);
+    }
     return result;
 }
 
 set<string> AExpAnalysis::getExtremalValue()
 {
+    // empty set
     set<string> result;
-    result.insert("tralala");
     return result;
 }

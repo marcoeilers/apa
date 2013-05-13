@@ -16,13 +16,13 @@ template<typename T, typename I> class MFramework
         //virtual ~MFramework();
 
         // methods defining the lattice
-        virtual T join(T,T) = 0;
+        virtual T join(T&,T&) = 0;
         virtual T top() = 0;
         virtual T bottom() = 0;
-        virtual bool lessThan(T, T) = 0;
+        virtual bool lessThan(T&, T&) = 0;
 
         // transfer function
-        virtual T f(T, I) = 0;
+        virtual T f(T&, I*) = 0;
 
         // initial value for extremal labels
         virtual T getExtremalValue() = 0;

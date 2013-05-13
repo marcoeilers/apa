@@ -22,7 +22,7 @@ template<typename I> class ControlFlow
         {
             // TODO
         }
-        std::vector<I> getLabels()
+        std::vector<I*> getLabels()
         {
             return labels;
         }
@@ -36,7 +36,7 @@ template<typename I> class ControlFlow
         }
     protected:
     private:
-        std::vector<I> labels;
+        std::vector<I*> labels;
         std::map<int, std::set<int> > transitions;
         std::set<int> extremals;
 };
