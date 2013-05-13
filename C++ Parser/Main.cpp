@@ -9,7 +9,7 @@
 int main() {
 	CPPParser::Parser parser;
 
-	parser.parseFile("Parser Input/Example.cpp");
+	parser.parseFile("Parser Input/Code.cpp");
 
 	CPPParser::TokenList tokens = parser.getTokens();
 
