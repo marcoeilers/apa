@@ -9,22 +9,23 @@ namespace CPPParser {
 // Forward declarations
 struct Program;
 struct Statement;
-struct While;
-struct If;
-struct VariableDeclaration;
-struct VariableAssignment;
-struct FunctionCall;
-struct CodeBlock;
+struct While; // : Statement
+struct If; // : Statement
+struct VariableDeclaration; // : Statement
+struct VariableAssignment; // : Statement
+struct FunctionCall; // : Statement
+struct CodeBlock; // : Statement
 struct FunctionDeclaration;
 struct Include;
 struct Condition;
-struct RelationalCondition;
-struct ConstantCondition;
-struct VariableValue;
-struct Constant;
-struct Combination;
-struct Allocation;
-struct Unknown; // Uninitialized
+struct RelationalCondition; // : Condition
+struct ConstantCondition; // : Condition
+struct VariableValue; // : Condition
+struct Constant; // : VariableValue
+struct Variable; // : VariableValue
+struct Combination; // : VariableValue
+struct Allocation; // : VariableValue
+struct Unknown; // : VariableValue // An uninitialized value
 
 typedef std::string String; // From now on we can call std::string 'String'.
 
@@ -68,9 +69,9 @@ enum StatementType {
 // [varDecl] = [type] varName = [variableValue];
 // [varAssignment] = [name] = [variableValue];
 // [combinator] = + | - | * | /
-// [combination] = [variableValue] [combinator] [variableValue]
-// [allocation] = new [type]([constant])
-// [variableValue] = [constant] | [combination] | [allocation] | [unknown]
+// [combination] = [variableValue] [combinator] [variableValue] // Note, for variableValue, only  variable/unknown are allowed.
+// [allocation] = new [type]([variableValue]) // Note, for variableValue, only variable/unknown are allowed.
+// [variableValue] = [variable] | [combination] | [allocation] | [unknown]
 // [functionCall] = fName();
 // [functionDecl] = [type] fName() [codeBlock]
 // [codeBlock] = { [Statement]* }
@@ -143,7 +144,7 @@ struct VariableValue {
 	virtual bool tryBuild(TokenList& tokens) = 0;
 };
 
-struct Constant : VariableValue {
+struct Variable : VariableValue {
 	String value;
 	virtual bool tryBuild(TokenList& tokens);
 };
@@ -154,8 +155,8 @@ struct Combination : VariableValue {
 	virtual bool tryBuild(TokenList& tokens);
 };
 struct Allocation : VariableValue {
-	String type;
-	String value; // That is, value of the object, not the pointer.
+	DataType* type;
+	VariableValue* value; // That is, value of the object, not the pointer.
 	virtual bool tryBuild(TokenList& tokens);
 };
 struct Unknown : VariableValue { // Uninitialized variables get this value.
