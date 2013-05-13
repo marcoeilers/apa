@@ -33,9 +33,9 @@ bool AExpAnalysis::lessThan(set<string>& first, set<string>& second)
 {
     set<string>::iterator it;
     bool result = true;
-    for (it = first.begin(); it != first.end(); it++)
+    for (it = second.begin(); it != second.end(); it++)
     {
-        result = result && (second.find(*it) != second.end());
+        result = result && (first.find(*it) != first.end());
     }
     return result;
 }

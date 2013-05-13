@@ -9,7 +9,7 @@ ControlFlow::ControlFlow(CPPParser::FunctionDeclaration& f)
     last = -1;
     index = addStatement(f.codeBlock, index);
 
-    // for all jumps to index, remove jumps, sources are end states
+    extremals.insert(0);
 }
 
 ControlFlow::~ControlFlow()
@@ -19,7 +19,6 @@ ControlFlow::~ControlFlow()
 
 int ControlFlow::addStatement(CPPParser::Statement* s, int label)
 {
-    // TODO: find final statements
     switch (s->getType())
         {
             case CPPParser::TYPE_WHILE :
@@ -67,7 +66,20 @@ int ControlFlow::addStatement(CPPParser::Statement* s, int label)
 
 void ControlFlow::addTransition(int from, int to)
 {
-    // TODO
+    if (from != -1)
+    {
+        if (transitions.find(from) != transitions.end())
+        {
+            set<int> current = transitions[from];
+            current.insert(to);
+        }
+        else
+        {
+            set<int> toInsert;
+            toInsert.insert(to);
+            transitions[from] = toInsert;
+        }
+    }
 }
 
 vector<CPPParser::Statement*> ControlFlow::getLabels()
