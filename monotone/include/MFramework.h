@@ -1,15 +1,15 @@
 #ifndef MFRAMEWORK_H
 #define MFRAMEWORK_H
 
+#include <../../C++ Parser/ParserSemantics.h>
+
 // Abstract base class for different kinds of analyses
 // Contains only information that is specific for one type of analysis
 // but is independent from the program that is analyzed.
 
 // param T is the type on which the analysis operated (e.g. a set of expressions
 // for available expressions analysis)
-// param I is the type of a statement/an instruction. Could be hard coded to be
-// the statement coming from our parser.
-template<typename T, typename I> class MFramework
+template<typename T> class MFramework
 {
     public:
         //MFramework();
@@ -22,7 +22,7 @@ template<typename T, typename I> class MFramework
         virtual bool lessThan(T&, T&) = 0;
 
         // transfer function
-        virtual T f(T&, I*) = 0;
+        virtual T f(T&, CPPParser::Statement*) = 0;
 
         // initial value for extremal labels
         virtual T getExtremalValue() = 0;

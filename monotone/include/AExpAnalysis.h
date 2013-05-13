@@ -11,12 +11,11 @@
 // implemented for testing reasons because of its relative simplicity.
 
 // type param T is instantiated to be a set of expressions, where the expressions are
-// represented as strings. I is instantated to be a Statement (TODO: placeholder, should be replaced
-// by the actual type used by the parser)
-class AExpAnalysis : public MFramework<std::set<std::string>, CPPParser::Statement>
+// represented as strings.
+class AExpAnalysis : public MFramework<std::set<std::string> >
 {
     public:
-        AExpAnalysis(ControlFlow<CPPParser::Statement>&);
+        AExpAnalysis(ControlFlow&);
         virtual ~AExpAnalysis();
         std::set<std::string> top();
         std::set<std::string> bottom();

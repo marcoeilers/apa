@@ -1,11 +1,30 @@
-#include "ControlFlow.h"
+#include <ControlFlow.h>
 
-ControlFlow::ControlFlow()
+ControlFlow::ControlFlow(CPPParser::FunctionDeclaration& f)
 {
-    //ctor
+    vector<CPPParser::Statement*>::iterator it;
+    for (it= f.codeBlock->statements.begin(); it != f.codeBlock->statements.begin(); it++)
+    {
+        //TODO
+    }
 }
 
 ControlFlow::~ControlFlow()
 {
-    //dtor
+
+}
+
+ControlFlow::getLabels()
+{
+    return labels;
+}
+
+ControlFlow::getExtremalLabels()
+{
+    return extremals;
+}
+
+ControlFlow::getNext(int l)
+{
+    return transitions[l];
 }

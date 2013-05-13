@@ -1,21 +1,21 @@
 using namespace std;
 
-template<typename T, typename I>
-MFP<T, I>::MFP()
+template<typename T>
+MFP<T>::MFP()
 {
 
 }
 
-template<typename T, typename I>
-MFP<T, I>::~MFP()
+template<typename T>
+MFP<T>::~MFP()
 {
 
 }
 
 
-template<typename T, typename I>
+template<typename T>
 
-T * MFP<T, I>::solve(MFramework<T, I>& mf, ControlFlow<I> cf)
+T * MFP<T>::solve(MFramework<T>& mf, ControlFlow cf)
 {
 
     T * result = new T[cf.getLabels().size()];

@@ -10,9 +10,7 @@
 
 // param T is the type on which the analysis operated (e.g. a set of expressions
 // for available expressions analysis)
-// param I is the type of a statement/an instruction. Could be hard coded to be
-// the statement coming from our parser.
-template<typename T, typename I> class MFP
+template<typename T> class MFP
 {
 public:
     MFP();
@@ -21,7 +19,7 @@ public:
     // takes a MFramework object describing the analysis
     // to be performed and a ControlFlow object describing the
     // program that is to be analyzed.
-    T * solve(MFramework<T, I>&, ControlFlow<I>);
+    T * solve(MFramework<T>&, ControlFlow);
 protected:
 private:
 };

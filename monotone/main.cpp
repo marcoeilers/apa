@@ -8,9 +8,9 @@ using namespace std;
 int main()
 {
     cout << "Hello world!" << endl;
-    ControlFlow<CPPParser::Statement>* cf = new ControlFlow<CPPParser::Statement>();
+    ControlFlow* cf = new ControlFlow();
     AExpAnalysis* a = new AExpAnalysis(*cf);
-    MFP<set<string>, CPPParser::Statement> * solver = new MFP<set<string>, CPPParser::Statement>();
+    MFP<set<string>> * solver = new MFP<set<string>>();
 
     return 0;
 }
