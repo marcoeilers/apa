@@ -1,0 +1,31 @@
+#ifndef MFP_H
+#define MFP_H
+
+#include <MFramework.h>
+#include <ControlFlow.h>
+
+// Class that provides a method to compute the maximal fix point
+// of any given monotone framework (and program).
+// Implementation of solve() is in src/MFP.hpp
+
+// param T is the type on which the analysis operated (e.g. a set of expressions
+// for available expressions analysis)
+// param I is the type of a statement/an instruction. Could be hard coded to be
+// the statement coming from our parser.
+template<typename T, typename I> class MFP
+{
+public:
+    MFP();
+    virtual ~MFP();
+
+    // takes a MFramework object describing the analysis
+    // to be performed and a ControlFlow object describing the
+    // program that is to be analyzed.
+    T * solve(MFramework<T, I>&, ControlFlow<I>);
+protected:
+private:
+};
+
+#include <MFP.hpp>
+
+#endif // MFP_H
