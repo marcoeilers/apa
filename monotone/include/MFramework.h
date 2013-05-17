@@ -1,7 +1,7 @@
 #ifndef MFRAMEWORK_H
 #define MFRAMEWORK_H
 
-#include <../../C++ Parser/ParserSemantics.h>
+#include <ParserSemantics.h>
 
 // Abstract base class for different kinds of analyses
 // Contains only information that is specific for one type of analysis

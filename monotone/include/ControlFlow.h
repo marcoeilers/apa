@@ -4,7 +4,7 @@
 #include <vector>
 #include <map>
 #include <set>
-#include <../../C++ Parser/ParserSemantics.h>
+#include <ParserSemantics.h>
 
 // This class stores all the information about a program
 // that is relevant for an analysis, i.e. the instruction that

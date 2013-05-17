@@ -5,7 +5,7 @@
 #include <set>
 #include <string>
 #include <ControlFlow.h>
-#include <../../C++ Parser/ParserSemantics.h>
+#include <ParserSemantics.h>
 
 // Available expressions analysis is one instance of a monotone framework
 // implemented for testing reasons because of its relative simplicity.
