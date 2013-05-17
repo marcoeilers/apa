@@ -9,27 +9,28 @@ AExpAnalysis::AExpAnalysis(ControlFlow& cf)
     {
         switch ((*it)->getType())
         {
-            case CPPParser::TYPE_VAR_ASSIGNMENT:
-            {
-                CPPParser::VariableAssignment* a = (CPPParser::VariableAssignment*) (*it);
-                addToExpressions(a->value);
-                break;
-            }
-            case CPPParser::TYPE_IF:
-            {
-                CPPParser::If* i = (CPPParser::If*) (*it);
-                // addToExpressions(i->condition);
-                // TODO: conditions should have VariableValues as arguments
-                break;
-            }
-            case CPPParser::TYPE_WHILE:
-            {
-                CPPParser::While* w = (CPPParser::While*) (*it);
-                // addToExpressions(w->condition);
-                // TODO: conditions should have VariableValues as arguments
-                break;
-            }
-            default: break;
+        case CPPParser::TYPE_VAR_ASSIGNMENT:
+        {
+            CPPParser::VariableAssignment* a = (CPPParser::VariableAssignment*) (*it);
+            addToExpressions(a->value);
+            break;
+        }
+        case CPPParser::TYPE_IF:
+        {
+            CPPParser::If* i = (CPPParser::If*) (*it);
+            // addToExpressions(i->condition);
+            // TODO: conditions should have VariableValues as arguments
+            break;
+        }
+        case CPPParser::TYPE_WHILE:
+        {
+            CPPParser::While* w = (CPPParser::While*) (*it);
+            // addToExpressions(w->condition);
+            // TODO: conditions should have VariableValues as arguments
+            break;
+        }
+        default:
+            break;
         }
     }
 }
@@ -42,17 +43,18 @@ AExpAnalysis::~AExpAnalysis()
 void AExpAnalysis::addToExpressions(CPPParser::VariableValue* v)
 {
     switch (v->getType())
-        {
-            case CPPParser::VALUE_COMBINATION:
-            {
-                CPPParser::Combination* c = (CPPParser::Combination*) v;
-                aexp.insert(v);
-                addToExpressions(c->value1);
-                addToExpressions(c->value2);
-                return;
-            }
-            default: return;
-        }
+    {
+    case CPPParser::VALUE_COMBINATION:
+    {
+        CPPParser::Combination* c = (CPPParser::Combination*) v;
+        aexp.insert(v);
+        addToExpressions(c->value1);
+        addToExpressions(c->value2);
+        return;
+    }
+    default:
+        return;
+    }
 }
 
 set<CPPParser::VariableValue*> AExpAnalysis::top()
@@ -81,9 +83,61 @@ bool AExpAnalysis::lessThan(set<CPPParser::VariableValue*>& first, set<CPPParser
 
 set<CPPParser::VariableValue*> AExpAnalysis::f(set<CPPParser::VariableValue*>& current, CPPParser::Statement* s)
 {
-    //TODO
+    set<CPPParser::VariableValue*> genSet = gen(s);
+
     set<CPPParser::VariableValue*> result;
+    set<CPPParser::VariableValue*>::iterator it;
+    if (s->getType() == CPPParser::TYPE_VAR_ASSIGNMENT)
+    {
+        CPPParser::VariableAssignment* va = (CPPParser::VariableAssignment*) s;
+        for (it = current.begin(); it != current.end(); it++)
+        {
+            if (!contains(*it, va->name))
+                result.insert(*it);
+        }
+    }
+    else
+    {
+        result.insert(current.begin(), current.end());
+    }
+
+    result.insert(genSet.begin(), genSet.end());
+
     return result;
+}
+
+set<CPPParser::VariableValue*> AExpAnalysis::gen(CPPParser::Statement* s)
+{
+    set<CPPParser::VariableValue*> result;
+    switch (s->getType())
+    {
+    case CPPParser::TYPE_VAR_ASSIGNMENT:
+    {
+        CPPParser::VariableAssignment* va = (CPPParser::VariableAssignment*) s;
+        addSubExpressions(result, va->value);
+        return result;
+    }
+    default: return result;
+
+    }
+}
+
+void AExpAnalysis::addSubExpressions(set<CPPParser::VariableValue*> s, CPPParser::VariableValue* v)
+{
+    switch (v->getType())
+    {
+        case CPPParser::VALUE_ALLOCATION: return;
+        case CPPParser::VALUE_COMBINATION:
+        {
+            CPPParser::Combination* c = (CPPParser::Combination*) v;
+            s.insert(v);
+            addSubExpressions(s, c->value1);
+            addSubExpressions(s, c->value2);
+            return;
+        }
+        case CPPParser::VALUE_VARIABLE: return;
+        case CPPParser::VALUE_UNKNOWN: return;
+    }
 }
 
 set<CPPParser::VariableValue*> AExpAnalysis::join(set<CPPParser::VariableValue*>& first, set<CPPParser::VariableValue*>& second)
@@ -105,3 +159,23 @@ set<CPPParser::VariableValue*> AExpAnalysis::getExtremalValue()
     set<CPPParser::VariableValue*> result;
     return result;
 }
+
+bool AExpAnalysis::contains(CPPParser::VariableValue* v, string name)
+{
+    switch (v->getType())
+    {
+    case CPPParser::VALUE_VARIABLE:
+    {
+        CPPParser::Variable* var = (CPPParser::Variable*) v;
+        return (0 == name.compare(var->value));
+    }
+    case CPPParser::VALUE_COMBINATION:
+    {
+        CPPParser::Combination* c = (CPPParser::Combination*) v;
+        return (contains(c->value1, name) || contains(c->value2, name));
+    }
+    default:
+        return false;
+    }
+}
+
