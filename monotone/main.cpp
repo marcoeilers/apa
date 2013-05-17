@@ -34,7 +34,7 @@ int main()
     AExpAnalysis* a = new AExpAnalysis(*cf);
     MFP<set<CPPParser::VariableValue*> > * solver = new MFP<set<CPPParser::VariableValue*> >();
 
-    solver->solve(a, cf);
+    set<CPPParser::VariableValue*> result = solver->solve(a, cf);
 
 
     printf("Press any key to exit..");
