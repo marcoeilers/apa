@@ -3,6 +3,7 @@
 
 #include <cstdlib>
 #include <vector>
+#include <string>
 
 namespace CPPParser {
 
@@ -56,11 +57,18 @@ enum StatementType {
 	TYPE_CODEBLOCK
 };
 
+enum ValueType {
+    VALUE_VARIABLE,
+    VALUE_COMBINATION,
+    VALUE_ALLOCATION,
+    VALUE_UNKNOWN
+};
+
 /////////////////////////////////////
 // Definitions of the semantics:
 /////////////////////////////////////
 
-// These are the possible semantics: 
+// These are the possible semantics:
 //
 // [program] = [include]* main() [functionDecl]+
 // [statement] = [while] | [if] | [varDecl] | [varAssignment] | [functionCall] | [codeBlock]
@@ -142,25 +150,31 @@ struct CodeBlock : Statement {
 
 struct VariableValue {
 	virtual bool tryBuild(TokenList& tokens) = 0;
+	virtual ValueType getType() = 0;
 };
 
 struct Variable : VariableValue {
 	String value;
 	virtual bool tryBuild(TokenList& tokens);
+	virtual ValueType getType() { return VALUE_VARIABLE; }
 };
 struct Combination : VariableValue {
 	VariableValue* value1;
 	VariableValue* value2;
 	String combinator;
 	virtual bool tryBuild(TokenList& tokens);
+	virtual ValueType getType() { return VALUE_COMBINATION; }
 };
 struct Allocation : VariableValue {
 	DataType* type;
 	VariableValue* value; // That is, value of the object, not the pointer.
 	virtual bool tryBuild(TokenList& tokens);
+    virtual ValueType getType() { return VALUE_ALLOCATION; }
+
 };
 struct Unknown : VariableValue { // Uninitialized variables get this value.
 	virtual bool tryBuild(TokenList& tokens);
+	virtual ValueType getType() { return VALUE_UNKNOWN; }
 };
 
 struct FunctionDeclaration {
