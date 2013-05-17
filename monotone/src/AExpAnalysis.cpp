@@ -7,13 +7,52 @@ AExpAnalysis::AExpAnalysis(ControlFlow& cf)
     vector<CPPParser::Statement*>::iterator it;
     for (it = cf.getLabels().begin(); it != cf.getLabels().end(); it++)
     {
-        // TODO: add expressions to aexp
+        switch ((*it)->getType())
+        {
+            case CPPParser::TYPE_VAR_ASSIGNMENT:
+            {
+                CPPParser::VariableAssignment* a = (CPPParser::VariableAssignment*) (*it);
+                addToExpressions(a->value);
+                break;
+            }
+            case CPPParser::TYPE_IF:
+            {
+                CPPParser::If* i = (CPPParser::If*) (*it);
+                // addToExpressions(i->condition);
+                // TODO: conditions should have VariableValues as arguments
+                break;
+            }
+            case CPPParser::TYPE_WHILE:
+            {
+                CPPParser::While* w = (CPPParser::While*) (*it);
+                // addToExpressions(w->condition);
+                // TODO: conditions should have VariableValues as arguments
+                break;
+            }
+            default: break;
+        }
     }
 }
 
 AExpAnalysis::~AExpAnalysis()
 {
     //dtor
+}
+
+void AExpAnalysis::addToExpressions(CPPParser::VariableValue* v)
+{
+    switch (v->getType())
+        {
+            case CPPParser::VALUE_COMBINATION:
+            {
+                CPPParser::Combination* c = (CPPParser::Combination*) v;
+                aexp.insert(v);
+                addToExpressions(c->value1);
+                addToExpressions(c->value2);
+                return;
+            }
+            default: return;
+        }
 }
 
 set<CPPParser::VariableValue*> AExpAnalysis::top()

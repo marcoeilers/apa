@@ -26,6 +26,7 @@ class AExpAnalysis : public MFramework<std::set<CPPParser::VariableValue*> >
     protected:
     private:
         std::set<CPPParser::VariableValue*> aexp;
+        void addToExpressions(CPPParser::VariableValue*);
 };
 
 #endif // AEXPANALYSIS_H
