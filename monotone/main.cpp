@@ -11,7 +11,7 @@ int main()
     CPPParser::FunctionDeclaration fd;
     ControlFlow* cf = new ControlFlow(fd);
     AExpAnalysis* a = new AExpAnalysis(*cf);
-    MFP<set<string> > * solver = new MFP<set<string> >();
+    MFP<set<CPPParser::VariableValue*> > * solver = new MFP<set<CPPParser::VariableValue*> >();
 
     return 0;
 }

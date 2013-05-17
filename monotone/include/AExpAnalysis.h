@@ -12,20 +12,20 @@
 
 // type param T is instantiated to be a set of expressions, where the expressions are
 // represented as strings.
-class AExpAnalysis : public MFramework<std::set<std::string> >
+class AExpAnalysis : public MFramework<std::set<CPPParser::VariableValue*> >
 {
     public:
         AExpAnalysis(ControlFlow&);
         virtual ~AExpAnalysis();
-        std::set<std::string> top();
-        std::set<std::string> bottom();
-        std::set<std::string> join(std::set<std::string>&, std::set<std::string>&);
-        bool lessThan(std::set<std::string>&, std::set<std::string>&);
-        std::set<std::string> f (std::set<std::string>&, CPPParser::Statement*);
-        std::set<std::string> getExtremalValue();
+        std::set<CPPParser::VariableValue*> top();
+        std::set<CPPParser::VariableValue*> bottom();
+        std::set<CPPParser::VariableValue*> join(std::set<CPPParser::VariableValue*>&, std::set<CPPParser::VariableValue*>&);
+        bool lessThan(std::set<CPPParser::VariableValue*>&, std::set<CPPParser::VariableValue*>&);
+        std::set<CPPParser::VariableValue*> f (std::set<CPPParser::VariableValue*>&, CPPParser::Statement*);
+        std::set<CPPParser::VariableValue*> getExtremalValue();
     protected:
     private:
-        std::set<std::string> aexp;
+        std::set<CPPParser::VariableValue*> aexp;
 };
 
 #endif // AEXPANALYSIS_H

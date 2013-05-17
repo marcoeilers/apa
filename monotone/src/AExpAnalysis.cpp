@@ -16,22 +16,22 @@ AExpAnalysis::~AExpAnalysis()
     //dtor
 }
 
-set<string> AExpAnalysis::top()
+set<CPPParser::VariableValue*> AExpAnalysis::top()
 {
     // empty set
-    set<string> result;
+    set<CPPParser::VariableValue*> result;
     return result;
 }
 
-set<string> AExpAnalysis::bottom()
+set<CPPParser::VariableValue*> AExpAnalysis::bottom()
 {
     // set of all subexpressions
     return aexp;
 }
 
-bool AExpAnalysis::lessThan(set<string>& first, set<string>& second)
+bool AExpAnalysis::lessThan(set<CPPParser::VariableValue*>& first, set<CPPParser::VariableValue*>& second)
 {
-    set<string>::iterator it;
+    set<CPPParser::VariableValue*>::iterator it;
     bool result = true;
     for (it = second.begin(); it != second.end(); it++)
     {
@@ -40,19 +40,18 @@ bool AExpAnalysis::lessThan(set<string>& first, set<string>& second)
     return result;
 }
 
-set<string> AExpAnalysis::f(set<string>& current, CPPParser::Statement* s)
+set<CPPParser::VariableValue*> AExpAnalysis::f(set<CPPParser::VariableValue*>& current, CPPParser::Statement* s)
 {
     //TODO
-    set<string> result;
-    result.insert("tralala");
+    set<CPPParser::VariableValue*> result;
     return result;
 }
 
-set<string> AExpAnalysis::join(set<string>& first, set<string>& second)
+set<CPPParser::VariableValue*> AExpAnalysis::join(set<CPPParser::VariableValue*>& first, set<CPPParser::VariableValue*>& second)
 {
     // compute the intersection
-    set<string> result;
-    set<string>::iterator it;
+    set<CPPParser::VariableValue*> result;
+    set<CPPParser::VariableValue*>::iterator it;
     for (it = first.begin(); it != first.end(); it++)
     {
         if (second.find(*it) != second.end())
@@ -61,9 +60,9 @@ set<string> AExpAnalysis::join(set<string>& first, set<string>& second)
     return result;
 }
 
-set<string> AExpAnalysis::getExtremalValue()
+set<CPPParser::VariableValue*> AExpAnalysis::getExtremalValue()
 {
     // empty set
-    set<string> result;
+    set<CPPParser::VariableValue*> result;
     return result;
 }
