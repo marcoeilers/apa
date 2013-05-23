@@ -1,8 +1,9 @@
 #ifndef MFP_H
 #define MFP_H
 
-#include <MFramework.h>
-#include <ControlFlow.h>
+#include <stdio.h>
+#include "MFramework.h"
+#include "ControlFlow.h"
 
 // Class that provides a method to compute the maximal fix point
 // of any given monotone framework (and program).
@@ -19,11 +20,11 @@ public:
     // takes a MFramework object describing the analysis
     // to be performed and a ControlFlow object describing the
     // program that is to be analyzed.
-    T * solve(MFramework<T>*, ControlFlow*);
+    T * solve(MFramework<T>*);
 protected:
 private:
 };
 
-#include <MFP.hpp>
+#include "MFP.hpp"
 
 #endif // MFP_H

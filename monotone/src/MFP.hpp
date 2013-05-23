@@ -15,21 +15,32 @@ MFP<T>::~MFP()
 
 template<typename T>
 
-T * MFP<T>::solve(MFramework<T>* mf, ControlFlow* cf)
+T * MFP<T>::solve(MFramework<T>* mf)
 {
 
-    T * result = new T[cf->getLabels().size()];
-    for (int i = 0; i<cf->getLabels().size(); i++)
+    T * result = new T[mf->getLabels().size()];
+    for (int i = 0; i<mf->getLabels().size(); i++)
     {
-        if (cf->getExtremalLabels().find(i) != cf->getExtremalLabels().end())
+        if (mf->getExtremalLabels().count(i))
+        {
+
             result[i] = mf->getExtremalValue();
+        }
         else
+        {
             result[i] = mf->bottom();
+        }
+
+    }
+
+    for (int i = 0; i<mf->getLabels().size(); i++)
+    {
+        CPPParser::Statement* s= mf->getLabels().at(i);
     }
 
     set<int> workList;
     for (int i = 0;
-            i<cf->getLabels().size();
+            i<mf->getLabels().size();
             i++)
     {
         workList.insert(i);
@@ -38,16 +49,17 @@ T * MFP<T>::solve(MFramework<T>* mf, ControlFlow* cf)
     while(!workList.empty())
     {
         int current = *(workList.begin());
-        set<int> next = cf->getNext(current);
+        set<int> next = mf->getNext(current);
         workList.erase(current);
         set<int>::iterator it;
-        for (it = workList.begin(); it != workList.end(); it++)
+        for (it = next.begin(); it != next.end(); it++)
         {
-            T iterated = mf->f(result[current], cf->getLabels().at(current));
+            T iterated = mf->f(result[current], mf->getLabels().at(current));
             if (!mf->lessThan(iterated, result[*it]))
             {
                 result[*it] = mf->join(result[*it], iterated);
-                set<int> toRevisit = cf->getNext(*it);
+                set<int> toRevisit = mf->getNext(*it);
+
                 workList.insert(toRevisit.begin(), toRevisit.end());
             }
         }

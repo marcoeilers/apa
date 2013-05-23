@@ -1,11 +1,12 @@
 #ifndef AEXPANALYSIS_H
 #define AEXPANALYSIS_H
 
-#include <MFramework.h>
+#include <stdio.h>
+#include "MFramework.h"
 #include <set>
 #include <string>
-#include <ControlFlow.h>
-#include <ParserSemantics.h>
+#include "ControlFlow.h"
+#include "ParserSemantics.h"
 
 // Available expressions analysis is one instance of a monotone framework
 // implemented for testing reasons because of its relative simplicity.
@@ -15,7 +16,7 @@
 class AExpAnalysis : public MFramework<std::set<CPPParser::VariableValue*> >
 {
     public:
-        AExpAnalysis(ControlFlow&);
+        AExpAnalysis(ControlFlow*);
         virtual ~AExpAnalysis();
         std::set<CPPParser::VariableValue*> top();
         std::set<CPPParser::VariableValue*> bottom();
@@ -23,13 +24,16 @@ class AExpAnalysis : public MFramework<std::set<CPPParser::VariableValue*> >
         bool lessThan(std::set<CPPParser::VariableValue*>&, std::set<CPPParser::VariableValue*>&);
         std::set<CPPParser::VariableValue*> f (std::set<CPPParser::VariableValue*>&, CPPParser::Statement*);
         std::set<CPPParser::VariableValue*> getExtremalValue();
+        std::set<int> getExtremalLabels();
+        std::set<int> getNext(int);
     protected:
     private:
+        std::set<CPPParser::VariableValue*> gen(CPPParser::Statement*);
         std::set<CPPParser::VariableValue*> aexp;
         void addToExpressions(CPPParser::VariableValue*);
         bool contains(CPPParser::VariableValue*, std::string);
-        std::set<CPPParser::VariableValue*> gen(CPPParser::Statement*);
-        void addSubExpressions(std::set<CPPParser::VariableValue*>, CPPParser::VariableValue*);
+        std::set<CPPParser::VariableValue*> varUnion(std::set<CPPParser::VariableValue*>&, std::set<CPPParser::VariableValue*>&);
+        void addSubExpressions(std::set<CPPParser::VariableValue*>*, CPPParser::VariableValue*);
 };
 
 #endif // AEXPANALYSIS_H

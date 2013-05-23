@@ -1,7 +1,8 @@
 #ifndef MFRAMEWORK_H
 #define MFRAMEWORK_H
 
-#include <ParserSemantics.h>
+#include "ParserSemantics.h"
+#include "ControlFlow.h"
 
 // Abstract base class for different kinds of analyses
 // Contains only information that is specific for one type of analysis
@@ -26,7 +27,13 @@ template<typename T> class MFramework
 
         // initial value for extremal labels
         virtual T getExtremalValue() = 0;
+
+        virtual std::set<int> getExtremalLabels() = 0;
+        virtual std::set<int> getNext(int) = 0;
+
+        virtual std::vector<CPPParser::Statement*> getLabels() {return cflow->getLabels();}
     protected:
+        ControlFlow* cflow;
     private:
 };
 

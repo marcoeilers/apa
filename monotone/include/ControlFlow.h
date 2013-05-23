@@ -1,10 +1,11 @@
 #ifndef CONTROLFLOW_H
 #define CONTROLFLOW_H
 
+#include <stdio.h>
 #include <vector>
 #include <map>
 #include <set>
-#include <ParserSemantics.h>
+#include "ParserSemantics.h"
 
 // This class stores all the information about a program
 // that is relevant for an analysis, i.e. the instruction that
@@ -18,16 +19,19 @@ class ControlFlow
         virtual ~ControlFlow();
         std::vector<CPPParser::Statement*> getLabels();
         std::set<int> getNext(int l);
-        std::set<int> getExtremalLabels();
-
+        std::set<int> getNextR(int l);
+        std::set<int> getFirstLabels();
+        std::set<int> getLastLabels();
     protected:
     private:
         int addStatement(CPPParser::Statement*, int);
         void addTransition(int, int);
+        void addTransitionR(int, int);
         std::vector<CPPParser::Statement*> labels;
         std::map<int, std::set<int> > transitions;
-        std::set<int> extremals;
-        int last;
+        std::map<int, std::set<int> > transitionsR;
+        std::set<int> first;
+        std::set<int> last;
 };
 
 #endif // CONTROLFLOW_H

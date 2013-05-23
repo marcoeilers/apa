@@ -1,15 +1,12 @@
-#include <ControlFlow.h>
+#include "ControlFlow.h"
 
 using namespace std;
 
 ControlFlow::ControlFlow(CPPParser::FunctionDeclaration& f)
 {
-    vector<CPPParser::Statement*>::iterator it;
-    int index = 0;
-    last = -1;
-    index = addStatement(f.codeBlock, index);
-
-    extremals.insert(0);
+    last.insert(-1);
+    addStatement(f.codeBlock, 0);
+    first.insert(0);
 }
 
 ControlFlow::~ControlFlow()
@@ -25,23 +22,49 @@ int ControlFlow::addStatement(CPPParser::Statement* s, int label)
             {
                 CPPParser::While* w = (CPPParser::While*) s;
                 int startLabel = label;
+                set<int>::iterator it;
+                for (it = last.begin(); it != last.end(); it++)
+                {
+                	addTransition(*it, startLabel);
+                }
+
+                last.clear();
+
+                last.insert(startLabel);
+
                 labels.insert(labels.begin()+label, w);
-                addTransition(last, label);
-                last=label++;
-                label = addStatement(w->statement, label);
-                addTransition(startLabel, label);
-                addTransition(label-1, startLabel);
+
+                label = addStatement(w->statement, ++label);
+
+                for (it = last.begin(); it != last.end(); it++)
+                {
+                	addTransition(*it, startLabel);
+                }
+
+                last.clear();
+                last.insert(startLabel);
                 return label;
             }
-            case CPPParser::TYPE_IF : return label;
+            case CPPParser::TYPE_IF :
             {
                 CPPParser::If* i = (CPPParser::If*) s;
                 int startLabel = label;
+                set<int>::iterator it;
+                for (it = last.begin(); it != last.end(); it++)
+                {
+                	addTransition(*it, startLabel);
+                }
+
+                last.clear();
+                last.insert(startLabel);
+
                 labels.insert(labels.begin()+label, s);
-                addTransition(last, label);
-                last=label++;
-                label =  addStatement(i->statement, label);
-                addTransition(startLabel, label);
+                //addTransition(last, label);
+
+                label = addStatement(i->statement, ++label);
+
+                last.insert(startLabel);
+                //addTransition(startLabel, label);
                 return label;
             }
             case CPPParser::TYPE_CODEBLOCK:
@@ -57,21 +80,32 @@ int ControlFlow::addStatement(CPPParser::Statement* s, int label)
             default:
             {
                 labels.insert(labels.begin()+label, s);
-                addTransition(last, label);
-                last=label++;
-                return label;
+
+                set<int>::iterator it;
+                for (it = last.begin(); it != last.end(); it++)
+                {
+                	addTransition(*it, label);
+                }
+
+                last.clear();
+                last.insert(label);
+                //addTransition(last, label);
+
+                return ++label;
             }
         }
 }
 
 void ControlFlow::addTransition(int from, int to)
 {
+    addTransitionR(to, from);
     if (from != -1)
     {
-        if (transitions.find(from) != transitions.end())
+        if (transitions.count(from))
         {
-            set<int> current = transitions[from];
-            current.insert(to);
+        	int sizeBf = transitions[from].size();
+            set<int>* current = &(transitions[from]);
+            current->insert(to);
         }
         else
         {
@@ -82,17 +116,46 @@ void ControlFlow::addTransition(int from, int to)
     }
 }
 
+void ControlFlow::addTransitionR(int from, int to)
+{
+	if (to != -1)
+	    {
+	        if (transitionsR.count(from))
+	        {
+	        	int sizeBf = transitionsR[from].size();
+	            set<int>* current = &(transitionsR[from]);
+	            current->insert(to);
+	        }
+	        else
+	        {
+	            set<int> toInsert;
+	            toInsert.insert(to);
+	            transitionsR[from] = toInsert;
+	        }
+	    }
+}
+
 vector<CPPParser::Statement*> ControlFlow::getLabels()
 {
     return labels;
 }
 
-set<int> ControlFlow::getExtremalLabels()
+set<int> ControlFlow::getFirstLabels()
 {
-    return extremals;
+    return first;
+}
+
+set<int> ControlFlow::getLastLabels()
+{
+	return last;
 }
 
 set<int> ControlFlow::getNext(int l)
 {
     return transitions[l];
+}
+
+set<int> ControlFlow::getNextR(int l)
+{
+    return transitionsR[l];
 }
