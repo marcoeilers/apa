@@ -1,6 +1,7 @@
 #ifndef PARSERSEMANTICS_H
 #define PARSERSEMANTICS_H
 
+#include <stdio.h>
 #include <cstdlib>
 #include <vector>
 #include <string>
@@ -151,12 +152,25 @@ struct CodeBlock : Statement {
 struct VariableValue {
 	virtual bool tryBuild(TokenList& tokens) = 0;
 	virtual ValueType getType() = 0;
+	virtual std::string toString() = 0;
+	virtual bool equals(VariableValue* other) = 0;
 };
 
 struct Variable : VariableValue {
 	String value;
 	virtual bool tryBuild(TokenList& tokens);
 	virtual ValueType getType() { return VALUE_VARIABLE; }
+	virtual std::string toString() { return value; }
+	virtual bool equals (VariableValue* other)
+	{
+	    if (other->getType() == VALUE_VARIABLE)
+	    {
+	        Variable* v = (Variable*) other;
+	        return (value.compare(v->value) == 0);
+	    }else{
+            return false;
+	    }
+	}
 };
 struct Combination : VariableValue {
 	VariableValue* value1;
@@ -164,17 +178,38 @@ struct Combination : VariableValue {
 	String combinator;
 	virtual bool tryBuild(TokenList& tokens);
 	virtual ValueType getType() { return VALUE_COMBINATION; }
+	virtual std::string toString() { return (value1->toString() + combinator.c_str()+value2->toString());}
+	virtual bool equals (VariableValue* other)
+	{
+	    if (other->getType() == VALUE_COMBINATION)
+	    {
+	        Combination* c = (Combination*) other;
+
+	        return (value1->equals(c->value1) && combinator.compare(c->combinator) == 0 && value2->equals(c->value2));
+	    }else{
+            return false;
+	    }
+	}
 };
 struct Allocation : VariableValue {
 	DataType* type;
 	VariableValue* value; // That is, value of the object, not the pointer.
 	virtual bool tryBuild(TokenList& tokens);
     virtual ValueType getType() { return VALUE_ALLOCATION; }
-
+    virtual std::string toString() { return "alloc";}
+    virtual bool equals (VariableValue* other)
+    {
+        return (other->getType() == VALUE_ALLOCATION);
+    }
 };
 struct Unknown : VariableValue { // Uninitialized variables get this value.
 	virtual bool tryBuild(TokenList& tokens);
 	virtual ValueType getType() { return VALUE_UNKNOWN; }
+	virtual std::string toString() { return "unknown"; }
+	virtual bool equals (VariableValue* other)
+	{
+	    return (other->getType() == VALUE_UNKNOWN);
+	}
 };
 
 struct FunctionDeclaration {

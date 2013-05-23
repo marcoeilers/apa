@@ -2,7 +2,7 @@
 
 namespace CPPParser {
 
-/** Generally, all tryBuild() methods defined here should return false if no match was possible, and throw a ParseError if 
+/** Generally, all tryBuild() methods defined here should return false if no match was possible, and throw a ParseError if
 	they modified the token list before finding out no match was possible. If this happens, the parsing has failed.
 */
 
@@ -14,7 +14,7 @@ Token pop(TokenList& tokens) {
 	return res;
 }
 
-// These are the possible semantics: 
+// These are the possible semantics:
 //
 // [program] = [include]* main() [functionDecl]+
 // [statement] = [while] | [if] | [varDecl] | [assignment] | [functionCall] | [codeBlock]
@@ -108,7 +108,7 @@ bool While::tryBuild(TokenList& tokens) {
 	if (tokens.size() == 0) return false;
 	if (tokens[0].name.compare("while") != 0) return false; // 'Safe' return
 	pop(tokens); // while
-	
+
 	condition = new RelationalCondition();
 	if (!condition->tryBuild(tokens)) {
 		delete condition;
@@ -131,7 +131,7 @@ bool If::tryBuild(TokenList& tokens) {
 	if (tokens.size() == 0) return false;
 	if (tokens[0].name.compare("if") != 0) return false; // 'Safe' return
 	pop(tokens); // if
-	
+
 	condition = new RelationalCondition();
 	if (!condition->tryBuild(tokens)) {
 		delete condition;
@@ -154,7 +154,7 @@ bool VariableDeclaration::tryBuild(TokenList& tokens) {
 	if (tokens.size() == 0) return false;
 	dataType = new DataType();
 	if (!dataType->tryBuild(tokens)) return false; // 'Safe' return: If dataType->tryBuild returns false it's been a safe return.
-	
+
 	name = pop(tokens).name;
 
 	Token token = pop(tokens); // '=' or ';'
@@ -196,7 +196,7 @@ bool VariableAssignment::tryBuild(TokenList& tokens) {
 	if (tokens[1].name.compare("=") != 0) return false; // 'Safe' return
 	name = pop(tokens).name;
 	pop(tokens); // '='
-	
+
 	// Try all possible variable value types:
 	value = new Allocation();
 	if (!value->tryBuild(tokens)) {
@@ -237,7 +237,7 @@ bool FunctionCall::tryBuild(TokenList& tokens) {
 			arguments += " ";
 		else break;
 	}
-	
+
 	pop(tokens); // ';'
 	return true;
 }
@@ -273,7 +273,45 @@ bool Variable::tryBuild(TokenList& tokens) {
 	return true;
 }
 bool Combination::tryBuild(TokenList& tokens) {
-	return false;
+    // not safe
+
+    combinator = tokens[1].name;
+
+    bool found = false;
+	for (int i = 0; i < nCombinators; i++)
+		if (combinators[i].compare(combinator) == 0) {
+			found = true;
+			break;
+		}
+	if (!found) return false; // Safe return
+
+    value1 = new Variable();
+    if (!value1->tryBuild(tokens))
+        return false;
+
+    //pop combinator
+        pop(tokens);
+
+    if (tokens[0].name.compare("(")==0)
+    {
+        //pop opening parenthesis
+        pop(tokens);
+
+        value2 = new Combination();
+        if (!value2->tryBuild(tokens))
+            throw ParseError("Something went wrong");
+
+        if (tokens[0].name.compare(")")!=0)
+            throw ParseError("Something else went wrong");
+        //pop closing parenthesis
+        pop(tokens);
+    }else{
+        value2 = new Variable();
+        if (!value2->tryBuild(tokens))
+            throw ParseError("Something entirely different went wrong");
+    }
+
+	return true;
 }
 bool Allocation::tryBuild(TokenList& tokens) {
 	if (tokens.size() < 5) return false;
@@ -285,7 +323,7 @@ bool Allocation::tryBuild(TokenList& tokens) {
 
 	if (tokens[0].name.compare("(") != 0) throw ParseError("Expected ( in Allocation");
 	pop(tokens); // (
-	
+
 	if (tokens[0].name.compare(")") == 0) value = new Unknown();
 	else {
 		value = new Variable();
@@ -347,7 +385,7 @@ bool Include::tryBuild(TokenList& tokens) {
 
 bool RelationalCondition::tryBuild(TokenList& tokens) {
 	if (tokens.size() < 3) return false;
-	
+
 	if (tokens[0].name.compare("(") != 0) return false;
 
 	value1 = tokens[1].name;
@@ -377,7 +415,7 @@ bool RelationalCondition::tryBuild(TokenList& tokens) {
 bool ConstantCondition::tryBuild(TokenList& tokens) {
 	if (tokens.size() < 3) return false;
 	if (tokens[0].name.compare("(") != 0 || tokens[2].name.compare(")") != 0) return false;
-	
+
 	pop(tokens); // (
 
 	value = tokens[0].name;

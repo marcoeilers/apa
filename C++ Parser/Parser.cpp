@@ -2,7 +2,7 @@
 #include "StringUtil.h"
 #include <string>
 //#include <regex>
-#include <boost\regex.hpp>
+#include <boost/regex.hpp>
 
 namespace CPPParser {
 
@@ -35,7 +35,7 @@ std::vector<std::string> split(std::string string) {
 	string = boost::regex_replace(string, r1, " $1 "); // Replaces just the * symbols, and one space before and after.
 
 	//r1.assign("(?<=[a-zA-Z0-9])\\("); // Find any '(' without a space preceding it
-	
+
 	//string = boost::regex_replace(string, r1, " (");
 
 	//r1.assign("(?<=[^=!<>]=[^=])(.*?)(?= *;)"); // Match any assignment (from i = i - 1, [i - 1] is returned.)
@@ -99,16 +99,16 @@ std::vector<Token> extractTokens(std::string string) {
 }
 
 void Parser::parseFile(std::string filename) {
-	FILE* file = fopen(filename.c_str(), "r");
-	
+	//FILE* file = fopen(filename.c_str(), "r");
+
 	std::string fullProgram; // We save the whole program in one string, not perfect memory wise, but more convenient and flexible.
 
-	char b[200];
+	/*char b[200];
 	while (fgets(b, 200, file) != NULL)
-		fullProgram += std::string(b);// + " ";
-	fclose(file);
-	file = NULL;
-
+		fullProgram += std::string(b);// + " "; */
+	//fclose(file);
+	//file = NULL;
+    fullProgram = "int main() { int i = 8; int j = 0; int k = 0; int z = 5; k = j + 5; while (k > j) { i = i + 1; j = k + i; z = 6; if (j > 5) k = j + i; } k = j + i; }";
 	tokens = extractTokens(fullProgram);
 }
 
