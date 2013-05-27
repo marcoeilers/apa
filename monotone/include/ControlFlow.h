@@ -14,6 +14,7 @@
 
 class ControlFlow {
 public:
+	ControlFlow();
 	ControlFlow(CPPParser::FunctionDeclaration&);
 	virtual ~ControlFlow();
 	std::vector<CPPParser::Statement*> getLabels();
@@ -30,6 +31,7 @@ protected:
 	std::map<int, std::set<int> > transitionsR;
 	std::set<int> first;
 	std::set<int> last;
+	std::set<int> rets;
 private:
 };
 

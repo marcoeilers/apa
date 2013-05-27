@@ -18,7 +18,8 @@ AExpAnalysis::AExpAnalysis(ControlFlow* cf) {
 		}
 		case CPPParser::TYPE_IF: {
 			CPPParser::If* i = (CPPParser::If*) (*it);
-			// addToExpressions(i->condition);
+			//CPPParser::Condition i->condition->
+			//addToExpressions(i->condition);
 			// TODO: conditions should have VariableValues as arguments
 			break;
 		}
