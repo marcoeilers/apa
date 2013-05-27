@@ -55,6 +55,7 @@ enum StatementType {
 	TYPE_VAR_DECLARATION,
 	TYPE_VAR_ASSIGNMENT,
 	TYPE_FUNCTIONCALL,
+	TYPE_RETURN,
 	TYPE_CODEBLOCK
 };
 
@@ -72,7 +73,7 @@ enum ValueType {
 // These are the possible semantics:
 //
 // [program] = [include]* main() [functionDecl]+
-// [statement] = [while] | [if] | [varDecl] | [varAssignment] | [functionCall] | [codeBlock]
+// [statement] = [while] | [if] | [varDecl] | [varAssignment] | [functionCall] | [return] | [codeBlock]
 // [while] = while [condition] [statement]
 // [if] = if [condition] [statement]
 // [varDecl] = [type] varName = [variableValue];
@@ -83,6 +84,7 @@ enum ValueType {
 // [variableValue] = [variable] | [combination] | [allocation] | [unknown]
 // [functionCall] = fName();
 // [functionDecl] = [type] fName() [codeBlock]
+// [return] = return [variableValue]? ;
 // [codeBlock] = { [Statement]* }
 // [include] = #include "[filename]"
 // [relational] = < | > | <= | >= | == | != | && | ||
@@ -93,8 +95,8 @@ struct Program {
 	std::vector<FunctionDeclaration> functionDeclarations;
 	bool tryBuild(TokenList& tokens);
 };
-const int nAllowedTypes = 5;
-const std::string allowedTypes[] = {"int", "long", "char", "float", "double"};
+const int nAllowedTypes = 6;
+const std::string allowedTypes[] = {"int", "long", "char", "float", "double", "bool"};
 const int nRelationals = 8;
 const std::string relationals[] = {">", "<", ">=", "<=", "==", "!=", "&&", "||"};
 const int nCombinators = 4;
@@ -141,6 +143,12 @@ struct FunctionCall : Statement {
 	String arguments;
 	virtual bool tryBuild(TokenList& tokens);
 	virtual StatementType getType() { return TYPE_FUNCTIONCALL; }
+};
+
+struct Return : Statement {
+	VariableValue* variable; // NULL if the return does not return anything.
+	virtual StatementType getType() { return TYPE_RETURN; }
+	virtual bool tryBuild(TokenList& tokens);
 };
 
 struct CodeBlock : Statement {

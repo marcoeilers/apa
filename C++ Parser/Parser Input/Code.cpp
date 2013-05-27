@@ -1,3 +1,13 @@
+bool* boolPtrTest() {
+	bool* bob;
+	return bob;
+}
+
+int hi() {
+	int a = 0;
+	return a;
+}
+
 int main() {
 	int a = 0;
 	int* p = new int(2);

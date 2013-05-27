@@ -99,16 +99,16 @@ std::vector<Token> extractTokens(std::string string) {
 }
 
 void Parser::parseFile(std::string filename) {
-	//FILE* file = fopen(filename.c_str(), "r");
+	FILE* file = fopen(filename.c_str(), "r");
 
 	std::string fullProgram; // We save the whole program in one string, not perfect memory wise, but more convenient and flexible.
 
-	/*char b[200];
+	char b[200];
 	while (fgets(b, 200, file) != NULL)
-		fullProgram += std::string(b);// + " "; */
-	//fclose(file);
-	//file = NULL;
-    fullProgram = "int main() { int i = 8; int j = 0; int k = 0; int z = 5; k = j + 5; while (k > j) { i = i + 1; j = k + i; z = 6; if (j > 5) k = j + i; } k = j + i; }";
+		fullProgram += std::string(b);// + " "; 
+	fclose(file);
+	file = NULL;
+    //fullProgram = "int main() { int i = 8; int j = 0; int k = 0; int z = 5; k = j + 5; while (k > j) { i = i + 1; j = k + i; z = 6; if (j > 5) k = j + i; } k = j + i; }";
 	tokens = extractTokens(fullProgram);
 }
 

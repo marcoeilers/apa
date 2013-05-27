@@ -58,8 +58,9 @@ bool DataType::tryBuild(TokenList& tokens) {
 	name = tokens[0].name;
 
 	int i;
-	for (i = 0; i < nAllowedTypes; i++)
+	for (i = 0; i < nAllowedTypes; i++) {
 		if (name.compare(allowedTypes[i]) == 0) break;
+	}
 	if (i == nAllowedTypes) return false; // 'Safe' return
 
 	pop(tokens); // Remove it now (so the above return is safe)
@@ -80,6 +81,10 @@ Statement* tryStatement(TokenList& tokens) {
 		return statement;
 	delete statement;
 	statement = new If();
+	if (statement->tryBuild(tokens))
+		return statement;
+	delete statement;
+	statement = new Return();
 	if (statement->tryBuild(tokens))
 		return statement;
 	delete statement;
@@ -239,6 +244,27 @@ bool FunctionCall::tryBuild(TokenList& tokens) {
 	}
 
 	pop(tokens); // ';'
+	return true;
+}
+bool Return::tryBuild(TokenList& tokens) {
+	if (tokens.size() < 2) return false;
+	if (tokens[0].name.compare("return") != 0) return false; // safe
+	pop(tokens); // return
+	if (tokens[0].name.compare(";") == 0) {
+		this->variable = NULL;
+		pop(tokens);
+		return true;
+	}
+	variable = new Variable();
+	if (!variable->tryBuild(tokens)) {
+		throw ParseError("Invalid return variable in Return");
+		return false;
+	}
+	if (tokens[0].name.compare(";") != 0) {
+		throw ParseError("Expected \';\' in Return");
+		return false;
+	}
+	pop(tokens); // ;
 	return true;
 }
 bool CodeBlock::tryBuild(TokenList& tokens) {
