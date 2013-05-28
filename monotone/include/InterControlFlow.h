@@ -36,6 +36,7 @@ public:
 	int getEntry(int);
 	int getReturn(int);
 	int getReturnForCall(int);
+	int getCallForReturn(int);
 	LabelType getType(int);
 protected:
 	virtual int addStatement(CPPParser::Statement*, int, std::set<int>*);

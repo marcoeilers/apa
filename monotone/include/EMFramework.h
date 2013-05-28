@@ -25,9 +25,9 @@ public:
        // transfer functions
        virtual T f(T&, CPPParser::Statement*) = 0;
        virtual T fcall(T&, CPPParser::Statement*, CPPParser::FunctionDeclaration*) = 0;
-       virtual T fenter(T&, CPPParser::FunctionDeclaration*) = 0;
-       virtual T fexit(T&, CPPParser::Return*) = 0;
-       virtual T freturn(T&, CPPParser::Statement*) = 0;
+       virtual T fenter(T& t) { return t; }
+       virtual T fexit(T& t, CPPParser::Return* r) { return t; }
+       virtual T freturn(T&, T&, CPPParser::Statement*) = 0;
 
 
        // initial value for extremal labels
@@ -38,6 +38,8 @@ public:
 
        virtual std::vector<CPPParser::Statement*> getLabels() {return cflow->getLabels();}
        virtual LabelType getLabelType(int label) {return cflow->getType(label);}
+
+       virtual int getCallFromReturn(int label) {return cflow->getCallForReturn(label); }
 
        virtual CPPParser::Program* getProg();
 protected:

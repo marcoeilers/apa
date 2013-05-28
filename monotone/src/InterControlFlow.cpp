@@ -36,6 +36,7 @@ int InterControlFlow::addFunction(string name, int label, set<int>* rets) {
 	return -1;
 }
 
+// gets the entry from the call
 int InterControlFlow::getEntry(int label) {
 	set<InterFlow*>::iterator it;
 	for (it = inter.begin(); it != inter.end(); it++) {
@@ -45,6 +46,7 @@ int InterControlFlow::getEntry(int label) {
 	return -1;
 }
 
+// gets the return from the exit
 int InterControlFlow::getReturn(int label) {
 	set<InterFlow*>::iterator it;
 	for (it = inter.begin(); it != inter.end(); it++) {
@@ -61,6 +63,15 @@ int InterControlFlow::getReturnForCall(int label) {
 			return (*it)->ret;
 	}
 	return -1;
+}
+
+int InterControlFlow::getCallForReturn(int label) {
+	set<InterFlow*>::iterator it;
+		for (it = inter.begin(); it != inter.end(); it++) {
+			if ((*it)->ret == label)
+				return (*it)->call;
+		}
+		return -1;
 }
 
 int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
