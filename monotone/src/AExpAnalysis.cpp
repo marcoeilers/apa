@@ -18,15 +18,22 @@ AExpAnalysis::AExpAnalysis(ControlFlow* cf) {
 		}
 		case CPPParser::TYPE_IF: {
 			CPPParser::If* i = (CPPParser::If*) (*it);
-			//CPPParser::Condition i->condition->
-			//addToExpressions(i->condition);
-			// TODO: conditions should have VariableValues as arguments
+			if (i->condition->getType() == CPPParser::CONDITION_RELATIONAL) {
+				CPPParser::RelationalCondition* rc =
+						(CPPParser::RelationalCondition*) i->condition;
+				addToExpressions(rc->variable1);
+				addToExpressions(rc->variable2);
+			}
 			break;
 		}
 		case CPPParser::TYPE_WHILE: {
 			CPPParser::While* w = (CPPParser::While*) (*it);
-			// addToExpressions(w->condition);
-			// TODO: conditions should have VariableValues as arguments
+			if (w->condition->getType() == CPPParser::CONDITION_RELATIONAL) {
+				CPPParser::RelationalCondition* rc =
+						(CPPParser::RelationalCondition*) w->condition;
+				addToExpressions(rc->variable1);
+				addToExpressions(rc->variable2);
+			}
 			break;
 		}
 		default:
@@ -68,7 +75,6 @@ bool AExpAnalysis::lessThan(set<CPPParser::VariableValue*>& first,
 		set<CPPParser::VariableValue*>& second) {
 	set<CPPParser::VariableValue*>::iterator it;
 
-	bool result = true;
 	for (it = second.begin(); it != second.end(); it++) {
 		bool tempResult = false;
 		set<CPPParser::VariableValue*>::iterator firstIt;
@@ -84,7 +90,6 @@ bool AExpAnalysis::lessThan(set<CPPParser::VariableValue*>& first,
 
 set<CPPParser::VariableValue*> AExpAnalysis::f(
 		set<CPPParser::VariableValue*>& current, CPPParser::Statement* s) {
-	int currentSize = current.size();
 	set<CPPParser::VariableValue*> genSet = gen(s);
 
 	set<CPPParser::VariableValue*> un = varUnion(current, genSet);
@@ -94,7 +99,7 @@ set<CPPParser::VariableValue*> AExpAnalysis::f(
 	if (s->getType() == CPPParser::TYPE_VAR_ASSIGNMENT) {
 		CPPParser::VariableAssignment* va = (CPPParser::VariableAssignment*) s;
 		for (it = un.begin(); it != un.end(); it++) {
-			if (!contains(*it, va->name)){
+			if (!contains(*it, va->name)) {
 				result.insert(*it);
 			}
 		}
@@ -111,23 +116,21 @@ set<CPPParser::VariableValue*> AExpAnalysis::f(
 	return result;
 }
 
-set<CPPParser::VariableValue*> AExpAnalysis::varUnion(set<CPPParser::VariableValue*>& first, set<CPPParser::VariableValue*>& second)
-{
+set<CPPParser::VariableValue*> AExpAnalysis::varUnion(
+		set<CPPParser::VariableValue*>& first,
+		set<CPPParser::VariableValue*>& second) {
 	set<CPPParser::VariableValue*> result;
 	result.insert(first.begin(), first.end());
 
 	set<CPPParser::VariableValue*>::iterator it;
-	for (it = second.begin(); it != second.end(); it++)
-	{
+	for (it = second.begin(); it != second.end(); it++) {
 		bool found = false;
 		set<CPPParser::VariableValue*>::iterator secIt;
-		for (secIt = result.begin(); secIt!=result.end(); secIt++)
-		{
+		for (secIt = result.begin(); secIt != result.end(); secIt++) {
 			if ((*it)->equals(*secIt))
 				found = true;
 		}
-		if (!found)
-		{
+		if (!found) {
 			result.insert(*it);
 		}
 	}
@@ -147,6 +150,26 @@ set<CPPParser::VariableValue*> AExpAnalysis::gen(CPPParser::Statement* s) {
 	case CPPParser::TYPE_VAR_DECLARATION: {
 		CPPParser::VariableDeclaration* va = (CPPParser::VariableDeclaration*) s;
 		addSubExpressions(&result, va->value);
+		return result;
+	}
+	case CPPParser::TYPE_IF: {
+		CPPParser::If* i = (CPPParser::If*) s;
+		if (i->condition->getType() == CPPParser::CONDITION_RELATIONAL) {
+			CPPParser::RelationalCondition* rc =
+					(CPPParser::RelationalCondition*) i->condition;
+			addSubExpressions(&result, rc->variable1);
+			addSubExpressions(&result, rc->variable2);
+		}
+		return result;
+	}
+	case CPPParser::TYPE_WHILE: {
+		CPPParser::While* w = (CPPParser::While*) s;
+		if (w->condition->getType() == CPPParser::CONDITION_RELATIONAL) {
+			CPPParser::RelationalCondition* rc =
+					(CPPParser::RelationalCondition*) w->condition;
+			addToExpressions(rc->variable1);
+			addToExpressions(rc->variable2);
+		}
 		return result;
 	}
 	default:
@@ -177,8 +200,7 @@ void AExpAnalysis::addSubExpressions(set<CPPParser::VariableValue*>* s,
 set<CPPParser::VariableValue*> AExpAnalysis::join(
 		set<CPPParser::VariableValue*>& first,
 		set<CPPParser::VariableValue*>& second) {
-	int firstSize = first.size();
-	int secondSize = second.size();
+
 	// compute the intersection
 	set<CPPParser::VariableValue*> result;
 	set<CPPParser::VariableValue*>::iterator it;
@@ -216,13 +238,11 @@ bool AExpAnalysis::contains(CPPParser::VariableValue* v, string name) {
 	}
 }
 
-set<int> AExpAnalysis::getExtremalLabels()
-{
+set<int> AExpAnalysis::getExtremalLabels() {
 	return cflow->getFirstLabels();
 }
 
-set<int> AExpAnalysis::getNext(int l)
-{
+set<int> AExpAnalysis::getNext(int l) {
 	return cflow->getNext(l);
 }
 
