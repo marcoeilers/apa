@@ -29,7 +29,7 @@ enum LabelType
 	LABEL_RETURN
 };
 
-class InterControlFlow : ControlFlow {
+class InterControlFlow : public virtual ControlFlow {
 public:
 	InterControlFlow(CPPParser::Program*);
 	virtual ~InterControlFlow();
@@ -38,6 +38,8 @@ public:
 	int getReturnForCall(int);
 	int getCallForReturn(int);
 	LabelType getType(int);
+	CPPParser::Program* getProg() { return prog; }
+	std::set<int> getNext(int);
 protected:
 	virtual int addStatement(CPPParser::Statement*, int, std::set<int>*);
 	int addFunction(std::string, int, std::set<int>*);

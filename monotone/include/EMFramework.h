@@ -36,12 +36,11 @@ public:
        virtual std::set<int> getExtremalLabels() = 0;
        virtual std::set<int> getNext(int) = 0;
 
-       virtual std::vector<CPPParser::Statement*> getLabels() {return cflow->getLabels();}
        virtual LabelType getLabelType(int label) {return cflow->getType(label);}
 
        virtual int getCallFromReturn(int label) {return cflow->getCallForReturn(label); }
 
-       virtual CPPParser::Program* getProg();
+       virtual CPPParser::Program* getProg() { return cflow->getProg(); }
 protected:
        InterControlFlow* cflow;
    private:

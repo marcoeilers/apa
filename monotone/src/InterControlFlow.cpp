@@ -67,11 +67,11 @@ int InterControlFlow::getReturnForCall(int label) {
 
 int InterControlFlow::getCallForReturn(int label) {
 	set<InterFlow*>::iterator it;
-		for (it = inter.begin(); it != inter.end(); it++) {
-			if ((*it)->ret == label)
-				return (*it)->call;
-		}
-		return -1;
+	for (it = inter.begin(); it != inter.end(); it++) {
+		if ((*it)->ret == label)
+			return (*it)->call;
+	}
+	return -1;
 }
 
 int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
@@ -124,7 +124,7 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 
 	}
 	case CPPParser::TYPE_RETURN: {
-		CPPParser::While* w = (CPPParser::While*) s;
+
 		int startLabel = label;
 		set<int>::iterator it;
 		for (it = last.begin(); it != last.end(); it++) {
@@ -210,11 +210,9 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 
 }
 
-LabelType InterControlFlow::getType(int label)
-{
+LabelType InterControlFlow::getType(int label) {
 	set<InterFlow*>::iterator it;
-	for (it = inter.begin(); it != inter.end(); it++)
-	{
+	for (it = inter.begin(); it != inter.end(); it++) {
 		if ((*it)->call == label)
 			return LABEL_CALL;
 		if ((*it)->enter == label)
@@ -227,3 +225,18 @@ LabelType InterControlFlow::getType(int label)
 	return LABEL_DEFAULT;
 }
 
+set<int> InterControlFlow::getNext(int label) {
+	set<int> result;
+	if (transitions.count(label)) {
+		result.insert(transitions[label].begin(), transitions[label].end());
+	}
+	set<InterFlow*>::iterator it;
+	for (it = inter.begin(); it != inter.end(); it++) {
+		if ((*it)->call == label)
+			result.insert((*it)->enter);
+		if ((*it)->exit == label)
+			result.insert((*it)->ret);
+	}
+
+	return result;
+}

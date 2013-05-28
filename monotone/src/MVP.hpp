@@ -129,29 +129,30 @@ map<string, T>* MVP<T>::solve(EMFramework<T>* mf) {
 			case LABEL_RETURN: {
 				int callLbl = mf->getCallFromReturn(current.first);
 
-				stringstream ss;
-				ss << callLbl;
-				string callLblStr = ss.str();
+				typename map<string, T>::iterator conIt;
+				for (conIt = result[current.first].begin();
+						conIt != result[current.first].end(); conIt++) {
+					string callContext = prepend(callLbl, conIt->first);
 
-				// we only handle the contexts that can actually return here
-				if (current.second.substr(0,1).compare(callLblStr) == 0)
-				{
-				string oldContext = current.second.substr(1);
+					if (callContext.compare(callContext) == 0) {
+						string oldContext = conIt->first;
 
-				T iterated = mf->freturn(result[callLbl][oldContext], result[current.first][current.second],
-						s);
-				if (!mf->lessThan(iterated, result[*it][current.second])) {
-					result[*it][current.second] = mf->join(
-							result[*it][current.second], iterated);
-					set<int> toRevisit = mf->getNext(*it);
+						T iterated = mf->freturn(result[callLbl][oldContext],
+								result[current.first][current.second], s);
+						if (!mf->lessThan(iterated,
+								result[*it][current.second])) {
+							result[*it][current.second] = mf->join(
+									result[*it][current.second], iterated);
+							set<int> toRevisit = mf->getNext(*it);
 
-					set<int>::iterator trIt;
-					for (trIt = toRevisit.begin(); trIt != toRevisit.end();
-							trIt++) {
-						pair<int, string> workItem(*it, current.second);
-						workList.insert(workItem);
+							set<int>::iterator trIt;
+							for (trIt = toRevisit.begin();
+									trIt != toRevisit.end(); trIt++) {
+								pair<int, string> workItem(*it, current.second);
+								workList.insert(workItem);
+							}
+						}
 					}
-				}
 				}
 				break;
 			}

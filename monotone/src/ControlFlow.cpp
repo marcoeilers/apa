@@ -110,7 +110,6 @@ void ControlFlow::addTransition(int from, int to) {
 	addTransitionR(to, from);
 	if (from != -1) {
 		if (transitions.count(from)) {
-			int sizeBf = transitions[from].size();
 			set<int>* current = &(transitions[from]);
 			current->insert(to);
 		} else {
@@ -124,7 +123,6 @@ void ControlFlow::addTransition(int from, int to) {
 void ControlFlow::addTransitionR(int from, int to) {
 	if (to != -1) {
 		if (transitionsR.count(from)) {
-			int sizeBf = transitionsR[from].size();
 			set<int>* current = &(transitionsR[from]);
 			current->insert(to);
 		} else {
