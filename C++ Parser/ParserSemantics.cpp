@@ -14,19 +14,6 @@ Token pop(TokenList& tokens) {
 	return res;
 }
 
-// These are the possible semantics:
-//
-// [program] = [include]* main() [functionDecl]+
-// [statement] = [while] | [if] | [varDecl] | [assignment] | [functionCall] | [codeBlock]
-// [while] = while [condition] [statement]
-// [if] = if [condition] [statement]
-// [varDecl] = [type] varName = [value];
-// [varAssignment] = [name] = [type];
-// [functionCall] = fName();
-// [functionDecl] = [type] fName() [codeBlock]
-// [codeBlock] = { [Statement]* }
-// [include] = #include "[filename]"
-
 bool Program::tryBuild(TokenList& tokens) {
 	if (tokens.size() == 0) return false;
 	includes.clear();
@@ -282,12 +269,6 @@ bool CodeBlock::tryBuild(TokenList& tokens) {
 		statements.push_back(statement);
 	}
 
-	/*if (tokens[0].name.compare("}") != 0) {
-		throw ParseError("Codeblock must end with \'}\'");
-		return false;
-	}
-	pop(tokens);*/
-
 	pop(tokens); // Remove the last '}'
 
 	return true;
@@ -295,6 +276,7 @@ bool CodeBlock::tryBuild(TokenList& tokens) {
 
 bool Variable::tryBuild(TokenList& tokens) {
 	if (tokens.size() == 0 || tokens[0].name.compare(";") == 0) return false;
+
 	value = pop(tokens).name;
 	return true;
 }
@@ -302,6 +284,9 @@ bool Combination::tryBuild(TokenList& tokens) {
     // not safe
 
     combinator = tokens[1].name;
+	for (int i = 0; i < nCombinators; i++) {
+
+	}
 
     bool found = false;
 	for (int i = 0; i < nCombinators; i++)
@@ -414,28 +399,59 @@ bool RelationalCondition::tryBuild(TokenList& tokens) {
 
 	if (tokens[0].name.compare("(") != 0) return false;
 
-	value1 = tokens[1].name;
-
-	conditional = tokens[2].name;
-
-	bool found = false;
-	for (int i = 0; i < nRelationals; i++)
-		if (relationals[i].compare(conditional) == 0) {
-			found = true;
-			break;
+	// tokens[0] is '(', now find the corresponding ')':
+	bool foundCondition = false;
+	int endPos;
+	int depth = 0;
+	for (endPos = 1; endPos < tokens.size(); endPos++) {
+		if (tokens[endPos].name.compare("(") == 0) depth++;
+		if (tokens[endPos].name.compare(")") == 0) {
+			if (depth == 0)
+				break;
+			else depth--;
+			continue;
 		}
-	if (!found) return false; // Safe return
+		if (depth == 0)
+			for (int j = 0; j < nRelationals; j++) {
+				if (relationals[j].compare(tokens[endPos].name) == 0) {
+					foundCondition = true;
+					break;
+				}
+			}
+	}
+	if (endPos == tokens.size()) {
+		throw ParseError("Expected \')\' in RelationalCondition.");
+		return false;
+	}
+	if (!foundCondition) return false; // Means this must be a ConstantCondition.
 
 	pop(tokens); // (
-	pop(tokens); // Value1
-	pop(tokens); // Conditional
 
-	value2 = pop(tokens).name;
+	// Parse a combination, or a variable.
+	this->variable1 = new Combination();
+	if (!variable1->tryBuild(tokens)) {
+		delete variable1;
+		variable1 = new Variable();
+		if (!variable1->tryBuild(tokens)) {
+			throw ParseError("Expected Combination or Variable in RelationalCondition");
+			return false;
+		}
+	}
+	this->conditional = pop(tokens).name; // The relational
 
-	if (tokens[0].name.compare(")") != 0) throw ParseError("Expected ) in RelationalCondition");
-	pop(tokens);
+	// Parse a combination, or a variable.
+	this->variable2 = new Combination();
+	if (!variable2->tryBuild(tokens)) {
+		delete variable2;
+		variable2 = new Variable();
+		if (!variable2->tryBuild(tokens)) {
+			throw ParseError("Expected Combination or Variable in RelationalCondition");
+			return false;
+		}
+	}
 
-	return true; // Safe return
+	pop(tokens); // )
+	return true;
 }
 
 bool ConstantCondition::tryBuild(TokenList& tokens) {
@@ -444,13 +460,11 @@ bool ConstantCondition::tryBuild(TokenList& tokens) {
 
 	pop(tokens); // (
 
-	value = tokens[0].name;
-
-	if (value[0] == '!') {
+	this->variable = pop(tokens).name;
+	if (variable[0] == '!') {
 		negative = true;
-		value = value.substr(1);
-	}
-	pop(tokens);
+		variable = variable.substr(1);
+	} else negative = false;
 
 	pop(tokens); // )
 

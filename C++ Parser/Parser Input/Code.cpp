@@ -12,6 +12,9 @@ int main() {
 	int a = 0;
 	int* p = new int(2);
 	int* p2 = new int(2);
+	while (a + 1 < b - 2) {
+		sayHey(ChinChan);
+	}
 	if (a == 0) {
 		p2 = p;
 	}

@@ -66,6 +66,11 @@ enum ValueType {
     VALUE_UNKNOWN
 };
 
+enum ConditionType {
+	CONDITION_CONSTANT,
+	CONDITION_RELATIONAL
+};
+
 /////////////////////////////////////
 // Definitions of the semantics:
 /////////////////////////////////////
@@ -88,7 +93,7 @@ enum ValueType {
 // [codeBlock] = { [Statement]* }
 // [include] = #include "[filename]"
 // [relational] = < | > | <= | >= | == | != | && | ||
-// [condition] = varName [relational] varName | varName
+// [condition] = [variableValue] [relational] [variableValue] | [variableValue] // EG i+1 > 15-j
 
 struct Program {
 	std::vector<Include> includes;
@@ -235,19 +240,22 @@ struct Include {
 
 struct Condition {
 	virtual bool tryBuild(TokenList& tokens) = 0;
+	virtual ConditionType getType() = 0;
 };
 
 struct RelationalCondition : Condition {
-	String value1;
-	String value2;
+	VariableValue* variable1;
+	VariableValue* variable2;
 	String conditional;
 	virtual bool tryBuild(TokenList& tokens);
+	virtual ConditionType getType() { return CONDITION_RELATIONAL; }
 };
 
 struct ConstantCondition : Condition {
-	String value;
 	bool negative;
+	String variable;
 	virtual bool tryBuild(TokenList& tokens);
+	virtual ConditionType getType() { return CONDITION_CONSTANT; }
 };
 
 }
