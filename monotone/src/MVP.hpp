@@ -14,13 +14,13 @@ MVP<T>::~MVP() {
 
 template<typename T>
 map<string, T>* MVP<T>::solve(EMFramework<T>* mf) {
-	T * result = new T[mf->getLabels().size()];
+	map<string, T> * result = new map<string, T>[mf->getLabels().size()];
 	for (int i = 0; i < mf->getLabels().size(); i++) {
 		if (mf->getExtremalLabels().count(i)) {
 
-			result[i] = mf->getExtremalValue();
+			result[i][""] = mf->getExtremalValue();
 		} else {
-			result[i] = mf->bottom();
+			result[i][""] = mf->bottom();
 		}
 
 	}
@@ -35,7 +35,7 @@ map<string, T>* MVP<T>::solve(EMFramework<T>* mf) {
 		pair<int, string> current = *(workList.begin());
 
 		// TODO: next has to get all next labels
-		set<int> next = mf->getNext(current);
+		set<int> next = mf->getNext(current.first);
 		workList.erase(current);
 		set<int>::iterator it;
 		for (it = next.begin(); it != next.end(); it++) {
@@ -70,13 +70,13 @@ map<string, T>* MVP<T>::solve(EMFramework<T>* mf) {
 						funIt != mf->getProg()->functionDeclarations.end();
 						funIt++) {
 					if (funIt->name.compare(fc->name) == 0) {
-						fc = it;
+						calledFun = &(*funIt);
 						break;
 					}
 				}
 
 				T iterated = mf->fcall(result[current.first][current.second], s,
-						fc);
+						calledFun);
 				if (!mf->lessThan(iterated, result[*it][newContext])) {
 					result[*it][newContext] = mf->join(result[*it][newContext],
 							iterated);

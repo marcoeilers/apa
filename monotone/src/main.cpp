@@ -1,9 +1,11 @@
 #include <iostream>
 #include "AExpAnalysis.h"
 #include "MFP.h"
+#include "MVP.h"
 #include "Parser.h"
 #include "StringUtil.h"
 #include "ParserSemantics.h"
+#include "SignAnalysis.h"
 
 
 using namespace std;
@@ -13,7 +15,7 @@ int main()
 
     CPPParser::Parser parser;
 
-    parser.parseFile("../../C++ Parser/Parser Input/Coe.cpp");
+    parser.parseFile("../../C++ Parser/Parser Input/Code.cpp");
 
     CPPParser::TokenList tokens = parser.getTokens();
 
@@ -33,6 +35,15 @@ int main()
 
 
 
+    InterControlFlow* icf = new InterControlFlow(&program);
+
+    SignAnalysis* s = new SignAnalysis(icf);
+
+	MVP<map<string, set<Sign> > >* mvp = new MVP<map<string, set<Sign> > >(2);
+
+	map<string, map<string, set<Sign> > >* result = mvp->solve(s);
+
+    /*
     CPPParser::FunctionDeclaration fd = *(program.functionDeclarations.begin());
 
     ControlFlow* cf = new ControlFlow(fd);
@@ -63,7 +74,7 @@ int main()
         {
             printf("%s\n", (*it)->toString().c_str());
         }
-    }
+    } */
 
     printf("Press any key to exit..");
     getchar();

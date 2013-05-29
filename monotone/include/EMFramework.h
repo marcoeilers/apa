@@ -34,11 +34,13 @@ public:
        virtual T getExtremalValue() = 0;
 
        virtual std::set<int> getExtremalLabels() = 0;
-       virtual std::set<int> getNext(int) = 0;
+       virtual std::set<int> getNext(int l) { return cflow->getNext(l); }
 
        virtual LabelType getLabelType(int label) {return cflow->getType(label);}
 
        virtual int getCallFromReturn(int label) {return cflow->getCallForReturn(label); }
+
+       virtual std::vector<CPPParser::Statement*> getLabels() {return cflow->getLabels();}
 
        virtual CPPParser::Program* getProg() { return cflow->getProg(); }
 protected:
