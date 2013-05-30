@@ -6,9 +6,19 @@
 #include <vector>
 #include <string>
 
-#include "ParserSemantics.h"
 
 namespace CPPParser {
+
+/** A token is a small building block of the language: 'if', 'while', '1', '=', etc.
+*/
+struct Token {
+	std::string name;
+	unsigned long id; // We don't really use this?
+};
+
+typedef std::vector<Token> TokenList;
+
+std::vector<Token> extractTokens(std::string);
 
 class Parser {
 private:

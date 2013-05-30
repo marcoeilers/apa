@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <vector>
 #include <string>
+#include <sstream>
+#include "Parser.h"
 
 namespace CPPParser {
 
@@ -30,15 +32,6 @@ struct Allocation; // : VariableValue
 struct Unknown; // : VariableValue // An uninitialized value
 
 typedef std::string String; // From now on we can call std::string 'String'.
-
-/** A token is a small building block of the language: 'if', 'while', '1', '=', etc.
-*/
-struct Token {
-	std::string name;
-	unsigned long id; // We don't really use this?
-};
-
-typedef std::vector<Token> TokenList;
 
 class ParseError {
 private:
@@ -145,7 +138,7 @@ struct VariableAssignment : Statement {
 };
 struct FunctionCall : Statement {
 	String name;
-	String arguments;
+	std::vector<VariableValue*> arguments;
 	Variable* variable; // NULL if no variable. [variable] = fName();
 	virtual bool tryBuild(TokenList& tokens);
 	virtual StatementType getType() { return TYPE_FUNCTIONCALL; }
@@ -229,7 +222,7 @@ struct Unknown : VariableValue { // Uninitialized variables get this value.
 struct FunctionDeclaration {
 	DataType* dataType;
 	String name;
-	std::string arguments;
+	std::vector<std::pair<Variable*, DataType*> > arguments;
 	CodeBlock* codeBlock;
 	bool tryBuild(TokenList& tokens);
 };

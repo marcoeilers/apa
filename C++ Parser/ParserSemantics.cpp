@@ -3,11 +3,11 @@
 namespace CPPParser {
 
 /** Generally, all tryBuild() methods defined here should return false if no match was possible, and throw a ParseError if
-	they modified the token list before finding out no match was possible. If this happens, the parsing has failed.
-*/
+ they modified the token list before finding out no match was possible. If this happens, the parsing has failed.
+ */
 
 /** Returns the first element from the list, and removes that element
-*/
+ */
 Token pop(TokenList& tokens) {
 	Token res = tokens.front();
 	tokens.erase(tokens.begin());
@@ -15,7 +15,8 @@ Token pop(TokenList& tokens) {
 }
 
 bool Program::tryBuild(TokenList& tokens) {
-	if (tokens.size() == 0) return false;
+	if (tokens.size() == 0)
+		return false;
 	includes.clear();
 	functionDeclarations.clear();
 	bool res;
@@ -23,13 +24,15 @@ bool Program::tryBuild(TokenList& tokens) {
 		// Parse any number of includes:
 		Include include;
 		res = include.tryBuild(tokens);
-		if (res) includes.push_back(include);
+		if (res)
+			includes.push_back(include);
 	} while (res);
 
 	do {
 		FunctionDeclaration functionDeclaration;
 		res = functionDeclaration.tryBuild(tokens);
-		if (res) functionDeclarations.push_back(functionDeclaration);
+		if (res)
+			functionDeclarations.push_back(functionDeclaration);
 	} while (res);
 
 	if (functionDeclarations.size() == 0) {
@@ -40,29 +43,34 @@ bool Program::tryBuild(TokenList& tokens) {
 	return true;
 }
 bool DataType::tryBuild(TokenList& tokens) {
-	if (tokens.size() == 0) return false;
+	if (tokens.size() == 0)
+		return false;
 	// Data type:
 	name = tokens[0].name;
 
 	int i;
 	for (i = 0; i < nAllowedTypes; i++) {
-		if (name.compare(allowedTypes[i]) == 0) break;
+		if (name.compare(allowedTypes[i]) == 0)
+			break;
 	}
-	if (i == nAllowedTypes) return false; // 'Safe' return
+	if (i == nAllowedTypes)
+		return false; // 'Safe' return
 
 	pop(tokens); // Remove it now (so the above return is safe)
 	// Data type pointer 'depth'
 	if (tokens.size() > 0 && tokens[0].name[0] == '*') {
 		// Parse a pointer:
 		pointerDepth = pop(tokens).name.size();
-	} else pointerDepth = 0;
+	} else
+		pointerDepth = 0;
 	return true;
 }
 /** Note, this function allocates 1 Statement object without releasing it.
-	However, in the program it doesn't really matter since we will never release it anyway.
-*/
+ However, in the program it doesn't really matter since we will never release it anyway.
+ */
 Statement* tryStatement(TokenList& tokens) {
 	// Try while, if, varDecl and function call:
+	TokenList oldTokens = tokens;
 	Statement* statement = new While();
 	if (statement->tryBuild(tokens))
 		return statement;
@@ -90,15 +98,20 @@ Statement* tryStatement(TokenList& tokens) {
 	statement = new CodeBlock();
 	if (statement->tryBuild(tokens))
 		return statement;
+	printf("Old top token is %s, %s.\n",oldTokens.front().name.c_str(), oldTokens.at(1).name.c_str());
+
+	printf("Current top token is %s, %s.\n",tokens.front().name.c_str(), tokens.at(1).name.c_str());
 	throw ParseError("Undefined Statement!");
 	return NULL;
 }
 /** Note: If this function returns false, it must not have modified the token list.
-	If the function throws an error, it may have.
-*/
+ If the function throws an error, it may have.
+ */
 bool While::tryBuild(TokenList& tokens) {
-	if (tokens.size() == 0) return false;
-	if (tokens[0].name.compare("while") != 0) return false; // 'Safe' return
+	if (tokens.size() == 0)
+		return false;
+	if (tokens[0].name.compare("while") != 0)
+		return false; // 'Safe' return
 	pop(tokens); // while
 
 	condition = new RelationalCondition();
@@ -112,16 +125,19 @@ bool While::tryBuild(TokenList& tokens) {
 	}
 
 	statement = tryStatement(tokens);
-	if (statement == NULL) throw ParseError("Expected Statement in While");
+	if (statement == NULL)
+		throw ParseError("Expected Statement in While");
 
 	return true;
 }
 /** Note: If this function returns false, it must not have modified the token list.
-	If the function throws an error, it may have.
-*/
+ If the function throws an error, it may have.
+ */
 bool If::tryBuild(TokenList& tokens) {
-	if (tokens.size() == 0) return false;
-	if (tokens[0].name.compare("if") != 0) return false; // 'Safe' return
+	if (tokens.size() == 0)
+		return false;
+	if (tokens[0].name.compare("if") != 0)
+		return false; // 'Safe' return
 	pop(tokens); // if
 
 	condition = new RelationalCondition();
@@ -135,17 +151,20 @@ bool If::tryBuild(TokenList& tokens) {
 	}
 
 	statement = tryStatement(tokens);
-	if (statement == NULL) throw ParseError("Expected Statement in If");
+	if (statement == NULL)
+		throw ParseError("Expected Statement in If");
 
 	return true;
 }
 /** Note: If this function returns false, it must not have modified the token list.
-	If the function throws an error, it may have.
-*/
+ If the function throws an error, it may have.
+ */
 bool VariableDeclaration::tryBuild(TokenList& tokens) {
-	if (tokens.size() == 0) return false;
+	if (tokens.size() == 0)
+		return false;
 	dataType = new DataType();
-	if (!dataType->tryBuild(tokens)) return false; // 'Safe' return: If dataType->tryBuild returns false it's been a safe return.
+	if (!dataType->tryBuild(tokens))
+		return false; // 'Safe' return: If dataType->tryBuild returns false it's been a safe return.
 
 	name = pop(tokens).name;
 
@@ -170,7 +189,6 @@ bool VariableDeclaration::tryBuild(TokenList& tokens) {
 		}
 	}
 
-
 	token = pop(tokens); // ';'
 
 	if (token.name.compare(";") != 0) {
@@ -181,11 +199,13 @@ bool VariableDeclaration::tryBuild(TokenList& tokens) {
 	return true;
 }
 /** Note: If this function returns false, it must not have modified the token list.
-	If the function throws an error, it may have.
-*/
+ If the function throws an error, it may have.
+ */
 bool VariableAssignment::tryBuild(TokenList& tokens) {
-	if (tokens.size() < 2) return false;
-	if (tokens[1].name.compare("=") != 0) return false; // 'Safe' return
+	if (tokens.size() < 2)
+		return false;
+	if (tokens[1].name.compare("=") != 0)
+		return false; // 'Safe' return
 	name = pop(tokens).name;
 	pop(tokens); // '='
 
@@ -211,14 +231,17 @@ bool VariableAssignment::tryBuild(TokenList& tokens) {
 	return true;
 }
 /** Note: If this function returns false, it must not have modified the token list.
-	If the function throws an error, it may have.
-*/
+ If the function throws an error, it may have.
+ */
 bool FunctionCall::tryBuild(TokenList& tokens) {
-	if (tokens.size() < 3) return false;
-	
+	if (tokens.size() < 3)
+		return false;
+
 	// First, check whether this is a functioncall (and not a variable assignment)
-	if (tokens[1].name[0] == '=' && tokens[3].name[0] != '(') return false;
-	if (tokens[1].name[0] != '=' && tokens[1].name[0] != '(') return false;
+	if (tokens[1].name[0] == '=' && tokens[3].name[0] != '(')
+		return false;
+	if (tokens[1].name[0] != '=' && tokens[1].name[0] != '(')
+		return false;
 
 	if (tokens[1].name[0] == '=') {
 		variable = new Variable();
@@ -226,28 +249,59 @@ bool FunctionCall::tryBuild(TokenList& tokens) {
 			return false; // Safe (variable->tryBuild is presumed safe)
 		}
 		pop(tokens); // = 
-	} else variable = NULL;
+	} else
+		variable = NULL;
 
 	name = pop(tokens).name;
 
 	pop(tokens); // (
 
-	arguments = "";
+	std::string args = "";
 	Token token = pop(tokens);
 	while (token.name.compare(")") != 0) {
-		arguments += token.name;
+		args += token.name;
+		args += " ";
 		token = pop(tokens);
-		if (token.name.compare(")") != 0)
-			arguments += " ";
-		else break;
+		//if (token.name.compare(")") != 0)
+		//	arguments += " ";
+		//else break;
+	}
+
+	std::vector<std::string> argStrings;
+
+	std::stringstream ss(args);
+	std::string item;
+	while (std::getline(ss, item, ',')) {
+		argStrings.push_back(item);
+	}
+
+	for (int i = 0; i < argStrings.size(); i++) {
+		TokenList argTokens = extractTokens(argStrings.at(i));
+		VariableValue* value;
+		value = new Allocation();
+		if (!value->tryBuild(argTokens)) {
+			delete value;
+			value = new Combination();
+			if (!value->tryBuild(argTokens)) {
+				delete value;
+				value = new Variable();
+				if (!value->tryBuild(argTokens)) {
+					delete value;
+					value = new Unknown(); // No need to try build
+				}
+			}
+		}
+		arguments.push_back(value);
 	}
 
 	pop(tokens); // ';'
 	return true;
 }
 bool Return::tryBuild(TokenList& tokens) {
-	if (tokens.size() < 2) return false;
-	if (tokens[0].name.compare("return") != 0) return false; // safe
+	if (tokens.size() < 2)
+		return false;
+	if (tokens[0].name.compare("return") != 0)
+		return false; // safe
 	pop(tokens); // return
 	if (tokens[0].name.compare(";") == 0) {
 		this->variable = NULL;
@@ -267,8 +321,10 @@ bool Return::tryBuild(TokenList& tokens) {
 	return true;
 }
 bool CodeBlock::tryBuild(TokenList& tokens) {
-	if (tokens.size() == 0) return false;
-	if (tokens[0].name.compare("{") != 0) return false; // 'Safe' return
+	if (tokens.size() == 0)
+		return false;
+	if (tokens[0].name.compare("{") != 0)
+		return false; // 'Safe' return
 
 	pop(tokens);
 	Token token;
@@ -287,72 +343,79 @@ bool CodeBlock::tryBuild(TokenList& tokens) {
 }
 
 bool Variable::tryBuild(TokenList& tokens) {
-	if (tokens.size() == 0 || tokens[0].name.compare(";") == 0) return false;
+	if (tokens.size() == 0 || tokens[0].name.compare(";") == 0)
+		return false;
 
 	value = pop(tokens).name;
 	return true;
 }
 bool Combination::tryBuild(TokenList& tokens) {
-    // not safe
+	// not safe
 
-    combinator = tokens[1].name;
+	combinator = tokens[1].name;
 	for (int i = 0; i < nCombinators; i++) {
 
 	}
 
-    bool found = false;
+	bool found = false;
 	for (int i = 0; i < nCombinators; i++)
 		if (combinators[i].compare(combinator) == 0) {
 			found = true;
 			break;
 		}
-	if (!found) return false; // Safe return
+	if (!found)
+		return false; // Safe return
 
-    value1 = new Variable();
-    if (!value1->tryBuild(tokens))
-        return false;
+	value1 = new Variable();
+	if (!value1->tryBuild(tokens))
+		return false;
 
-    //pop combinator
-        pop(tokens);
+	//pop combinator
+	pop(tokens);
 
-    if (tokens[0].name.compare("(")==0)
-    {
-        //pop opening parenthesis
-        pop(tokens);
+	if (tokens[0].name.compare("(") == 0) {
+		//pop opening parenthesis
+		pop(tokens);
 
-        value2 = new Combination();
-        if (!value2->tryBuild(tokens))
-            throw ParseError("Something went wrong");
+		value2 = new Combination();
+		if (!value2->tryBuild(tokens))
+			throw ParseError("Something went wrong");
 
-        if (tokens[0].name.compare(")")!=0)
-            throw ParseError("Something else went wrong");
-        //pop closing parenthesis
-        pop(tokens);
-    }else{
-        value2 = new Variable();
-        if (!value2->tryBuild(tokens))
-            throw ParseError("Something entirely different went wrong");
-    }
+		if (tokens[0].name.compare(")") != 0)
+			throw ParseError("Something else went wrong");
+		//pop closing parenthesis
+		pop(tokens);
+	} else {
+		value2 = new Variable();
+		if (!value2->tryBuild(tokens))
+			throw ParseError("Something entirely different went wrong");
+	}
 
 	return true;
 }
 bool Allocation::tryBuild(TokenList& tokens) {
-	if (tokens.size() < 5) return false;
-	if (tokens[0].name.compare("new") != 0) return false;
+	if (tokens.size() < 5)
+		return false;
+	if (tokens[0].name.compare("new") != 0)
+		return false;
 	pop(tokens); // new
 
 	type = new DataType();
-	if (!type->tryBuild(tokens)) throw ParseError("Expected datatype in Allocation");
+	if (!type->tryBuild(tokens))
+		throw ParseError("Expected datatype in Allocation");
 
-	if (tokens[0].name.compare("(") != 0) throw ParseError("Expected ( in Allocation");
+	if (tokens[0].name.compare("(") != 0)
+		throw ParseError("Expected ( in Allocation");
 	pop(tokens); // (
 
-	if (tokens[0].name.compare(")") == 0) value = new Unknown();
+	if (tokens[0].name.compare(")") == 0)
+		value = new Unknown();
 	else {
 		value = new Variable();
 		value->tryBuild(tokens);
 	}
-	if (tokens[0].name.compare(")") != 0) throw ParseError("Expected ) in Allocation");
+	if (tokens[0].name.compare(")") != 0)
+		throw ParseError("Expected ) in Allocation");
 	pop(tokens); // )
 
 	return true;
@@ -362,7 +425,8 @@ bool Unknown::tryBuild(TokenList& tokens) {
 }
 
 bool FunctionDeclaration::tryBuild(TokenList& tokens) {
-	if (tokens.size() == 0) return false;
+	if (tokens.size() == 0)
+		return false;
 	// Function datatype:
 	dataType = new DataType();
 	if (!dataType->tryBuild(tokens)) {
@@ -375,14 +439,37 @@ bool FunctionDeclaration::tryBuild(TokenList& tokens) {
 	// Function arguments:
 	pop(tokens); // (
 
-	arguments = "";
+	std::string args = "";
 	Token token = pop(tokens);
 	while (token.name.compare(")") != 0) {
-		arguments += token.name;
+		args += token.name;
+		args += " ";
 		token = pop(tokens);
-		if (token.name.compare(")") != 0)
-			arguments += " ";
-		else break;
+		//if (token.name.compare(")") != 0)
+		//	arguments += " ";
+		//else break;
+	}
+
+	std::vector<std::string> argStrings;
+
+	std::stringstream ss(args);
+	std::string item;
+	while (std::getline(ss, item, ',')) {
+		argStrings.push_back(item);
+	}
+
+	for (int i = 0; i < argStrings.size(); i++) {
+		TokenList argTokens = extractTokens(argStrings.at(i));
+		DataType* type = new DataType();
+		type->tryBuild(argTokens);
+
+		Variable* value;
+
+		value = new Variable();
+		value->tryBuild(argTokens);
+
+		std::pair<Variable*, DataType*> p (value, type);
+		arguments.push_back(p);
 	}
 
 	// Function body:
@@ -395,7 +482,8 @@ bool FunctionDeclaration::tryBuild(TokenList& tokens) {
 	return true;
 }
 bool Include::tryBuild(TokenList& tokens) {
-	if (tokens.size() == 0) return false;
+	if (tokens.size() == 0)
+		return false;
 	if (tokens[0].name.compare("#include") == 0) {
 		pop(tokens); // Discard
 		this->filename = pop(tokens).name;
@@ -404,23 +492,25 @@ bool Include::tryBuild(TokenList& tokens) {
 	return false;
 }
 
-
-
 bool RelationalCondition::tryBuild(TokenList& tokens) {
-	if (tokens.size() < 3) return false;
+	if (tokens.size() < 3)
+		return false;
 
-	if (tokens[0].name.compare("(") != 0) return false;
+	if (tokens[0].name.compare("(") != 0)
+		return false;
 
 	// tokens[0] is '(', now find the corresponding ')':
 	bool foundCondition = false;
 	int endPos;
 	int depth = 0;
 	for (endPos = 1; endPos < tokens.size(); endPos++) {
-		if (tokens[endPos].name.compare("(") == 0) depth++;
+		if (tokens[endPos].name.compare("(") == 0)
+			depth++;
 		if (tokens[endPos].name.compare(")") == 0) {
 			if (depth == 0)
 				break;
-			else depth--;
+			else
+				depth--;
 			continue;
 		}
 		if (depth == 0)
@@ -435,7 +525,8 @@ bool RelationalCondition::tryBuild(TokenList& tokens) {
 		throw ParseError("Expected \')\' in RelationalCondition.");
 		return false;
 	}
-	if (!foundCondition) return false; // Means this must be a ConstantCondition.
+	if (!foundCondition)
+		return false; // Means this must be a ConstantCondition.
 
 	pop(tokens); // (
 
@@ -445,7 +536,8 @@ bool RelationalCondition::tryBuild(TokenList& tokens) {
 		delete variable1;
 		variable1 = new Variable();
 		if (!variable1->tryBuild(tokens)) {
-			throw ParseError("Expected Combination or Variable in RelationalCondition");
+			throw ParseError(
+					"Expected Combination or Variable in RelationalCondition");
 			return false;
 		}
 	}
@@ -457,7 +549,8 @@ bool RelationalCondition::tryBuild(TokenList& tokens) {
 		delete variable2;
 		variable2 = new Variable();
 		if (!variable2->tryBuild(tokens)) {
-			throw ParseError("Expected Combination or Variable in RelationalCondition");
+			throw ParseError(
+					"Expected Combination or Variable in RelationalCondition");
 			return false;
 		}
 	}
@@ -467,8 +560,10 @@ bool RelationalCondition::tryBuild(TokenList& tokens) {
 }
 
 bool ConstantCondition::tryBuild(TokenList& tokens) {
-	if (tokens.size() < 3) return false;
-	if (tokens[0].name.compare("(") != 0 || tokens[2].name.compare(")") != 0) return false;
+	if (tokens.size() < 3)
+		return false;
+	if (tokens[0].name.compare("(") != 0 || tokens[2].name.compare(")") != 0)
+		return false;
 
 	pop(tokens); // (
 
@@ -476,7 +571,8 @@ bool ConstantCondition::tryBuild(TokenList& tokens) {
 	if (variable[0] == '!') {
 		negative = true;
 		variable = variable.substr(1);
-	} else negative = false;
+	} else
+		negative = false;
 
 	pop(tokens); // )
 
