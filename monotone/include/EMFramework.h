@@ -18,7 +18,6 @@ public:
 
        // methods defining the lattice
        virtual T join(T&,T&) = 0;
-       virtual T top() = 0;
        virtual T bottom() = 0;
        virtual bool lessThan(T&, T&) = 0;
 

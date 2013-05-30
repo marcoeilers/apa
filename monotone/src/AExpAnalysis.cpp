@@ -60,12 +60,6 @@ void AExpAnalysis::addToExpressions(CPPParser::VariableValue* v) {
 	}
 }
 
-set<CPPParser::VariableValue*> AExpAnalysis::top() {
-	// empty set
-	set<CPPParser::VariableValue*> result;
-	return result;
-}
-
 set<CPPParser::VariableValue*> AExpAnalysis::bottom() {
 	// set of all subexpressions
 	return aexp;

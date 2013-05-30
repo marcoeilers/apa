@@ -10,6 +10,7 @@
 using namespace std;
 
 InterControlFlow::InterControlFlow(CPPParser::Program* p) {
+	prog = p;
 	last.insert(-1);
 	set<int>* rets = new set<int>();
 	addFunction("main", 0, rets);

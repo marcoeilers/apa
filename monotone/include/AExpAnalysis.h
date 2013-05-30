@@ -18,7 +18,6 @@ class AExpAnalysis : public MFramework<std::set<CPPParser::VariableValue*> >
     public:
         AExpAnalysis(ControlFlow*);
         virtual ~AExpAnalysis();
-        std::set<CPPParser::VariableValue*> top();
         std::set<CPPParser::VariableValue*> bottom();
         std::set<CPPParser::VariableValue*> join(std::set<CPPParser::VariableValue*>&, std::set<CPPParser::VariableValue*>&);
         bool lessThan(std::set<CPPParser::VariableValue*>&, std::set<CPPParser::VariableValue*>&);

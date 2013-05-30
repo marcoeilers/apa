@@ -173,17 +173,29 @@ void SignAnalysis::addAllCombinations(const set<Sign>* op[][3], set<Sign>& first
 map<string, set<Sign> > SignAnalysis::fcall(map<string, set<Sign> >& old,
 		CPPParser::Statement* s, CPPParser::FunctionDeclaration* fd) {
 	map<string, set<Sign> > result;
+
+	CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
+
+	for (int i = 0; i < fc->arguments.size(); i++){
+		set<Sign> argSigns = getSigns(fc->arguments.at(i), old);
+		pair<CPPParser::Variable*, CPPParser::DataType*> var = fd->arguments.at(i);
+		result[var.first->value] = argSigns;
+	}
+
 	return result;
 }
 
 map<string, set<Sign> > SignAnalysis::fenter(map<string, set<Sign> >& old) {
 	map<string, set<Sign> > result;
+	result.insert(old.begin(), old.end());
 	return result;
 }
 
 map<string, set<Sign> > SignAnalysis::fexit(map<string, set<Sign> >& old,
 		CPPParser::Return* r) {
 	map<string, set<Sign> > result;
+	set<Sign> returnedSigns = getSigns(r->variable, old);
+	result["return"]=returnedSigns;
 	return result;
 }
 
@@ -191,6 +203,12 @@ map<string, set<Sign> > SignAnalysis::freturn(
 		map<string, set<Sign> >& beforeCall,
 		map<string, set<Sign> >& afterFunction, CPPParser::Statement* s) {
 	map<string, set<Sign> > result;
+	result.insert(beforeCall.begin(), beforeCall.end());
+
+	CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
+	if (fc->variable != NULL){
+		result[fc->variable->value]=afterFunction["return"];
+	}
 	return result;
 }
 

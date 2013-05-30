@@ -26,23 +26,29 @@ map<string, T>* MVP<T>::solve(EMFramework<T>* mf) {
 	}
 
 	set<pair<int, string> > workList;
-	for (int i = 0; i < mf->getLabels().size(); i++) {
-		pair<int, string> p(i, "");
+	set<int>::iterator setIt;
+	for (setIt = mf->getExtremalLabels().begin(); setIt != mf->getExtremalLabels().end(); setIt++) {
+		pair<int, string> p(*setIt, "");
 		workList.insert(p);
 	}
 
+
+
 	while (!workList.empty()) {
 		pair<int, string> current = *(workList.begin());
+		printf("current work item is label %i with context %s.\n",current.first, current.second.c_str());
 
 		// TODO: next has to get all next labels
 		set<int> next = mf->getNext(current.first);
 		workList.erase(current);
 		set<int>::iterator it;
 		for (it = next.begin(); it != next.end(); it++) {
+			printf("working on transition to label %i.\n",*it);
 			CPPParser::Statement* s = mf->getLabels().at(current.first);
 
 			switch (mf->getLabelType(current.first)) {
 			case LABEL_DEFAULT: {
+				printf("Default case.");
 				T iterated = mf->f(result[current.first][current.second], s);
 				if (!mf->lessThan(iterated, result[*it][current.second])) {
 					result[*it][current.second] = mf->join(
@@ -161,7 +167,7 @@ map<string, T>* MVP<T>::solve(EMFramework<T>* mf) {
 		}
 	}
 
-	//return result;
+	return result;
 }
 
 template<typename T>
