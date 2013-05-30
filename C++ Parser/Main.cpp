@@ -24,7 +24,7 @@ int main() {
 		printf("Parser error: %s\n", pe.getMessage().c_str());
 	}
 
-	printf("Press enter to exit..");
+	printf("%s. Press enter to exit..", tokens.size() == 0 ? "Succesful" : "Failed");
 	getchar();
 
 	return 0;

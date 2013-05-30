@@ -15,6 +15,9 @@ int main() {
 	while (a + 1 < b - 2) {
 		sayHey(ChinChan);
 	}
+	a = getInt();
+	float b;
+	b = getFloat(); // We don't support float b = getFloat(); Declare seperately.
 	if (a == 0) {
 		p2 = p;
 	}

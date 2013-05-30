@@ -79,11 +79,11 @@ Statement* tryStatement(TokenList& tokens) {
 	if (statement->tryBuild(tokens))
 		return statement;
 	delete statement;
-	statement = new VariableAssignment();
+	statement = new FunctionCall();
 	if (statement->tryBuild(tokens))
 		return statement;
 	delete statement;
-	statement = new FunctionCall();
+	statement = new VariableAssignment();
 	if (statement->tryBuild(tokens))
 		return statement;
 	delete statement;
@@ -214,8 +214,20 @@ bool VariableAssignment::tryBuild(TokenList& tokens) {
 	If the function throws an error, it may have.
 */
 bool FunctionCall::tryBuild(TokenList& tokens) {
-	if (tokens.size() == 0) return false;
-	if (tokens[1].name[0] != '(') return false;
+	if (tokens.size() < 3) return false;
+	
+	// First, check whether this is a functioncall (and not a variable assignment)
+	if (tokens[1].name[0] == '=' && tokens[3].name[0] != '(') return false;
+	if (tokens[1].name[0] != '=' && tokens[1].name[0] != '(') return false;
+
+	if (tokens[1].name[0] == '=') {
+		variable = new Variable();
+		if (!variable->tryBuild(tokens)) {
+			return false; // Safe (variable->tryBuild is presumed safe)
+		}
+		pop(tokens); // = 
+	} else variable = NULL;
+
 	name = pop(tokens).name;
 
 	pop(tokens); // (

@@ -87,7 +87,7 @@ enum ConditionType {
 // [combination] = [variableValue] [combinator] [variableValue] // Note, for variableValue, only  variable/unknown are allowed.
 // [allocation] = new [type]([variableValue]) // Note, for variableValue, only variable/unknown are allowed.
 // [variableValue] = [variable] | [combination] | [allocation] | [unknown]
-// [functionCall] = fName();
+// [functionCall] = fName(); | [variable] = fName();
 // [functionDecl] = [type] fName() [codeBlock]
 // [return] = return [variableValue]? ;
 // [codeBlock] = { [Statement]* }
@@ -146,6 +146,7 @@ struct VariableAssignment : Statement {
 struct FunctionCall : Statement {
 	String name;
 	String arguments;
+	Variable* variable; // NULL if no variable. [variable] = fName();
 	virtual bool tryBuild(TokenList& tokens);
 	virtual StatementType getType() { return TYPE_FUNCTIONCALL; }
 };
