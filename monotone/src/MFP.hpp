@@ -15,7 +15,7 @@ MFP<T>::~MFP()
 
 template<typename T>
 
-T * MFP<T>::solve(MFramework<T>* mf)
+pair<T, T> * MFP<T>::solve(MFramework<T>* mf)
 {
 
     T * result = new T[mf->getLabels().size()];
@@ -65,5 +65,14 @@ T * MFP<T>::solve(MFramework<T>* mf)
         }
     }
 
-    return result;
+    pair<T, T>* final = new pair<T, T>[mf->getLabels().size()];
+
+    for (int i = 0; i < mf->getLabels().size(); i++){
+    	T context = result[i];
+    	T effect = mf->f(result[i], mf->getLabels().at(i));
+    	pair<T, T> p (context, effect);
+    	final[i] = p;
+    }
+
+    return final;
 }

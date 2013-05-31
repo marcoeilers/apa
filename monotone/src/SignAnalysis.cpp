@@ -10,14 +10,15 @@
 using namespace std;
 
 SignAnalysis::SignAnalysis(InterControlFlow* cf) :
-		op_plus( { { &plusSet, &allSet, &plusSet }, { &allSet, &minusSet, &minusSet },
-				{ &plusSet, &minusSet, &zeroSet } }), op_minus( { { &allSet,
-				&plusSet, &plusSet }, { &minusSet, &allSet, &minusSet }, { &minusSet,
-				&plusSet, &zeroSet } }), op_mult( {
-				{ &plusSet, &minusSet, &zeroSet }, { &minusSet, &plusSet, &zeroSet },
-				{ &zeroSet, &zeroSet, &zeroSet } }), op_div( { { &plusSet, &minusSet,
-				&emptySet }, { &minusSet, &plusSet, &emptySet }, { &zeroSet, &zeroSet,
-				&emptySet } }) {
+		op_plus( { { &plusSet, &allSet, &plusSet }, { &allSet, &minusSet,
+				&minusSet }, { &plusSet, &minusSet, &zeroSet } }), op_minus( { {
+				&allSet, &plusSet, &plusSet },
+				{ &minusSet, &allSet, &minusSet }, { &minusSet, &plusSet,
+						&zeroSet } }), op_mult( { { &plusSet, &minusSet,
+				&zeroSet }, { &minusSet, &plusSet, &zeroSet }, { &zeroSet,
+				&zeroSet, &zeroSet } }), op_div( { { &plusSet, &minusSet,
+				&emptySet }, { &minusSet, &plusSet, &emptySet }, { &zeroSet,
+				&zeroSet, &emptySet } }) {
 	cflow = cf;
 
 	plusSet.insert(SIGN_PLUS);
@@ -26,11 +27,10 @@ SignAnalysis::SignAnalysis(InterControlFlow* cf) :
 	allSet.insert(SIGN_PLUS);
 	allSet.insert(SIGN_MINUS);
 	allSet.insert(SIGN_ZERO);
-
 }
 
 SignAnalysis::~SignAnalysis() {
-	// TODO Auto-generated destructor stub
+// TODO Auto-generated destructor stub
 }
 
 map<string, set<Sign> > SignAnalysis::top() {
@@ -85,9 +85,16 @@ map<string, set<Sign> > SignAnalysis::f(map<string, set<Sign> >& old,
 	switch (s->getType()) {
 	case CPPParser::TYPE_VAR_ASSIGNMENT: {
 		CPPParser::VariableAssignment* va = (CPPParser::VariableAssignment*) s;
-		if (old.count(va->name)) {
-			set<Sign> newOnes = getSigns(va->value, old);
-			result[va->name].insert(newOnes.begin(), newOnes.end());
+		set<Sign> newOnes = getSigns(va->value, old);
+		if (va->derefDepth != 0) {
+			map<string, set<Sign> >::iterator it;
+			for (it = old.begin(); it != old.end(); it++){
+				result[it->first].insert(newOnes.begin(), newOnes.end());
+			}
+		} else {
+			if (old.count(va->name)) {
+				result[va->name] = newOnes;
+			}
 		}
 		break;
 	}
@@ -100,6 +107,13 @@ map<string, set<Sign> > SignAnalysis::f(map<string, set<Sign> >& old,
 
 			result[vd->name] = newOnes;
 		}
+		break;
+	}
+	case CPPParser::TYPE_RETURN: {
+		CPPParser::Return* r = (CPPParser::Return*) s;
+
+		set<Sign> newOnes = getSigns(r->variable, old);
+		result["return"] = newOnes;
 		break;
 	}
 	default: {
@@ -158,13 +172,13 @@ set<Sign> SignAnalysis::getSigns(CPPParser::VariableValue* v,
 	return result;
 }
 
-void SignAnalysis::addAllCombinations(const set<Sign>* op[][3], set<Sign>& first,
-		set<Sign>& second, set<Sign>* result) {
+void SignAnalysis::addAllCombinations(const set<Sign>* op[][3],
+		set<Sign>& first, set<Sign>& second, set<Sign>* result) {
 	set<Sign>::iterator fIt;
 	for (fIt = first.begin(); fIt != first.end(); fIt++) {
 		set<Sign>::iterator sIt;
 		for (sIt = second.begin(); sIt != second.end(); sIt++) {
-			set<Sign> toAdd = (*op)[*fIt][*sIt];
+			set<Sign> toAdd = *(op[*fIt][*sIt]);
 			result->insert(toAdd.begin(), toAdd.end());
 		}
 	}
@@ -176,9 +190,10 @@ map<string, set<Sign> > SignAnalysis::fcall(map<string, set<Sign> >& old,
 
 	CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
 
-	for (int i = 0; i < fc->arguments.size(); i++){
+	for (int i = 0; i < fc->arguments.size(); i++) {
 		set<Sign> argSigns = getSigns(fc->arguments.at(i), old);
-		pair<CPPParser::Variable*, CPPParser::DataType*> var = fd->arguments.at(i);
+		pair<CPPParser::Variable*, CPPParser::DataType*> var = fd->arguments.at(
+				i);
 		result[var.first->value] = argSigns;
 	}
 
@@ -191,11 +206,9 @@ map<string, set<Sign> > SignAnalysis::fenter(map<string, set<Sign> >& old) {
 	return result;
 }
 
-map<string, set<Sign> > SignAnalysis::fexit(map<string, set<Sign> >& old,
-		CPPParser::Return* r) {
+map<string, set<Sign> > SignAnalysis::fexit(map<string, set<Sign> >& old) {
 	map<string, set<Sign> > result;
-	set<Sign> returnedSigns = getSigns(r->variable, old);
-	result["return"]=returnedSigns;
+	result.insert(old.begin(), old.end());
 	return result;
 }
 
@@ -206,8 +219,8 @@ map<string, set<Sign> > SignAnalysis::freturn(
 	result.insert(beforeCall.begin(), beforeCall.end());
 
 	CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
-	if (fc->variable != NULL){
-		result[fc->variable->value]=afterFunction["return"];
+	if (fc->variable != NULL) {
+		result[fc->variable->value] = afterFunction["return"];
 	}
 	return result;
 }

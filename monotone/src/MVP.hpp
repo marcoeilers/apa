@@ -9,47 +9,43 @@ MVP<T>::MVP(int limit) {
 
 template<typename T>
 MVP<T>::~MVP() {
-	// TODO Auto-generated destructor stub
+	// Auto-generated destructor stub
 }
 
 template<typename T>
-map<string, T>* MVP<T>::solve(EMFramework<T>* mf) {
-	map<string, T> * result = new map<string, T>[mf->getLabels().size()];
+pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
+	map<string, T> *result = new map<string, T> [mf->getLabels().size()];
 	for (int i = 0; i < mf->getLabels().size(); i++) {
 		if (mf->getExtremalLabels().count(i)) {
 
 			result[i][""] = mf->getExtremalValue();
-		} else {
-			result[i][""] = mf->bottom();
 		}
 
 	}
 
 	set<pair<int, string> > workList;
 	set<int>::iterator setIt;
-	for (setIt = mf->getExtremalLabels().begin(); setIt != mf->getExtremalLabels().end(); setIt++) {
+	for (setIt = mf->getExtremalLabels().begin();
+			setIt != mf->getExtremalLabels().end(); setIt++) {
 		pair<int, string> p(*setIt, "");
 		workList.insert(p);
 	}
 
-
-
 	while (!workList.empty()) {
 		pair<int, string> current = *(workList.begin());
-		printf("current work item is label %i with context %s.\n",current.first, current.second.c_str());
 
-		// TODO: next has to get all next labels
 		set<int> next = mf->getNext(current.first);
+
 		workList.erase(current);
 		set<int>::iterator it;
 		for (it = next.begin(); it != next.end(); it++) {
-			printf("working on transition to label %i.\n",*it);
 			CPPParser::Statement* s = mf->getLabels().at(current.first);
 
 			switch (mf->getLabelType(current.first)) {
 			case LABEL_DEFAULT: {
-				printf("Default case.");
-				T iterated = mf->f(result[current.first][current.second], s);
+
+				T old = getResult(result, current.first, current.second, mf);
+				T iterated = mf->f(old, s);
 				if (!mf->lessThan(iterated, result[*it][current.second])) {
 					result[*it][current.second] = mf->join(
 							result[*it][current.second], iterated);
@@ -69,7 +65,6 @@ map<string, T>* MVP<T>::solve(EMFramework<T>* mf) {
 
 				CPPParser::FunctionDeclaration* calledFun;
 
-				// TODO other call
 				CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
 				vector<CPPParser::FunctionDeclaration>::iterator funIt;
 				for (funIt = mf->getProg()->functionDeclarations.begin();
@@ -81,8 +76,8 @@ map<string, T>* MVP<T>::solve(EMFramework<T>* mf) {
 					}
 				}
 
-				T iterated = mf->fcall(result[current.first][current.second], s,
-						calledFun);
+				T old = getResult(result, current.first, current.second, mf);
+				T iterated = mf->fcall(old, s, calledFun);
 				if (!mf->lessThan(iterated, result[*it][newContext])) {
 					result[*it][newContext] = mf->join(result[*it][newContext],
 							iterated);
@@ -98,7 +93,9 @@ map<string, T>* MVP<T>::solve(EMFramework<T>* mf) {
 				break;
 			}
 			case LABEL_ENTER: {
-				T iterated = mf->fenter(result[current.first][current.second]);
+
+				T old = getResult(result, current.first, current.second, mf);
+				T iterated = mf->fenter(old);
 				if (!mf->lessThan(iterated, result[*it][current.second])) {
 					result[*it][current.second] = mf->join(
 							result[*it][current.second], iterated);
@@ -114,10 +111,9 @@ map<string, T>* MVP<T>::solve(EMFramework<T>* mf) {
 				break;
 			}
 			case LABEL_EXIT: {
-				CPPParser::Return* r = (CPPParser::Return*) s;
 
-				T iterated = mf->fexit(result[current.first][current.second],
-						r);
+				T old = getResult(result, current.first, current.second, mf);
+				T iterated = mf->fexit(old);
 				if (!mf->lessThan(iterated, result[*it][current.second])) {
 					result[*it][current.second] = mf->join(
 							result[*it][current.second], iterated);
@@ -136,15 +132,19 @@ map<string, T>* MVP<T>::solve(EMFramework<T>* mf) {
 				int callLbl = mf->getCallFromReturn(current.first);
 
 				typename map<string, T>::iterator conIt;
-				for (conIt = result[current.first].begin();
-						conIt != result[current.first].end(); conIt++) {
+				for (conIt = result[callLbl].begin();
+						conIt != result[callLbl].end(); conIt++) {
 					string callContext = prepend(callLbl, conIt->first);
-
-					if (callContext.compare(callContext) == 0) {
+					if (callContext.compare(current.second) == 0) {
 						string oldContext = conIt->first;
+						T beforeCall = getResult(result, callLbl, oldContext,
+								mf);
 
-						T iterated = mf->freturn(result[callLbl][oldContext],
-								result[current.first][current.second], s);
+						T afterFunc = getResult(result, current.first,
+								current.second, mf);
+
+						T iterated = mf->freturn(beforeCall, afterFunc, s);
+
 						if (!mf->lessThan(iterated,
 								result[*it][current.second])) {
 							result[*it][current.second] = mf->join(
@@ -167,7 +167,102 @@ map<string, T>* MVP<T>::solve(EMFramework<T>* mf) {
 		}
 	}
 
-	return result;
+	pair<map<string, T>, map<string, T> >* final = new pair<map<string, T>,
+			map<string, T> > [mf->getLabels().size()];
+
+	// apply one last time
+	for (int i = 0; i < mf->getLabels().size(); i++) {
+		map<string, T> context = result[i];
+		map<string, T> effect;
+
+		typename map<string, T>::iterator finalIt;
+		switch (mf->getLabelType(i)) {
+		case LABEL_CALL: {
+			CPPParser::FunctionDeclaration* calledFun;
+
+			CPPParser::FunctionCall* fc =
+					(CPPParser::FunctionCall*) mf->getLabels().at(i);
+			vector<CPPParser::FunctionDeclaration>::iterator funIt;
+			for (funIt = mf->getProg()->functionDeclarations.begin();
+					funIt != mf->getProg()->functionDeclarations.end();
+					funIt++) {
+				if (funIt->name.compare(fc->name) == 0) {
+					calledFun = &(*funIt);
+					break;
+				}
+			}
+
+			for (finalIt = context.begin(); finalIt != context.end();
+					finalIt++) {
+				effect[finalIt->first] = mf->fcall(context[finalIt->first],
+						mf->getLabels().at(i), calledFun);
+			}
+			break;
+		}
+		case LABEL_DEFAULT:
+			for (finalIt = context.begin(); finalIt != context.end();
+					finalIt++) {
+				effect[finalIt->first] = mf->f(context[finalIt->first],
+						mf->getLabels().at(i));
+			}
+			break;
+		case LABEL_ENTER:
+			for (finalIt = context.begin(); finalIt != context.end();
+					finalIt++) {
+				effect[finalIt->first] = mf->fenter(context[finalIt->first]);
+			}
+			break;
+		case LABEL_EXIT:
+			for (finalIt = context.begin(); finalIt != context.end();
+					finalIt++) {
+				effect[finalIt->first] = mf->fexit(context[finalIt->first]);
+			}
+			break;
+		case LABEL_RETURN: {
+			int callLbl = mf->getCallFromReturn(i);
+
+			for (finalIt = context.begin(); finalIt != context.end();
+					finalIt++) {
+
+				typename map<string, T>::iterator conIt;
+				for (conIt = result[callLbl].begin();
+						conIt != result[callLbl].end(); conIt++) {
+					string callContext = prepend(callLbl, conIt->first);
+
+					if (finalIt->first.compare(callContext) == 0) {
+
+						T beforeCall = result[callLbl][conIt->first];
+						T afterFunc = context[finalIt->first];
+
+						T old = getResult(result, callLbl, conIt->first, mf);
+						T newVal = mf->freturn(beforeCall, afterFunc,
+								mf->getLabels().at(callLbl));
+						effect[conIt->first] = newVal;
+					}
+				}
+
+			}
+
+			break;
+
+		}
+
+		}
+		pair<map<string, T>, map<string, T> > p(context, effect);
+		final[i] = p;
+	}
+
+	return final;
+}
+
+template<typename T>
+T MVP<T>::getResult(map<string, T>* result, int label, string context,
+		EMFramework<T>* mf) {
+	if (result[label].count(context)) {
+		return result[label][context];
+	} else {
+		return mf->bottom();
+	}
 }
 
 template<typename T>

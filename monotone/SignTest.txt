@@ -1,0 +1,22 @@
+int main() {
+	int i = 5;
+	int j = -3;
+	int k = 0;
+	int* ptr = &k;
+	int l = i + j;
+	int m = i - j;
+	int o = j * i;
+	int p = i / j;
+	l = k;
+	m = o + i;
+	p = doStuff(l, i, l * i);
+	i = -17 ;
+	*ptr = 14;
+	j = 0;
+}
+
+int doStuff(int i, int j, int k) {
+	int p = i + j;
+	int q = p - i;
+	return 0;
+}

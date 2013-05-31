@@ -92,9 +92,11 @@ set<CPPParser::VariableValue*> AExpAnalysis::f(
 	set<CPPParser::VariableValue*>::iterator it;
 	if (s->getType() == CPPParser::TYPE_VAR_ASSIGNMENT) {
 		CPPParser::VariableAssignment* va = (CPPParser::VariableAssignment*) s;
-		for (it = un.begin(); it != un.end(); it++) {
-			if (!contains(*it, va->name)) {
-				result.insert(*it);
+		if (va->derefDepth == 0) {
+			for (it = un.begin(); it != un.end(); it++) {
+				if (!contains(*it, va->name)) {
+					result.insert(*it);
+				}
 			}
 		}
 	} else if (s->getType() == CPPParser::TYPE_VAR_DECLARATION) {

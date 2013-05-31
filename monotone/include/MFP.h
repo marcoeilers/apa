@@ -20,7 +20,7 @@ public:
     // takes a MFramework object describing the analysis
     // to be performed and a ControlFlow object describing the
     // program that is to be analyzed.
-    T * solve(MFramework<T>*);
+    std::pair<T, T> * solve(MFramework<T>*);
 protected:
 private:
 };
