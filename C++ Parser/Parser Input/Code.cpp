@@ -16,6 +16,7 @@ int main() {
 		sayHey(ChinChan);
 	}
 	a = getInt();
+	*p = a; // Note: This works, but *a = getInt(); won't (because that's a function call). If we need it, I'll add it.
 	float b;
 	b = getFloat(); // We don't support float b = getFloat(); Declare seperately.
 	if (a == 0) {
@@ -25,11 +26,3 @@ int main() {
 		printf("hi there"); // Note: right now string arguments are still broken at the space, but we don't really care about strings anyway.
 	}
 }
-
-/*
-
-*int ptr = &k;
-*ptr = 15; 
-dont work. it fails at *ptr = ...
-
-*/

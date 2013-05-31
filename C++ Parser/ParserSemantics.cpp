@@ -185,7 +185,17 @@ bool VariableDeclaration::tryBuild(TokenList& tokens) {
 */
 bool VariableAssignment::tryBuild(TokenList& tokens) {
 	if (tokens.size() < 2) return false;
-	if (tokens[1].name.compare("=") != 0) return false; // 'Safe' return
+
+	derefDepth = 0;
+	while (tokens[derefDepth].name.compare("*") == 0)
+		derefDepth++;
+
+	if (tokens[derefDepth + 1].name.compare("=") != 0) return false; // 'Safe' return
+
+	// Remove all the *s that represent derefDepth:
+	for (int i = 0; i < derefDepth; i++)
+		pop(tokens);
+
 	name = pop(tokens).name;
 	pop(tokens); // '='
 
@@ -296,9 +306,6 @@ bool Combination::tryBuild(TokenList& tokens) {
     // not safe
 
     combinator = tokens[1].name;
-	for (int i = 0; i < nCombinators; i++) {
-
-	}
 
     bool found = false;
 	for (int i = 0; i < nCombinators; i++)
@@ -413,7 +420,7 @@ bool RelationalCondition::tryBuild(TokenList& tokens) {
 
 	// tokens[0] is '(', now find the corresponding ')':
 	bool foundCondition = false;
-	int endPos;
+	unsigned int endPos;
 	int depth = 0;
 	for (endPos = 1; endPos < tokens.size(); endPos++) {
 		if (tokens[endPos].name.compare("(") == 0) depth++;

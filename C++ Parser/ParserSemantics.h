@@ -140,6 +140,7 @@ struct VariableDeclaration : Statement {
 struct VariableAssignment : Statement {
 	String name;
 	VariableValue* value;
+	int derefDepth;
 	virtual bool tryBuild(TokenList& tokens);
 	virtual StatementType getType() { return TYPE_VAR_ASSIGNMENT; }
 };
