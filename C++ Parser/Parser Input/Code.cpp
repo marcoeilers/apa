@@ -25,3 +25,11 @@ int main() {
 		printf("hi there"); // Note: right now string arguments are still broken at the space, but we don't really care about strings anyway.
 	}
 }
+
+/*
+
+*int ptr = &k;
+*ptr = 15; 
+dont work. it fails at *ptr = ...
+
+*/
