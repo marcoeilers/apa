@@ -16,16 +16,20 @@ enum Sign {
 	SIGN_PLUS, SIGN_MINUS, SIGN_ZERO
 };
 
-
+/*
+ * Interprocedural Sign Analysis
+ * Implemented to test the framework
+ */
 class SignAnalysis: virtual public EMFramework<std::map<std::string, std::set<Sign> > > {
 public:
+	// constructor takes interprocedural control flow
 	SignAnalysis(InterControlFlow*);
 	virtual ~SignAnalysis();
 
+	// operations of the lattice
 	virtual std::map<std::string, std::set<Sign> > join(
 			std::map<std::string, std::set<Sign> >&,
 			std::map<std::string, std::set<Sign> >&);
-	virtual std::map<std::string, std::set<Sign> > top();
 	virtual std::map<std::string, std::set<Sign> > bottom();
 	virtual bool lessThan(std::map<std::string, std::set<Sign> >&,
 			std::map<std::string, std::set<Sign> >&);
@@ -39,7 +43,7 @@ public:
 	virtual std::map<std::string, std::set<Sign> > fenter(
 			std::map<std::string, std::set<Sign> >& t);
 	virtual std::map<std::string, std::set<Sign> > fexit(
-			std::map<std::string, std::set<Sign> >& t, CPPParser::Return* r);
+			std::map<std::string, std::set<Sign> >& t);
 	virtual std::map<std::string, std::set<Sign> > freturn(
 			std::map<std::string, std::set<Sign> >&,
 			std::map<std::string, std::set<Sign> >&, CPPParser::Statement*);

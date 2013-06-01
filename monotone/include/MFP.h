@@ -20,6 +20,10 @@ public:
     // takes a MFramework object describing the analysis
     // to be performed and a ControlFlow object describing the
     // program that is to be analyzed.
+    // returns an array of pairs.
+    // result[i].first is the context value of statement s (i.e.
+    // the analysis result before the statement), result[i].second
+    // is the effect value, i.e. the result after the statement
     std::pair<T, T> * solve(MFramework<T>*);
 protected:
 private:

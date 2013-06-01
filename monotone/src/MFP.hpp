@@ -1,78 +1,73 @@
 using namespace std;
 
 template<typename T>
-MFP<T>::MFP()
-{
+MFP<T>::MFP() {
 
 }
 
 template<typename T>
-MFP<T>::~MFP()
-{
+MFP<T>::~MFP() {
 
 }
 
-
 template<typename T>
 
-pair<T, T> * MFP<T>::solve(MFramework<T>* mf)
-{
+pair<T, T> * MFP<T>::solve(MFramework<T>* mf) {
+	// initialize
+	T * result = new T[mf->getLabels().size()];
+	for (int i = 0; i < mf->getLabels().size(); i++) {
+		if (mf->getExtremalLabels().count(i)) {
+			// extremal labels get extremal values
+			result[i] = mf->getExtremalValue();
+		} else {
+			// others get bottom
+			result[i] = mf->bottom();
+		}
 
-    T * result = new T[mf->getLabels().size()];
-    for (int i = 0; i<mf->getLabels().size(); i++)
-    {
-        if (mf->getExtremalLabels().count(i))
-        {
+	}
 
-            result[i] = mf->getExtremalValue();
-        }
-        else
-        {
-            result[i] = mf->bottom();
-        }
+	// put each label in the worklist once
+	set<int> workList;
+	for (int i = 0; i < mf->getLabels().size(); i++) {
+		workList.insert(i);
+	}
 
-    }
+	// perform fixpoint iteration
+	while (!workList.empty()) {
+		int current = *(workList.begin());
+		set<int> next = mf->getNext(current);
+		workList.erase(current);
 
-    for (int i = 0; i<mf->getLabels().size(); i++)
-    {
-        CPPParser::Statement* s= mf->getLabels().at(i);
-    }
+		// for all next labels
+		set<int>::iterator it;
+		for (it = next.begin(); it != next.end(); it++) {
+			// apply transfer function
+			T iterated = mf->f(result[current], mf->getLabels().at(current));
 
-    set<int> workList;
-    for (int i = 0;
-            i<mf->getLabels().size();
-            i++)
-    {
-        workList.insert(i);
-    }
+			// if there is a change
+			if (!mf->lessThan(iterated, result[*it])) {
+				// join with old value
+				result[*it] = mf->join(result[*it], iterated);
 
-    while(!workList.empty())
-    {
-        int current = *(workList.begin());
-        set<int> next = mf->getNext(current);
-        workList.erase(current);
-        set<int>::iterator it;
-        for (it = next.begin(); it != next.end(); it++)
-        {
-            T iterated = mf->f(result[current], mf->getLabels().at(current));
-            if (!mf->lessThan(iterated, result[*it]))
-            {
-                result[*it] = mf->join(result[*it], iterated);
-                set<int> toRevisit = mf->getNext(*it);
+				// add following labels to work list
+				set<int> toRevisit = mf->getNext(*it);
 
-                workList.insert(toRevisit.begin(), toRevisit.end());
-            }
-        }
-    }
+				workList.insert(toRevisit.begin(), toRevisit.end());
+			}
+		}
+	}
 
-    pair<T, T>* final = new pair<T, T>[mf->getLabels().size()];
+	// now we have the context values.
+	// to get the effect values, apply the transfer function one more
+	// time for each label
+	pair<T, T>* final = new pair<T, T> [mf->getLabels().size()];
 
-    for (int i = 0; i < mf->getLabels().size(); i++){
-    	T context = result[i];
-    	T effect = mf->f(result[i], mf->getLabels().at(i));
-    	pair<T, T> p (context, effect);
-    	final[i] = p;
-    }
+	for (int i = 0; i < mf->getLabels().size(); i++) {
+		T context = result[i];
+		T effect = mf->f(result[i], mf->getLabels().at(i));
+		pair<T, T> p(context, effect);
+		final[i] = p;
+	}
 
-    return final;
+	return final;
 }

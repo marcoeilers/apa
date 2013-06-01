@@ -22,13 +22,14 @@ InterControlFlow::~InterControlFlow() {
 	// TODO Auto-generated destructor stub
 }
 
+// adds all statements and transitions in function name,
+// puts labels of return statements in rets
 int InterControlFlow::addFunction(string name, int label, set<int>* rets) {
 	vector<CPPParser::FunctionDeclaration>::iterator it;
 	bool found = false;
 	for (it = (prog->functionDeclarations.begin());
 			it != (prog->functionDeclarations.end()); it++) {
 		if (it->name.compare(name) == 0) {
-			// TODO: add skips
 			return addStatement(it->codeBlock, label, rets);
 		}
 	}
@@ -57,6 +58,7 @@ int InterControlFlow::getReturn(int label) {
 	return -1;
 }
 
+// gets return label from the call label
 int InterControlFlow::getReturnForCall(int label) {
 	set<InterFlow*>::iterator it;
 	for (it = inter.begin(); it != inter.end(); it++) {
@@ -66,6 +68,7 @@ int InterControlFlow::getReturnForCall(int label) {
 	return -1;
 }
 
+// gets call label from the return label
 int InterControlFlow::getCallForReturn(int label) {
 	set<InterFlow*>::iterator it;
 	for (it = inter.begin(); it != inter.end(); it++) {
@@ -75,6 +78,8 @@ int InterControlFlow::getCallForReturn(int label) {
 	return -1;
 }
 
+// adds a statement and its transitions (intra and interprocedural) to the
+// control flow
 int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 		set<int>* rets) {
 
@@ -83,6 +88,7 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 		int startLabel = label;
 		labels.insert(labels.begin() + label, s);
 
+		// add all transitions to this statement
 		set<int>::iterator it;
 		for (it = last.begin(); it != last.end(); it++) {
 			addTransition(*it, label);
@@ -92,31 +98,41 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 
 		label++;
 
-		//add empty entry label
+		// add empty entry label (symbolizing a skip at the start of
+		// a function)
 		labels.insert(labels.begin() + label, NULL);
+
+		// create InterFlow object to store control flow data
 		InterFlow* i = new InterFlow();
-		i->call = startLabel;
-		i->enter = label;
+		i->call = startLabel; // the call label
+		i->enter = label;     // the skip (NULL) at the start of the function
 
+		// the last label (i.e. the one from which all next transitions come)
+		// is the skip
 		last.insert(label);
+		label++;
 
+		// TODO add only once!!!!
+		// add called Function
 		set<int>* rets = new set<int>();
 		CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
 		label = addFunction(fc->name, label, rets);
 
-		// add empty exit label
+		// add empty exit label /skip)
 		labels.insert(labels.begin() + label, NULL);
 		i->exit = label;
 
 		//  add transitions from return statements to exit
 		set<int>::iterator retIt;
 		for (retIt = rets->begin(); retIt != rets->end(); retIt++) {
-			addTransition(*it, label);
+			addTransition(*retIt, label);
 		}
 
 		label++;
 		labels.insert(labels.begin() + label, s);
 		i->ret = label;
+
+		// store interflow
 		inter.insert(i);
 
 		last.clear();
@@ -132,13 +148,19 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 			addTransition(*it, startLabel);
 		}
 
+		labels.insert(labels.begin() + label, s);
+
+		// last stays empty
 		last.clear();
+		// add this to the returns, though
 		rets->insert(label);
-		last.insert(label);
+
 		return ++label;
 	}
 	case CPPParser::TYPE_WHILE: {
 		CPPParser::While* w = (CPPParser::While*) s;
+
+		// remember current label
 		int startLabel = label;
 		set<int>::iterator it;
 		for (it = last.begin(); it != last.end(); it++) {
@@ -152,13 +174,16 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 
 		labels.insert(labels.begin() + label, w);
 
+		// add while block
 		label = addStatement(w->statement, ++label, rets);
 
+		// for each one of them, add transitions to while stmt
 		for (it = last.begin(); it != last.end(); it++) {
 			if (!rets->count(*it))
 				addTransition(*it, startLabel);
 		}
 
+		// all following transitions start from the while stmt
 		last.clear();
 		last.insert(startLabel);
 		return label;
@@ -176,16 +201,18 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 		last.insert(startLabel);
 
 		labels.insert(labels.begin() + label, s);
-		//addTransition(last, label);
 
+		// add if block
 		label = addStatement(i->statement, ++label, rets);
 
+		// add if stmt to last
 		last.insert(startLabel);
-		//addTransition(startLabel, label);
 		return label;
 	}
 	case CPPParser::TYPE_CODEBLOCK: {
 		CPPParser::CodeBlock* cb = (CPPParser::CodeBlock*) s;
+
+		// add all stmts in the block
 		vector<CPPParser::Statement*>::iterator it;
 		for (it = cb->statements.begin(); it != cb->statements.end(); it++) {
 			label = addStatement(*it, label, rets);
@@ -193,18 +220,21 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 		return label;
 	}
 	default: {
+		// add this statement
 		labels.insert(labels.begin() + label, s);
 
+		// add transitions to this statement
 		set<int>::iterator it;
 		for (it = last.begin(); it != last.end(); it++) {
 			if (!rets->count(*it))
 				addTransition(*it, label);
 		}
 
+		// this is now the last statement
 		last.clear();
 		last.insert(label);
-		//addTransition(last, label);
 
+		// increment label
 		return ++label;
 	}
 	}
