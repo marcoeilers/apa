@@ -77,12 +77,12 @@ enum ConditionType {
 
 // These are the possible semantics:
 //
-// [program] = [include]* main() [functionDecl]+
+// [program] = [include]* [functionDecl]+
 // [statement] = [while] | [if] | [varDecl] | [varAssignment] | [functionCall] | [return] | [codeBlock]
 // [while] = while [condition] [statement]
 // [if] = if [condition] [statement]
-// [varDecl] = [type] varName = [variableValue]; | [type] varName;
-// [varAssignment] = [name] = [variableValue];
+// [varDecl] = [type] <name> = [variableValue]; | [type] varName;
+// [varAssignment] = <name> = [variableValue];
 // [combinator] = + | - | * | /
 // [combination] = [variableValue] [combinator] [variableValue] // Note, for variableValue, only  variable/unknown are allowed.
 // [allocation] = new [type]([variableValue]) // Note, for variableValue, only variable/unknown are allowed.
@@ -173,6 +173,7 @@ struct VariableValue {
 
 struct Variable : VariableValue {
 	String value;
+	int derefDepth;
 	virtual bool tryBuild(TokenList& tokens);
 	virtual ValueType getType() { return VALUE_VARIABLE; }
 	virtual std::string toString() { return value; }

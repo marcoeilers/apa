@@ -3,6 +3,7 @@
 #include <cstdio>
 #include "Parser.h"
 #include "StringUtil.h"
+#include <array>
 
 /**	First breaks up in tokens, then builds the semantic tree.
 */

@@ -16,7 +16,7 @@ int main() {
 		sayHey(ChinChan);
 	}
 	a = getInt();
-	*p = a; // Note: This works, but *a = getInt(); won't (because that's a function call). If we need it, I'll add it.
+	*p = *a; // Note: This works, but *a = getInt(); won't (because that's a function call). If we need it, I'll add it.
 	float b;
 	b = getFloat(a, 1, bob); // We don't support float b = getFloat(); Declare seperately.
 	if (a == 0) {

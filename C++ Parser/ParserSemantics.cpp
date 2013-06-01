@@ -313,6 +313,11 @@ bool CodeBlock::tryBuild(TokenList& tokens) {
 
 bool Variable::tryBuild(TokenList& tokens) {
 	if (tokens.size() == 0 || tokens[0].name.compare(";") == 0) return false;
+	derefDepth = 0;
+	while (tokens[derefDepth].name.compare("*") == 0) {
+		derefDepth++;
+		pop(tokens);
+	}
 
 	value = pop(tokens).name;
 	return true;
