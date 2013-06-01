@@ -9,16 +9,41 @@
 
 using namespace std;
 
-SignAnalysis::SignAnalysis(InterControlFlow* cf) :
+std::set<Sign>* SignAnalysis::getSign(char c) {
+	switch (c) {
+	case 'p': return &plusSet;
+	case 'm': return &minusSet;
+	case 'e': return &emptySet;
+	case 'z': return &zeroSet;
+	}
+	throw "This should never happen";
+}
+
+SignAnalysis::SignAnalysis(InterControlFlow* cf)/* :
 		op_plus( { { &plusSet, &allSet, &plusSet }, { &allSet, &minusSet,
-				&minusSet }, { &plusSet, &minusSet, &zeroSet } }), op_minus( { {
-				&allSet, &plusSet, &plusSet },
+				&minusSet }, { &plusSet, &minusSet, &zeroSet } }),
+		op_minus( { { &allSet, &plusSet, &plusSet },
 				{ &minusSet, &allSet, &minusSet }, { &minusSet, &plusSet,
-						&zeroSet } }), op_mult( { { &plusSet, &minusSet,
+						&zeroSet } }),
+		op_mult( { { &plusSet, &minusSet,
 				&zeroSet }, { &minusSet, &plusSet, &zeroSet }, { &zeroSet,
-				&zeroSet, &zeroSet } }), op_div( { { &plusSet, &minusSet,
+				&zeroSet, &zeroSet } }), 
+		op_div( { { &plusSet, &minusSet,
 				&emptySet }, { &minusSet, &plusSet, &emptySet }, { &zeroSet,
-				&zeroSet, &emptySet } }) {
+				&zeroSet, &emptySet } })*/ {
+	std::string op_plus_s = "papammpmz";
+	std::string op_minus_s = "appmammpz";
+	std::string op_mult_s = "pmzmpzzzz";
+	std::string op_div_s = "pmempezze";
+	for (int i = 0; i < 9; i++) {
+		int x = i % 3;
+		int y = i / 3;
+		op_plus[y][x] = getSign(op_plus_s[i]);
+		op_minus[y][x] = getSign(op_minus_s[i]);
+		op_mult[y][x] = getSign(op_mult_s[i]);
+		op_div[y][x] = getSign(op_div_s[i]);
+	}
+
 	// we just initialized the operator matrices
 
 	cflow = cf;
@@ -198,7 +223,7 @@ set<Sign> SignAnalysis::getSigns(CPPParser::VariableValue* v,
 // for two given sets of signs and a combinator,
 // returns a set of all combinations which can arise from an arithmetic
 // operation
-void SignAnalysis::addAllCombinations(const set<Sign>* op[][3],
+void SignAnalysis::addAllCombinations(SignArray op,
 		set<Sign>& first, set<Sign>& second, set<Sign>* result) {
 	set<Sign>::iterator fIt;
 	for (fIt = first.begin(); fIt != first.end(); fIt++) {

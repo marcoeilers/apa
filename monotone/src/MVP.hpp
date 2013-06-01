@@ -14,7 +14,8 @@ MVP<T>::~MVP() {
 
 template<typename T>
 pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
-	map<string, T> *result = new map<string, T> [mf->getLabels().size()];
+	map<string, T> *result = new map<string, T>[mf->getLabels().size()];
+
 	for (int i = 0; i < mf->getLabels().size(); i++) {
 		if (mf->getExtremalLabels().count(i)) {
 			// for extremal labels, assign extremal value for empty context

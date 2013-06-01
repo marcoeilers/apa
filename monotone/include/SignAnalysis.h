@@ -11,10 +11,13 @@
 #include <sstream>
 #include "EMFramework.h"
 #include "InterControlFlow.h"
+#include <array>
 
 enum Sign {
 	SIGN_PLUS, SIGN_MINUS, SIGN_ZERO
 };
+
+typedef std::array<std::array<std::set<Sign>*, 3>, 3> SignArray;
 
 /*
  * Interprocedural Sign Analysis
@@ -56,17 +59,18 @@ public:
 protected:
 	virtual std::set<Sign> getSigns(CPPParser::VariableValue*,
 			std::map<std::string, std::set<Sign> >&);
-	virtual void addAllCombinations(const std::set<Sign>*[3][3], std::set<Sign>&, std::set<Sign>&, std::set<Sign>*);
+	virtual void addAllCombinations(SignArray, std::set<Sign>&, std::set<Sign>&, std::set<Sign>*);
+	std::set<Sign>* getSign(char c);
 	std::set<Sign> plusSet;
 	std::set<Sign> minusSet;
 	std::set<Sign> zeroSet;
 	std::set<Sign> allSet;
 	std::set<Sign> emptySet;
 
-	const std::set<Sign>* op_plus[3][3];
-	const std::set<Sign>* op_minus[3][3];
-	const std::set<Sign>* op_mult[3][3];
-	const std::set<Sign>* op_div[3][3];
+	SignArray op_plus;
+	SignArray op_minus;
+	SignArray op_mult;
+	SignArray op_div;
 };
 
 #endif /* SIGNANALYSIS_H_ */

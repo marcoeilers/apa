@@ -27,13 +27,13 @@ int main() {
 	} catch (CPPParser::ParseError pe) {
 		printf("Parser error: %s\n", pe.getMessage().c_str());
 	}
-
+	
 	InterControlFlow* icf = new InterControlFlow(program);
-
+	
 	SignAnalysis* s = new SignAnalysis(icf);
-
+	
 	MVP<map<string, set<Sign> > >* mvp = new MVP<map<string, set<Sign> > >(2);
-
+	
 	pair<map<string, map<string, set<Sign> > >, map<string, map<string, set<Sign> > > >* result = mvp->solve(s);
 
 
@@ -66,7 +66,7 @@ int main() {
 			}
 		}
 	}
-
+	
 	/*
 	 CPPParser::FunctionDeclaration fd = *(program.functionDeclarations.begin());
 
