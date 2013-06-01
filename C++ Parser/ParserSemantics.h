@@ -146,8 +146,8 @@ struct VariableAssignment : Statement {
 };
 struct FunctionCall : Statement {
 	String name;
-	String arguments;
-	Variable* variable; // NULL if no variable. [variable] = fName();
+	std::vector<VariableValue*> variables;
+	Variable* returnVariable; // NULL if no return variable. [returnVariable] = fName();
 	virtual bool tryBuild(TokenList& tokens);
 	virtual StatementType getType() { return TYPE_FUNCTIONCALL; }
 };
@@ -230,7 +230,7 @@ struct Unknown : VariableValue { // Uninitialized variables get this value.
 struct FunctionDeclaration {
 	DataType* dataType;
 	String name;
-	std::vector<VariableDeclaration*> arguments;
+	std::vector<std::pair<Variable*, DataType*>> arguments;
 	CodeBlock* codeBlock;
 	bool tryBuild(TokenList& tokens);
 };

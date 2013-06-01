@@ -231,26 +231,41 @@ bool FunctionCall::tryBuild(TokenList& tokens) {
 	if (tokens[1].name[0] != '=' && tokens[1].name[0] != '(') return false;
 
 	if (tokens[1].name[0] == '=') {
-		variable = new Variable();
-		if (!variable->tryBuild(tokens)) {
+		returnVariable = new Variable();
+		if (!returnVariable->tryBuild(tokens)) {
 			return false; // Safe (variable->tryBuild is presumed safe)
 		}
 		pop(tokens); // = 
-	} else variable = NULL;
+	} else returnVariable = NULL;
 
 	name = pop(tokens).name;
 
 	pop(tokens); // (
 
-	arguments = "";
-	Token token = pop(tokens);
+	variables.clear();
+	Token token = tokens[0];
 	while (token.name.compare(")") != 0) {
-		arguments += token.name;
-		token = pop(tokens);
-		if (token.name.compare(")") != 0)
-			arguments += " ";
+		VariableValue* variable;
+		variable = new Combination();
+		if (!variable->tryBuild(tokens)) {
+			delete variable;
+			variable = new Variable();
+			if (!variable->tryBuild(tokens)) {
+				delete variable;
+				throw ParseError("Expected VariableValue in FunctionCall");
+				return false;
+			}
+		}
+		variables.push_back(variable);
+
+		if (tokens[0].name.compare(",") == 0) pop(tokens);
 		else break;
 	}
+	if (tokens[0].name.compare(")") != 0) {
+		throw ParseError("Expected \')\' in FunctionCall");
+		return false;
+	}
+	pop(tokens); // )
 
 	pop(tokens); // ';'
 	return true;
@@ -385,11 +400,19 @@ bool FunctionDeclaration::tryBuild(TokenList& tokens) {
 	arguments.clear();
 	Token token = tokens[0];
 	while (token.name.compare(")") != 0) {
-		VariableDeclaration* declaration = new VariableDeclaration();
-		if (!declaration->tryBuild(tokens)) {
-			throw ParseError("Expected variableDeclaration in FunctionDeclaration");
+		std::pair<Variable*, DataType*> pair;
+		pair.second = new DataType();
+		if (!pair.second->tryBuild(tokens)) {
+			throw ParseError("Expected DataType in FunctionDeclaration");
 			return false;
 		}
+		pair.first = new Variable();
+		if (!pair.first->tryBuild(tokens)) {
+			throw ParseError("Expected Variable in FunctionDeclaration");
+			return false;
+		}
+		arguments.push_back(pair);
+
 		if (tokens[0].name.compare(",") == 0) pop(tokens);
 		else break;
 	}
