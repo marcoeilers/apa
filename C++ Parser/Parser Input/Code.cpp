@@ -3,7 +3,7 @@ bool* boolPtrTest() {
 	return bob;
 }
 
-int hi() {
+int hi(int arg1, float arg2) {
 	int a = 0;
 	return a;
 }

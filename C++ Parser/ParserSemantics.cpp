@@ -382,15 +382,22 @@ bool FunctionDeclaration::tryBuild(TokenList& tokens) {
 	// Function arguments:
 	pop(tokens); // (
 
-	arguments = "";
-	Token token = pop(tokens);
+	arguments.clear();
+	Token token = tokens[0];
 	while (token.name.compare(")") != 0) {
-		arguments += token.name;
-		token = pop(tokens);
-		if (token.name.compare(")") != 0)
-			arguments += " ";
+		VariableDeclaration* declaration = new VariableDeclaration();
+		if (!declaration->tryBuild(tokens)) {
+			throw ParseError("Expected variableDeclaration in FunctionDeclaration");
+			return false;
+		}
+		if (tokens[0].name.compare(",") == 0) pop(tokens);
 		else break;
 	}
+	if (tokens[0].name.compare(")") != 0) {
+		throw ParseError("Expected \')\' in FunctionDeclaration");
+		return false;
+	}
+	pop(tokens); // )
 
 	// Function body:
 	codeBlock = new CodeBlock();

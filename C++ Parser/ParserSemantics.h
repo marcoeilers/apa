@@ -81,14 +81,14 @@ enum ConditionType {
 // [statement] = [while] | [if] | [varDecl] | [varAssignment] | [functionCall] | [return] | [codeBlock]
 // [while] = while [condition] [statement]
 // [if] = if [condition] [statement]
-// [varDecl] = [type] varName = [variableValue];
+// [varDecl] = [type] varName = [variableValue]; | [type] varName;
 // [varAssignment] = [name] = [variableValue];
 // [combinator] = + | - | * | /
 // [combination] = [variableValue] [combinator] [variableValue] // Note, for variableValue, only  variable/unknown are allowed.
 // [allocation] = new [type]([variableValue]) // Note, for variableValue, only variable/unknown are allowed.
 // [variableValue] = [variable] | [combination] | [allocation] | [unknown]
 // [functionCall] = fName(); | [variable] = fName();
-// [functionDecl] = [type] fName() [codeBlock]
+// [functionDecl] = [type] fName( [varDecl]* ) [codeBlock]
 // [return] = return [variableValue]? ;
 // [codeBlock] = { [Statement]* }
 // [include] = #include "[filename]"
@@ -230,7 +230,7 @@ struct Unknown : VariableValue { // Uninitialized variables get this value.
 struct FunctionDeclaration {
 	DataType* dataType;
 	String name;
-	std::string arguments;
+	std::vector<VariableDeclaration*> arguments;
 	CodeBlock* codeBlock;
 	bool tryBuild(TokenList& tokens);
 };
