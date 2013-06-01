@@ -21,6 +21,16 @@ PointerAnalysis::~PointerAnalysis() {
 map<string, set<string> > PointerAnalysis::join(
 		map<string, set<string> >& first, map<string, set<string> >& second) {
 	map<string, set<string> > result;
+	result.insert(first.begin(), first.end());
+
+	map<string, set<string> >::iterator it;
+	for (it = second.begin(); it != second.end(); it++){
+		if (result.count(it->first)){
+			result[it->first].insert(it->second.begin(), it->second.end());
+		}else{
+			result[it->first] = it->second;
+		}
+	}
 	return result;
 }
 
@@ -31,30 +41,46 @@ map<string, set<string> > PointerAnalysis::bottom() {
 
 bool PointerAnalysis::lessThan(
 		map<string, set<string> >& first, map<string, set<string> >& second) {
-	return false;
+	map<string, set<string> >::iterator fIt;
+	for (fIt = first.begin(); fIt != first.end(); fIt++){
+		if (second.count(fIt->first)){
+			set<string>::iterator sIt;
+			for (sIt = fIt->second.begin(); sIt != fIt->second.end(); sIt++){
+				if (!second[fIt->first].count(*sIt))
+					return false;
+			}
+		}else{
+			return false;
+		}
+		return true;
+	}
 }
 
 map<string, set<string> > PointerAnalysis::f(map<string, set<string> >& old,
 		CPPParser::Statement* s) {
 	map<string, set<string> > result;
+	// TODO
 	return result;
 }
 
 map<string, set<string> > PointerAnalysis::fcall(map<string, set<string> >& old,
 		CPPParser::Statement* s, CPPParser::FunctionDeclaration* fd) {
 	map<string, set<string> > result;
+	// TODO
 	return result;
 }
 
 map<string, set<string> > PointerAnalysis::fenter(
 		map<string, set<string> >& old) {
 	map<string, set<string> > result;
+	// TODO
 	return result;
 }
 
 map<string, set<string> > PointerAnalysis::fexit(
 		map<string, set<string> >& old) {
 	map<string, set<string> > result;
+	// TODO
 	return result;
 }
 
