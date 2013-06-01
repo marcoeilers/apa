@@ -6,6 +6,7 @@
 #include "StringUtil.h"
 #include "ParserSemantics.h"
 #include "SignAnalysis.h"
+#include "PointerAnalysis.h"
 
 using namespace std;
 
@@ -13,7 +14,7 @@ int main() {
 
 	CPPParser::Parser parser;
 
-	parser.parseFile("SignTest.txt");
+	parser.parseFile("PointerTest.txt");
 
 	CPPParser::TokenList tokens = parser.getTokens();
 
@@ -28,8 +29,35 @@ int main() {
 		printf("Parser error: %s\n", pe.getMessage().c_str());
 	}
 	
+
 	InterControlFlow* icf = new InterControlFlow(program);
 	
+	PointerAnalysis* p = new PointerAnalysis(icf);
+
+	MVP<map<string, set<string> > >* mvp = new MVP<map<string, set<string> > >(2);
+
+	pair<map<string, map<string, set<string> > >, map<string, map<string, set<string> > > >* result = mvp->solve(p);
+
+	for (int i = 0; i < icf->getLabels().size(); i++) {
+			printf("For label %i:\n", i);
+			map<string, map<string, set<string> > >::iterator mapIt;
+			for (mapIt = result[i].second.begin(); mapIt != result[i].second.end(); mapIt++) {
+				printf("For context %s:\n", mapIt->first.c_str());
+
+				map<string, set<string> >::iterator map2It;
+				for (map2It = mapIt->second.begin(); map2It != mapIt->second.end();
+						map2It++) {
+					printf("For variable %s:\n", map2It->first.c_str());
+
+					set<string>::iterator setIt;
+					for (setIt = map2It->second.begin(); setIt != map2It->second.end(); setIt++){
+						printf("Points to %s.\n", setIt->c_str());
+					}
+				}
+			}
+	}
+
+	/*
 	SignAnalysis* s = new SignAnalysis(icf);
 	
 	MVP<map<string, set<Sign> > >* mvp = new MVP<map<string, set<Sign> > >(2);
@@ -66,7 +94,7 @@ int main() {
 			}
 		}
 	}
-	
+	*/
 	/*
 	 CPPParser::FunctionDeclaration fd = *(program.functionDeclarations.begin());
 

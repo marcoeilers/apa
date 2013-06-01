@@ -63,6 +63,7 @@ private:
 	CPPParser::Program* prog;
 	std::set<InterFlow*> inter;
 	std::set<int> returnLabels;
+	std::map<std::string, std::pair<int, int> > functions;
 };
 
 #endif /* INTERCONTROLFLOW_H_ */
