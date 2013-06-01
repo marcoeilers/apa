@@ -34,12 +34,13 @@ int main() {
 
 	MVP<map<string, set<Sign> > >* mvp = new MVP<map<string, set<Sign> > >(2);
 
-	map<string, map<string, set<Sign> > >* result = mvp->solve(s);
+	pair<map<string, map<string, set<Sign> > >, map<string, map<string, set<Sign> > > >* result = mvp->solve(s);
+
 
 	for (int i = 0; i < icf->getLabels().size(); i++) {
 		printf("For label %i:\n", i);
 		map<string, map<string, set<Sign> > >::iterator mapIt;
-		for (mapIt = result[i].begin(); mapIt != result[i].end(); mapIt++) {
+		for (mapIt = result[i].second.begin(); mapIt != result[i].second.end(); mapIt++) {
 			printf("For context %s:\n", mapIt->first.c_str());
 
 			map<string, set<Sign> >::iterator map2It;
