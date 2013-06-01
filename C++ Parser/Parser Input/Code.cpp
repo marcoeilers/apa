@@ -4,7 +4,10 @@ bool* boolPtrTest() {
 }
 
 int hi(int arg1, float arg2) {
-	int a = 0;
+	int i = 5;
+	int* p = &i;
+	int* q = &i;
+	int** ptr = &q;
 	return a;
 }
 

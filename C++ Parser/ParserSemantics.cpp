@@ -52,10 +52,11 @@ bool DataType::tryBuild(TokenList& tokens) {
 
 	pop(tokens); // Remove it now (so the above return is safe)
 	// Data type pointer 'depth'
-	if (tokens.size() > 0 && tokens[0].name[0] == '*') {
-		// Parse a pointer:
-		pointerDepth = pop(tokens).name.size();
-	} else pointerDepth = 0;
+	pointerDepth = 0;
+	while (tokens[0].name.compare("*") == 0) {
+		pointerDepth++;
+		pop(tokens);
+	}
 	return true;
 }
 /** Note, this function allocates 1 Statement object without releasing it.
