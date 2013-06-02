@@ -101,7 +101,7 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 	switch (s->getType()) {
 	case CPPParser::TYPE_FUNCTIONCALL: {
 		int startLabel = label;
-		labels.insert(labels.begin() + label, s);
+		addLabel(label, s);
 
 		// add all transitions to this statement
 		set<int>::iterator it;
@@ -122,7 +122,7 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 			pair<int, int> funcInfo = functions[fc->name];
 
 			// add call again (l_r)
-			labels.insert(labels.begin() + label, s);
+			addLabel(label, s);
 
 			InterFlow* i = new InterFlow();
 			i->call = startLabel;
@@ -140,7 +140,7 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 			InterFlow* i = new InterFlow();
 
 			// add call again (l_r)
-			labels.insert(labels.begin() + label, s);
+			addLabel(label, s);
 
 			int enter = incompleteFuncs[fc->name];
 
@@ -159,7 +159,7 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 
 			// add empty entry label (symbolizing a skip at the start of
 			// a function)
-			labels.insert(labels.begin() + label, NULL);
+			addLabel(label, NULL);
 
 			// create InterFlow object to store control flow data
 			InterFlow* i = new InterFlow();
@@ -180,7 +180,7 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 			label = addFunction(fc->name, label, rets);
 
 			// add empty exit label /skip)
-			labels.insert(labels.begin() + label, NULL);
+			addLabel(label, NULL);
 			i->exit = label;
 
 			pair<int, int> thisFunction (i->enter, label);
@@ -195,7 +195,7 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 			}
 
 			label++;
-			labels.insert(labels.begin() + label, s);
+			addLabel(label, s);
 			i->ret = label;
 
 			// store interflow
@@ -215,7 +215,7 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 			addTransition(*it, startLabel);
 		}
 
-		labels.insert(labels.begin() + label, s);
+		addLabel(label, s);
 
 		// last stays empty
 		last.clear();
@@ -239,7 +239,7 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 
 		last.insert(startLabel);
 
-		labels.insert(labels.begin() + label, w);
+		addLabel(label, w);
 
 		// add while block
 		label = addStatement(w->statement, ++label, rets);
@@ -267,7 +267,7 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 		last.clear();
 		last.insert(startLabel);
 
-		labels.insert(labels.begin() + label, s);
+		addLabel(label, s);
 
 		// add if block
 		label = addStatement(i->statement, ++label, rets);
@@ -288,7 +288,7 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 	}
 	default: {
 		// add this statement
-		labels.insert(labels.begin() + label, s);
+		addLabel(label, s);
 
 		// add transitions to this statement
 		set<int>::iterator it;

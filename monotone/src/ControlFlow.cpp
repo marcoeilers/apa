@@ -44,7 +44,7 @@ int ControlFlow::addStatement(CPPParser::Statement* s, int label) {
 
 		last.insert(startLabel);
 
-		labels.insert(labels.begin() + label, w);
+		addLabel(label, w);
 
 		// add the contents of the while block
 		label = addStatement(w->statement, ++label);
@@ -76,7 +76,7 @@ int ControlFlow::addStatement(CPPParser::Statement* s, int label) {
 		// set last to the if statement
 		last.insert(startLabel);
 
-		labels.insert(labels.begin() + label, s);
+		addLabel(label, s);
 
 		// add if block
 		label = addStatement(i->statement, ++label);
@@ -96,7 +96,7 @@ int ControlFlow::addStatement(CPPParser::Statement* s, int label) {
 		return label;
 	}
 	case CPPParser::TYPE_RETURN: {
-		labels.insert(labels.begin() + label, s);
+		addLabel(label, s);
 		set<int>::iterator it;
 		for (it = last.begin(); it != last.end(); it++) {
 			if (!rets.count(*it))
@@ -111,9 +111,13 @@ int ControlFlow::addStatement(CPPParser::Statement* s, int label) {
 
 		return ++label;
 	}
+	case CPPParser::TYPE_FUNCTIONCALL: {
+		throw ControlFlowError(
+				"No function calls allowed in intraprocedural analysis.");
+	}
 	default: {
 		// add this stmt to labels
-		labels.insert(labels.begin() + label, s);
+		addLabel(label, s);
 
 		// add transitions from last to this
 		set<int>::iterator it;
@@ -130,6 +134,15 @@ int ControlFlow::addStatement(CPPParser::Statement* s, int label) {
 		return ++label;
 	}
 	}
+}
+
+void ControlFlow::addLabel(int index, CPPParser::Statement* s) {
+	if (s != NULL)
+		printf("Label %i is %s.\n", index, s->toString().c_str());
+	else
+		printf("Label %i is SKIP (function entry or exit).\n", index);
+
+	labels.insert(labels.begin() + index, s);
 }
 
 // adds a transition to flow (and the reverse to flowR)

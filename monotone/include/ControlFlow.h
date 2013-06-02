@@ -45,6 +45,7 @@ public:
 	std::set<int> getLastLabels();
 protected:
 	virtual int addStatement(CPPParser::Statement*, int);
+	void addLabel(int, CPPParser::Statement*);
 	void addTransition(int, int);
 	void addTransitionR(int, int);
 	std::vector<CPPParser::Statement*> labels;
