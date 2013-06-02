@@ -30,7 +30,6 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 	// they all get looked at at least once
 	addToWorkList(&workList, *(mf->getExtremalLabels().begin()), "", mf);
 
-
 	// while there is stuff to do
 	while (!workList.empty()) {
 		// current.first is the label we are working on,
@@ -373,7 +372,6 @@ void MVP<T>::addToWorkList(set<pair<int, string> >* wl, int label,
 	pair<int, string> p(label, context);
 	wl->insert(p);
 
-
 	switch (mf->getLabelType(label)) {
 	case LABEL_CALL: {
 		string newContext = prepend(label, context);
@@ -386,17 +384,42 @@ void MVP<T>::addToWorkList(set<pair<int, string> >* wl, int label,
 			set<pair<int, string> >::iterator wlIt;
 			bool found = false;
 			for (wlIt = wl->begin(); wlIt != wl->end(); wlIt++) {
-				if (wlIt->first == *it && wlIt->second.compare(newContext) == 0) {
+				if (wlIt->first == *it
+						&& wlIt->second.compare(newContext) == 0) {
 					found = true;
 					break;
 				}
 			}
-			//printf("call found is %i\n", found);
-			if (!found){
-				printf("recursive call call.\n");
+			if (!found) {
 				addToWorkList(wl, *it, newContext, mf);
 			}
 		}
+
+		// add followers of the return label
+		// with old context
+		int returnLbl = mf->getReturnFromCall(label);
+		next = mf->getNext(returnLbl);
+		for (it = next.begin(); it != next.end(); it++) {
+			pair<int, string> pNew(*it, newContext);
+
+			set<pair<int, string> >::iterator wlIt;
+			bool found = false;
+			for (wlIt = wl->begin(); wlIt != wl->end(); wlIt++) {
+				if (wlIt->first == *it
+						&& wlIt->second.compare(context) == 0) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				addToWorkList(wl, *it, context, mf);
+			}
+		}
+		break;
+	}
+	case LABEL_RETURN: {
+		// do not propagate any further,
+		// this has already been dealt with in the call
 		break;
 	}
 	default: {
@@ -413,10 +436,8 @@ void MVP<T>::addToWorkList(set<pair<int, string> >* wl, int label,
 					break;
 				}
 			}
-			//printf("default found is %i\n", found);
 
-			if (!found){
-				printf("recursive call.\n");
+			if (!found) {
 				addToWorkList(wl, *it, context, mf);
 			}
 		}

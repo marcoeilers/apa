@@ -14,7 +14,7 @@ int main() {
 
 	CPPParser::Parser parser;
 
-	parser.parseFile("RecursionTest.txt");
+	parser.parseFile("FibTest.txt");
 
 	CPPParser::TokenList tokens = parser.getTokens();
 
@@ -44,7 +44,7 @@ int main() {
 
 	SignAnalysis* s = new SignAnalysis(icf);
 	
-	MVP<map<string, set<Sign> > >* mvp = new MVP<map<string, set<Sign> > >(2);
+	MVP<map<string, set<Sign> > >* mvp = new MVP<map<string, set<Sign> > >(1);
 	
 	pair<map<string, map<string, set<Sign> > >, map<string, map<string, set<Sign> > > >* result = mvp->solve(s);
 

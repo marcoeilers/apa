@@ -56,6 +56,7 @@ public:
        virtual LabelType getLabelType(int label) {return cflow->getType(label);}
 
        virtual int getCallFromReturn(int label) {return cflow->getCallForReturn(label); }
+       virtual int getReturnFromCall(int label) {return cflow->getReturnForCall(label); }
 
        virtual std::vector<CPPParser::Statement*> getLabels() {return cflow->getLabels();}
 
