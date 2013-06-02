@@ -41,22 +41,29 @@ map<string, set<string> > PointerAnalysis::bottom() {
 
 bool PointerAnalysis::lessThan(map<string, set<string> >& first,
 		map<string, set<string> >& second) {
+	printf("lessThan first has size %i, second has size %i.\n", first.size(),
+			second.size());
+
 	map<string, set<string> >::iterator fIt;
 	for (fIt = first.begin(); fIt != first.end(); fIt++) {
 		if (second.count(fIt->first)) {
 			set<string>::iterator sIt;
 			for (sIt = fIt->second.begin(); sIt != fIt->second.end(); sIt++) {
-				if (!second[fIt->first].count(*sIt))
+				if (!second[fIt->first].count(*sIt)) {
+					printf("lessThan is false.\n");
 					return false;
+				}
 			}
 		} else {
+			printf("lessThan is false.\n");
 			return false;
 		}
 	}
+	printf("lessThan is true.\n");
 	return true;
 }
 
-set<string> PointerAnalysis::evaluateLsh(int derefDepth, string name,
+set<string> PointerAnalysis::evaluateLhs(int derefDepth, string name,
 		map<string, set<string> >& old) {
 	set<string> result;
 
@@ -129,10 +136,12 @@ set<string> PointerAnalysis::evaluateRhs(CPPParser::VariableValue* v,
 map<string, set<string> > PointerAnalysis::f(map<string, set<string> >& old,
 		CPPParser::Statement* s) {
 	map<string, set<string> > result;
+	result.insert(old.begin(), old.end());
+
 	switch (s->getType()) {
 	case CPPParser::TYPE_VAR_ASSIGNMENT: {
 		CPPParser::VariableAssignment* va = (CPPParser::VariableAssignment*) s;
-		set<string> lhs = evaluateLsh(va->derefDepth, va->name, old);
+		set<string> lhs = evaluateLhs(va->derefDepth, va->name, old);
 		set<string> rhs = evaluateRhs(va->value, old);
 
 		// for every var in lhs
@@ -158,7 +167,7 @@ map<string, set<string> > PointerAnalysis::f(map<string, set<string> >& old,
 	case CPPParser::TYPE_VAR_DECLARATION: {
 		CPPParser::VariableDeclaration* vd = (CPPParser::VariableDeclaration*) s;
 		if (vd->dataType->pointerDepth > 0) {
-			set<string> lhs = evaluateLsh(0, vd->name, old);
+			set<string> lhs = evaluateLhs(0, vd->name, old);
 			set<string> rhs = evaluateRhs(vd->value, old);
 
 			// for every var in lhs
@@ -182,6 +191,11 @@ map<string, set<string> > PointerAnalysis::f(map<string, set<string> >& old,
 		}
 		break;
 	}
+	case CPPParser::TYPE_RETURN: {
+		CPPParser::Return* r = (CPPParser::Return*) s;
+		set<string> rhs = evaluateRhs(r->variable, old);
+		result["return"].insert(rhs.begin(), rhs.end());
+	}
 	default:
 		break;
 	}
@@ -191,21 +205,46 @@ map<string, set<string> > PointerAnalysis::f(map<string, set<string> >& old,
 map<string, set<string> > PointerAnalysis::fcall(map<string, set<string> >& old,
 		CPPParser::Statement* s, CPPParser::FunctionDeclaration* fd) {
 	map<string, set<string> > result;
-	// TODO
+	CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
+
+	for (int i = 0; i < fc->variables.size(); i++) {
+		set<string> lhs = evaluateLhs(0, fd->arguments.at(i).first->value, old);
+		set<string> rhs = evaluateRhs(fc->variables.at(i), old);
+
+		// for every var in lhs
+		set<string>::iterator it;
+		for (it = lhs.begin(); it != lhs.end(); it++) {
+			set<string> oldVal = old[*it];
+
+			bool subset = true;
+			set<string>::iterator rIt;
+			for (rIt = rhs.begin(); rIt != rhs.end(); rIt++) {
+				if (!oldVal.count(*rIt)) {
+					subset = false;
+					break;
+				}
+			}
+			result[*it].insert(oldVal.begin(), oldVal.end());
+			if (!subset) {
+				result[*it].insert(rhs.begin(), rhs.end());
+			}
+		}
+	}
+
 	return result;
 }
 
 map<string, set<string> > PointerAnalysis::fenter(
 		map<string, set<string> >& old) {
 	map<string, set<string> > result;
-	// TODO
+	result.insert(old.begin(), old.end());
 	return result;
 }
 
 map<string, set<string> > PointerAnalysis::fexit(
 		map<string, set<string> >& old) {
 	map<string, set<string> > result;
-	// TODO
+	result.insert(old.begin(), old.end());
 	return result;
 }
 
@@ -213,6 +252,34 @@ map<string, set<string> > PointerAnalysis::freturn(
 		map<string, set<string> >& beforeCall,
 		map<string, set<string> >& afterFunc, CPPParser::Statement* s) {
 	map<string, set<string> > result;
+	result.insert(beforeCall.begin(), beforeCall.end());
+
+	CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
+	if (fc->returnVariable != NULL) {
+		set<string> lhs = evaluateLhs(fc->returnVariable->derefDepth,
+				fc->returnVariable->value, beforeCall);
+		set<string> rhs = afterFunc["return"];
+
+		// for every var in lhs
+		set<string>::iterator it;
+		for (it = lhs.begin(); it != lhs.end(); it++) {
+			set<string> oldVal = beforeCall[*it];
+
+			bool subset = true;
+			set<string>::iterator rIt;
+			for (rIt = rhs.begin(); rIt != rhs.end(); rIt++) {
+				if (!oldVal.count(*rIt)) {
+					subset = false;
+					break;
+				}
+			}
+			result[*it].insert(oldVal.begin(), oldVal.end());
+			if (!subset) {
+				result[*it].insert(rhs.begin(), rhs.end());
+			}
+		}
+	}
+
 	return result;
 }
 

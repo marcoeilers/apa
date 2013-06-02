@@ -14,8 +14,7 @@ MVP<T>::~MVP() {
 
 template<typename T>
 pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
-	map<string, T> *result = new map<string, T>[mf->getLabels().size()];
-
+	map<string, T> *result = new map<string, T> [mf->getLabels().size()];
 	for (int i = 0; i < mf->getLabels().size(); i++) {
 		if (mf->getExtremalLabels().count(i)) {
 			// for extremal labels, assign extremal value for empty context
@@ -25,11 +24,9 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 
 	// worklist contains of pairs of label and context
 	set<pair<int, string> > workList;
-	set<int>::iterator setIt;
-	for (setIt = mf->getExtremalLabels().begin();
-			setIt != mf->getExtremalLabels().end(); setIt++) {
+	for (int i = 0; i < mf->getLabels().size(); i++) {
 		// insert extremal labels with empty context into workList
-		pair<int, string> p(*setIt, "");
+		pair<int, string> p(i, "");
 		workList.insert(p);
 	}
 
@@ -47,6 +44,8 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 		// for each subsequent label
 		set<int>::iterator it;
 		for (it = next.begin(); it != next.end(); it++) {
+			printf("Now working on transition %i to %i.\n", current.first, *it);
+
 			// s is the current statement
 			CPPParser::Statement* s = mf->getLabels().at(current.first);
 

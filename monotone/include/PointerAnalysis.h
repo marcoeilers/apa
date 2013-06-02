@@ -37,7 +37,7 @@ public:
 	virtual std::set<int> getExtremalLabels();
 
 protected:
-	virtual std::set<std::string> evaluateLsh(int, std::string, std::map<std::string, std::set<std::string> >&);
+	virtual std::set<std::string> evaluateLhs(int, std::string, std::map<std::string, std::set<std::string> >&);
 	virtual std::set<std::string> evaluateRhs(CPPParser::VariableValue*, std::map<std::string, std::set<std::string> >&);
 };
 
