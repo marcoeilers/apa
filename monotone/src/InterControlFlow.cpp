@@ -18,9 +18,12 @@ InterControlFlow::InterControlFlow(CPPParser::Program* p) {
 	first.insert(0);
 
 	// complete interflow information for recursive calls
-	map<string, pair<int, int> >::iterator it;
+	map<string, set<pair<int, int> > >::iterator it;
 	for (it = toComplete.begin(); it != toComplete.end(); toComplete.erase(it++)){
-		pair<int, int> complete = it->second;
+		set<pair<int, int> >::iterator compIt;
+		for (compIt = it->second.begin(); compIt != it->second.end(); compIt++){
+
+		pair<int, int> complete = *compIt;
 
 		pair<int, int> funcInfo = functions[it->first];
 
@@ -30,6 +33,27 @@ InterControlFlow::InterControlFlow(CPPParser::Program* p) {
 				(*iIt)->exit = funcInfo.second;
 			}
 		}
+		}
+	}
+
+	// print transitions
+	map<int, set<int> >::iterator it2;
+	for (it2 = transitions.begin(); it2 != transitions.end(); it2++){
+		printf("Transitions from %i: ", it2->first);
+
+		set<int>::iterator setIt;
+		for (setIt = it2->second.begin(); setIt != it2->second.end(); setIt++){
+			if (setIt != it2->second.begin())
+				printf(", ");
+			printf("%i", *setIt);
+		}
+		printf("\n");
+	}
+
+	// print interprocedural transitions
+	set<InterFlow*>::iterator iIt;
+	for (iIt = inter.begin(); iIt != inter.end(); iIt++){
+		printf("Call %i, entry %i, exit %i, return %i.\n", (*iIt)->call, (*iIt)->enter, (*iIt)->exit, (*iIt)->ret);
 	}
 }
 
@@ -153,7 +177,7 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 			last.insert(label);
 
 			pair<int, int> complete (startLabel, label);
-			toComplete[fc->name] = complete;
+			toComplete[fc->name].insert(complete);
 
 		} else {
 

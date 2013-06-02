@@ -23,12 +23,13 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 	}
 
 	// worklist contains of pairs of label and context
+
 	set<pair<int, string> > workList;
-	for (int i = 0; i < mf->getLabels().size(); i++) {
-		// insert extremal labels with empty context into workList
-		pair<int, string> p(i, "");
-		workList.insert(p);
-	}
+
+	// insert all label/context combinations that will happen so that
+	// they all get looked at at least once
+	addToWorkList(&workList, *(mf->getExtremalLabels().begin()), "", mf);
+
 
 	// while there is stuff to do
 	while (!workList.empty()) {
@@ -362,5 +363,66 @@ string MVP<T>::prepend(int label, string context) {
 	string result = ss.str();
 	result.resize(k);
 	return result;
+}
+
+template<typename T>
+void MVP<T>::addToWorkList(set<pair<int, string> >* wl, int label,
+		string context, EMFramework<T>* mf) {
+	//printf("adding label %i context %s.\n", label, context.c_str());
+	//printf("worklist has length %i.\n", wl->size());
+	pair<int, string> p(label, context);
+	wl->insert(p);
+
+
+	switch (mf->getLabelType(label)) {
+	case LABEL_CALL: {
+		string newContext = prepend(label, context);
+
+		set<int> next = mf->getNext(label);
+		set<int>::iterator it;
+		for (it = next.begin(); it != next.end(); it++) {
+			pair<int, string> pNew(*it, newContext);
+
+			set<pair<int, string> >::iterator wlIt;
+			bool found = false;
+			for (wlIt = wl->begin(); wlIt != wl->end(); wlIt++) {
+				if (wlIt->first == *it && wlIt->second.compare(newContext) == 0) {
+					found = true;
+					break;
+				}
+			}
+			//printf("call found is %i\n", found);
+			if (!found){
+				printf("recursive call call.\n");
+				addToWorkList(wl, *it, newContext, mf);
+			}
+		}
+		break;
+	}
+	default: {
+		set<int> next = mf->getNext(label);
+		set<int>::iterator it;
+		for (it = next.begin(); it != next.end(); it++) {
+			pair<int, string> pNew(*it, context);
+
+			set<pair<int, string> >::iterator wlIt;
+			bool found = false;
+			for (wlIt = wl->begin(); wlIt != wl->end(); wlIt++) {
+				if (wlIt->first == *it && wlIt->second.compare(context) == 0) {
+					found = true;
+					break;
+				}
+			}
+			//printf("default found is %i\n", found);
+
+			if (!found){
+				printf("recursive call.\n");
+				addToWorkList(wl, *it, context, mf);
+			}
+		}
+		break;
+	}
+	}
+
 }
 

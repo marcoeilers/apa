@@ -29,6 +29,8 @@ protected:
 	int k;
 	std::string prepend(int, std::string);
 	T getResult(std::map<std::string, T>*, int, std::string, EMFramework<T>*);
+	void addToWorkList(std::set<std::pair<int, std::string> >*, int, std::string,
+			EMFramework<T>*);
 };
 
 #include "MVP.hpp"
