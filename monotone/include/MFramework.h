@@ -36,6 +36,8 @@ public:
 	virtual std::vector<CPPParser::Statement*> getLabels() {
 		return cflow->getLabels();
 	}
+
+	virtual std::string toString(T& t) {return ""; }
 protected:
 	ControlFlow* cflow;
 private:

@@ -207,6 +207,9 @@ map<string, set<string> > PointerAnalysis::fcall(map<string, set<string> >& old,
 	map<string, set<string> > result;
 	CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
 
+	if (fc->variables.size() != fd->arguments.size())
+		throw EMFError("Wrong number of arguments in function call.");
+
 	for (int i = 0; i < fc->variables.size(); i++) {
 		set<string> lhs = evaluateLhs(0, fd->arguments.at(i).first->value, old);
 		set<string> rhs = evaluateRhs(fc->variables.at(i), old);
@@ -297,8 +300,7 @@ string PointerAnalysis::toString(map<string, set<string> >& m) {
 	ss << "\n";
 
 	map<string, set<string> >::iterator map2It;
-	for (map2It = m.begin(); map2It != m.end();
-			map2It++) {
+	for (map2It = m.begin(); map2It != m.end(); map2It++) {
 		ss << "For variable ";
 		ss << map2It->first;
 		ss << ":\n";

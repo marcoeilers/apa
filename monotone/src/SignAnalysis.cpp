@@ -248,6 +248,9 @@ map<string, set<Sign> > SignAnalysis::fcall(map<string, set<Sign> >& old,
 
 	// add parameters
 	CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
+
+	if (fc->variables.size() != fd->arguments.size())
+		throw EMFError("Wrong number of arguments in function call.");
 	// for each of them, get the signs of the param from
 	// the old environment
 	for (int i = 0; i < fc->variables.size(); i++) {

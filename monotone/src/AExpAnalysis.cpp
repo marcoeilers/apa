@@ -277,3 +277,14 @@ set<int> AExpAnalysis::getNext(int l) {
 	return cflow->getNext(l);
 }
 
+string AExpAnalysis::toString(set<CPPParser::VariableValue*>& s){
+	stringstream ss;
+	set<CPPParser::VariableValue*>::iterator it;
+	for (it = s.begin(); it != s.end(); it++){
+		if (it != s.begin())
+			ss << ", ";
+		ss << (*it)->toString();
+	}
+	ss << "\n";
+}
+

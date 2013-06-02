@@ -69,5 +69,14 @@ pair<T, T> * MFP<T>::solve(MFramework<T>* mf) {
 		final[i] = p;
 	}
 
+	// print results
+	for (int i = 0; i < mf->getLabels().size(); i++){
+		printf("For label %i:\n", i);
+
+		printf("Context value:\n%s\n", mf->toString(final[i].first).c_str());
+
+		printf("Effect value:\n%s\n", mf->toString(final[i].second).c_str());
+	}
+
 	return final;
 }

@@ -49,7 +49,7 @@ int InterControlFlow::addFunction(string name, int label, set<int>* rets) {
 		}
 	}
 	if (!found)
-		printf("No function with name %s declared.", name.c_str());
+		throw ControlFlowError("Undeclared function called.");
 	return -1;
 }
 

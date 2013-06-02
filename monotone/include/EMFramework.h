@@ -11,6 +11,15 @@
 #include "InterControlFlow.h"
 
 
+class EMFError {
+private:
+	std::string message;
+public:
+	EMFError() {message = "Unknown error!";}
+	EMFError(std::string m) : message(m) {}
+	std::string getMessage() { return message;}
+};
+
 /*
  * Abstract superclass for all embellished monotone frameworks.
  *

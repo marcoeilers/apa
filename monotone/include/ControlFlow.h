@@ -7,6 +7,15 @@
 #include <set>
 #include "ParserSemantics.h"
 
+class ControlFlowError {
+private:
+	std::string message;
+public:
+	ControlFlowError() {message = "Unknown error!";}
+	ControlFlowError(std::string m) : message(m) {}
+	std::string getMessage() { return message;}
+};
+
 // This class stores all the information about a single function
 // that is relevant for an intraprocedural analysis, i.e. the instruction that
 // can be found at a given label and the set of labels that can follow a given label,

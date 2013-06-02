@@ -39,24 +39,6 @@ int main() {
 
 	pair<map<string, map<string, set<string> > >, map<string, map<string, set<string> > > >* result = mvp->solve(p);
 
-	for (int i = 0; i < icf->getLabels().size(); i++) {
-			printf("For label %i:\n", i);
-			map<string, map<string, set<string> > >::iterator mapIt;
-			for (mapIt = result[i].second.begin(); mapIt != result[i].second.end(); mapIt++) {
-				printf("For context %s:\n", mapIt->first.c_str());
-
-				map<string, set<string> >::iterator map2It;
-				for (map2It = mapIt->second.begin(); map2It != mapIt->second.end();
-						map2It++) {
-					printf("For variable %s:\n", map2It->first.c_str());
-
-					set<string>::iterator setIt;
-					for (setIt = map2It->second.begin(); setIt != map2It->second.end(); setIt++){
-						printf("Points to %s.\n", setIt->c_str());
-					}
-				}
-			}
-	}
 	*/
 
 
@@ -66,37 +48,7 @@ int main() {
 	
 	pair<map<string, map<string, set<Sign> > >, map<string, map<string, set<Sign> > > >* result = mvp->solve(s);
 
-	/*
-	for (int i = 0; i < icf->getLabels().size(); i++) {
-		printf("For label %i:\n", i);
-		map<string, map<string, set<Sign> > >::iterator mapIt;
-		for (mapIt = result[i].second.begin(); mapIt != result[i].second.end(); mapIt++) {
-			printf("For context %s:\n", mapIt->first.c_str());
 
-			map<string, set<Sign> >::iterator map2It;
-			for (map2It = mapIt->second.begin(); map2It != mapIt->second.end();
-					map2It++) {
-				printf("For variable %s:\n", map2It->first.c_str());
-
-				set<Sign>::iterator setIt;
-				for (setIt = map2It->second.begin();
-						setIt != map2It->second.end(); setIt++) {
-					switch (*setIt) {
-					case SIGN_PLUS:
-						printf("plus\n");
-						break;
-					case SIGN_MINUS:
-						printf("minus\n");
-						break;
-					case SIGN_ZERO:
-						printf("zero\n");
-						break;
-					}
-				}
-			}
-		}
-	}
-	*/
 
 	/*
 	 CPPParser::FunctionDeclaration fd = *(program.functionDeclarations.begin());

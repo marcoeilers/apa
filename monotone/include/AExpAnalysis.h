@@ -2,9 +2,11 @@
 #define AEXPANALYSIS_H
 
 #include <stdio.h>
-#include "MFramework.h"
 #include <set>
 #include <string>
+#include <sstream>
+
+#include "MFramework.h"
 #include "ControlFlow.h"
 #include "ParserSemantics.h"
 
@@ -25,6 +27,7 @@ class AExpAnalysis : public MFramework<std::set<CPPParser::VariableValue*> >
         std::set<CPPParser::VariableValue*> getExtremalValue();
         std::set<int> getExtremalLabels();
         std::set<int> getNext(int);
+        std::string toString(std::set<CPPParser::VariableValue*>&);
     protected:
     private:
         std::set<CPPParser::VariableValue*> gen(CPPParser::Statement*);
