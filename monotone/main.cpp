@@ -14,7 +14,7 @@ int main() {
 
 	CPPParser::Parser parser;
 
-	parser.parseFile("PointerTest.txt");
+	parser.parseFile("RecursionTest.txt");
 
 	CPPParser::TokenList tokens = parser.getTokens();
 
@@ -32,6 +32,7 @@ int main() {
 
 	InterControlFlow* icf = new InterControlFlow(program);
 	
+	/*
 	PointerAnalysis* p = new PointerAnalysis(icf);
 
 	MVP<map<string, set<string> > >* mvp = new MVP<map<string, set<string> > >(2);
@@ -56,8 +57,9 @@ int main() {
 				}
 			}
 	}
+	*/
 
-	/*
+
 	SignAnalysis* s = new SignAnalysis(icf);
 	
 	MVP<map<string, set<Sign> > >* mvp = new MVP<map<string, set<Sign> > >(2);
@@ -94,7 +96,7 @@ int main() {
 			}
 		}
 	}
-	*/
+
 	/*
 	 CPPParser::FunctionDeclaration fd = *(program.functionDeclarations.begin());
 

@@ -64,6 +64,8 @@ private:
 	std::set<InterFlow*> inter;
 	std::set<int> returnLabels;
 	std::map<std::string, std::pair<int, int> > functions;
+	std::map<std::string, int> incompleteFuncs;
+	std::map<std::string, std::pair<int, int> > toComplete;
 };
 
 #endif /* INTERCONTROLFLOW_H_ */

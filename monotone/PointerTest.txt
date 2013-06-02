@@ -1,6 +1,9 @@
 int main() {
 	int i = 5;
+	int j = 6;
 	int* p = &i;
-	int* q = &i;
+	int* q = &j;
+	if (true)
+		p = q;
 	int** ptr = &q;
 }

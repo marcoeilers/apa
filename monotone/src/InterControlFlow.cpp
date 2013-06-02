@@ -16,6 +16,21 @@ InterControlFlow::InterControlFlow(CPPParser::Program* p) {
 	addFunction("main", 0, rets);
 	last.insert(rets->begin(), rets->end());
 	first.insert(0);
+
+	// complete interflow information for recursive calls
+	map<string, pair<int, int> >::iterator it;
+	for (it = toComplete.begin(); it != toComplete.end(); toComplete.erase(it++)){
+		pair<int, int> complete = it->second;
+
+		pair<int, int> funcInfo = functions[it->first];
+
+		set<InterFlow*>::iterator iIt;
+		for (iIt = inter.begin(); iIt != inter.end(); iIt++){
+			if ((*iIt)->call == complete.first){
+				(*iIt)->exit = funcInfo.second;
+			}
+		}
+	}
 }
 
 InterControlFlow::~InterControlFlow() {
@@ -98,45 +113,97 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 
 		label++;
 
-		// add empty entry label (symbolizing a skip at the start of
-		// a function)
-		labels.insert(labels.begin() + label, NULL);
-
-		// create InterFlow object to store control flow data
-		InterFlow* i = new InterFlow();
-		i->call = startLabel; // the call label
-		i->enter = label;     // the skip (NULL) at the start of the function
-
-		// the last label (i.e. the one from which all next transitions come)
-		// is the skip
-		last.insert(label);
-		label++;
-
-		// TODO add only once!!!!
-		// add called Function
-		set<int>* rets = new set<int>();
 		CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
-		label = addFunction(fc->name, label, rets);
 
-		// add empty exit label /skip)
-		labels.insert(labels.begin() + label, NULL);
-		i->exit = label;
+		// if function was already added
+		if (functions.count(fc->name)) {
 
-		//  add transitions from return statements to exit
-		set<int>::iterator retIt;
-		for (retIt = rets->begin(); retIt != rets->end(); retIt++) {
-			addTransition(*retIt, label);
+			// get information about the function
+			pair<int, int> funcInfo = functions[fc->name];
+
+			// add call again (l_r)
+			labels.insert(labels.begin() + label, s);
+
+			InterFlow* i = new InterFlow();
+			i->call = startLabel;
+			i->enter = funcInfo.first;
+			i->exit = funcInfo.second;
+			i->ret = label;
+
+			// add to interflow
+			inter.insert(i);
+
+			last.insert(label);
+
+			// else if function has been incompletely added yet
+		} else if (incompleteFuncs.count(fc->name)) {
+			InterFlow* i = new InterFlow();
+
+			// add call again (l_r)
+			labels.insert(labels.begin() + label, s);
+
+			int enter = incompleteFuncs[fc->name];
+
+			i->call = startLabel;
+			i->enter = enter;
+			i->ret = label;
+
+			inter.insert(i);
+
+			last.insert(label);
+
+			pair<int, int> complete (startLabel, label);
+			toComplete[fc->name] = complete;
+
+		} else {
+
+			// add empty entry label (symbolizing a skip at the start of
+			// a function)
+			labels.insert(labels.begin() + label, NULL);
+
+			// create InterFlow object to store control flow data
+			InterFlow* i = new InterFlow();
+			i->call = startLabel; // the call label
+			i->enter = label;    // the skip (NULL) at the start of the function
+
+			incompleteFuncs[fc->name] = label;
+
+			// the last label (i.e. the one from which all next transitions come)
+			// is the skip
+			last.insert(label);
+			label++;
+
+			// TODO add only once!!!!
+			// add called Function
+			set<int>* rets = new set<int>();
+			CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
+			label = addFunction(fc->name, label, rets);
+
+			// add empty exit label /skip)
+			labels.insert(labels.begin() + label, NULL);
+			i->exit = label;
+
+			pair<int, int> thisFunction (i->enter, label);
+			functions[fc->name] = thisFunction;
+
+			incompleteFuncs.erase(fc->name);
+
+			//  add transitions from return statements to exit
+			set<int>::iterator retIt;
+			for (retIt = rets->begin(); retIt != rets->end(); retIt++) {
+				addTransition(*retIt, label);
+			}
+
+			label++;
+			labels.insert(labels.begin() + label, s);
+			i->ret = label;
+
+			// store interflow
+			inter.insert(i);
+
+			last.clear();
+			last.insert(label);
 		}
-
-		label++;
-		labels.insert(labels.begin() + label, s);
-		i->ret = label;
-
-		// store interflow
-		inter.insert(i);
-
-		last.clear();
-		last.insert(label);
 		return ++label;
 
 	}

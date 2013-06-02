@@ -1,0 +1,15 @@
+int main() {
+	int start = 1;
+	int j = 4;
+	j = recFunc(start);
+	j = j + 1;
+	j = recFunc(j);
+	start = j;
+}
+
+int recFunc(int whatever) {
+	int result = 5;
+	if (whatever < 3)
+		result = recFunc(whatever - 1);
+	return result;
+}
