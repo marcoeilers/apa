@@ -66,7 +66,7 @@ int main() {
 	
 	pair<map<string, map<string, set<Sign> > >, map<string, map<string, set<Sign> > > >* result = mvp->solve(s);
 
-
+	/*
 	for (int i = 0; i < icf->getLabels().size(); i++) {
 		printf("For label %i:\n", i);
 		map<string, map<string, set<Sign> > >::iterator mapIt;
@@ -96,6 +96,7 @@ int main() {
 			}
 		}
 	}
+	*/
 
 	/*
 	 CPPParser::FunctionDeclaration fd = *(program.functionDeclarations.begin());

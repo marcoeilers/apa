@@ -8,6 +8,8 @@
 #ifndef POINTERANALYSIS_H_
 #define POINTERANALYSIS_H_
 
+#include <sstream>
+
 #include "EMFramework.h"
 #include "InterControlFlow.h"
 
@@ -35,6 +37,8 @@ public:
 
 	// set of extremal (i.e. first) labels, usually a singleton set
 	virtual std::set<int> getExtremalLabels();
+
+	virtual std::string toString(std::map<std::string, std::set<std::string> >&);
 
 protected:
 	virtual std::set<std::string> evaluateLhs(int, std::string, std::map<std::string, std::set<std::string> >&);

@@ -56,6 +56,8 @@ public:
 
 	virtual std::set<int> getExtremalLabels();
 	virtual std::set<int> getNext(int);
+
+	virtual std::string toString(std::map<std::string, std::set<Sign> >&);
 protected:
 	virtual std::set<Sign> getSigns(CPPParser::VariableValue*,
 			std::map<std::string, std::set<Sign> >&);

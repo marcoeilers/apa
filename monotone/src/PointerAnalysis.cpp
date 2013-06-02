@@ -291,3 +291,25 @@ map<string, set<string> > PointerAnalysis::getExtremalValue() {
 set<int> PointerAnalysis::getExtremalLabels() {
 	return cflow->getFirstLabels();
 }
+
+string PointerAnalysis::toString(map<string, set<string> >& m) {
+	stringstream ss;
+	ss << "\n";
+
+	map<string, set<string> >::iterator map2It;
+	for (map2It = m.begin(); map2It != m.end();
+			map2It++) {
+		ss << "For variable ";
+		ss << map2It->first;
+		ss << ":\n";
+
+		set<string>::iterator setIt;
+		for (setIt = map2It->second.begin(); setIt != map2It->second.end();
+				setIt++) {
+			ss << "Points to ";
+			ss << *setIt;
+			ss << ".\n";
+		}
+	}
+	return ss.str();
+}

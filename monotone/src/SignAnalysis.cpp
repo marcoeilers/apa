@@ -11,26 +11,32 @@ using namespace std;
 
 std::set<Sign>* SignAnalysis::getSign(char c) {
 	switch (c) {
-	case 'p': return &plusSet;
-	case 'm': return &minusSet;
-	case 'e': return &emptySet;
-	case 'z': return &zeroSet;
+	case 'p':
+		return &plusSet;
+	case 'm':
+		return &minusSet;
+	case 'e':
+		return &emptySet;
+	case 'z':
+		return &zeroSet;
+	case 'a':
+		return &allSet;
 	}
 	throw "This should never happen";
 }
 
 SignAnalysis::SignAnalysis(InterControlFlow* cf)/* :
-		op_plus( { { &plusSet, &allSet, &plusSet }, { &allSet, &minusSet,
-				&minusSet }, { &plusSet, &minusSet, &zeroSet } }),
-		op_minus( { { &allSet, &plusSet, &plusSet },
-				{ &minusSet, &allSet, &minusSet }, { &minusSet, &plusSet,
-						&zeroSet } }),
-		op_mult( { { &plusSet, &minusSet,
-				&zeroSet }, { &minusSet, &plusSet, &zeroSet }, { &zeroSet,
-				&zeroSet, &zeroSet } }), 
-		op_div( { { &plusSet, &minusSet,
-				&emptySet }, { &minusSet, &plusSet, &emptySet }, { &zeroSet,
-				&zeroSet, &emptySet } })*/ {
+ op_plus( { { &plusSet, &allSet, &plusSet }, { &allSet, &minusSet,
+ &minusSet }, { &plusSet, &minusSet, &zeroSet } }),
+ op_minus( { { &allSet, &plusSet, &plusSet },
+ { &minusSet, &allSet, &minusSet }, { &minusSet, &plusSet,
+ &zeroSet } }),
+ op_mult( { { &plusSet, &minusSet,
+ &zeroSet }, { &minusSet, &plusSet, &zeroSet }, { &zeroSet,
+ &zeroSet, &zeroSet } }),
+ op_div( { { &plusSet, &minusSet,
+ &emptySet }, { &minusSet, &plusSet, &emptySet }, { &zeroSet,
+ &zeroSet, &emptySet } })*/{
 	std::string op_plus_s = "papammpmz";
 	std::string op_minus_s = "appmammpz";
 	std::string op_mult_s = "pmzmpzzzz";
@@ -123,7 +129,7 @@ map<string, set<Sign> > SignAnalysis::f(map<string, set<Sign> >& old,
 			// since it could point anywhere, we must add the new signs
 			// to ALL vars
 			map<string, set<Sign> >::iterator it;
-			for (it = old.begin(); it != old.end(); it++){
+			for (it = old.begin(); it != old.end(); it++) {
 				result[it->first].insert(newOnes.begin(), newOnes.end());
 			}
 		} else {
@@ -223,8 +229,8 @@ set<Sign> SignAnalysis::getSigns(CPPParser::VariableValue* v,
 // for two given sets of signs and a combinator,
 // returns a set of all combinations which can arise from an arithmetic
 // operation
-void SignAnalysis::addAllCombinations(SignArray op,
-		set<Sign>& first, set<Sign>& second, set<Sign>* result) {
+void SignAnalysis::addAllCombinations(SignArray op, set<Sign>& first,
+		set<Sign>& second, set<Sign>* result) {
 	set<Sign>::iterator fIt;
 	for (fIt = first.begin(); fIt != first.end(); fIt++) {
 		set<Sign>::iterator sIt;
@@ -298,3 +304,35 @@ set<int> SignAnalysis::getNext(int label) {
 	return cflow->getNext(label);
 }
 
+string SignAnalysis::toString(map<string, set<Sign> >& m) {
+	stringstream ss;
+	ss << "\n";
+
+	map<string, set<Sign> >::iterator map2It;
+	for (map2It = m.begin(); map2It != m.end();
+			map2It++) {
+		ss << "For variable ";
+		ss << map2It->first;
+		ss << ":\n";
+
+		set<Sign>::iterator setIt;
+		for (setIt = map2It->second.begin(); setIt != map2It->second.end();
+				setIt++) {
+			if (setIt != map2It->second.begin())
+				ss << ", ";
+			switch (*setIt) {
+			case SIGN_PLUS:
+				ss << "PLUS";
+				break;
+			case SIGN_MINUS:
+				ss << "MINUS";
+				break;
+			case SIGN_ZERO:
+				ss << "ZERO";
+				break;
+			}
+		}
+		ss << "\n";
+	}
+	return ss.str();
+}

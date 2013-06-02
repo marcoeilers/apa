@@ -51,6 +51,8 @@ public:
        virtual std::vector<CPPParser::Statement*> getLabels() {return cflow->getLabels();}
 
        virtual CPPParser::Program* getProg() { return cflow->getProg(); }
+
+       virtual std::string toString(T& t) { return ""; }
 protected:
        InterControlFlow* cflow;
    private:

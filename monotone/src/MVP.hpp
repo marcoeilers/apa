@@ -192,8 +192,7 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 						T iterated = mf->freturn(beforeCall, afterFunc, s);
 
 						// if changed
-						if (!mf->lessThan(iterated,
-								result[*it][oldContext])) {
+						if (!mf->lessThan(iterated, result[*it][oldContext])) {
 							// add to the result with the context from before the call
 							result[*it][oldContext] = mf->join(
 									result[*it][oldContext], iterated);
@@ -315,6 +314,27 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 		// add to result
 		pair<map<string, T>, map<string, T> > p(context, effect);
 		final[i] = p;
+	}
+
+	// print results
+	for (int i = 0; i < mf->getLabels().size(); i++) {
+		pair<map<string, T>, map<string, T> > current = final[i];
+
+		printf("For label %i:\n", i);
+		printf("Context value:\n");
+
+		typename map<string, T>::iterator it;
+		for (it = current.first.begin(); it != current.first.end(); it++) {
+			printf("For call string '%s', value is:\n%s\n", it->first.c_str(),
+					mf->toString(it->second).c_str());
+		}
+		printf("Effect value:\n");
+
+		for (it = current.second.begin(); it != current.second.end(); it++) {
+			printf("For call string '%s', value is:\n%s\n", it->first.c_str(),
+					mf->toString(it->second).c_str());
+		}
+		printf("\n");
 	}
 
 	return final;
