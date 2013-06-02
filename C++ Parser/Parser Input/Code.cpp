@@ -8,7 +8,7 @@ int hi(int arg1, float arg2) {
 	int* p = &i;
 	int* q = &i;
 	int** ptr = &q;
-	return a;
+	return;
 }
 
 int main() {
@@ -28,4 +28,5 @@ int main() {
 	while (!myBool) {
 		printf(15);
 	}
+	return 0;
 }

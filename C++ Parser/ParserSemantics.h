@@ -95,10 +95,15 @@ enum ConditionType {
 // [relational] = < | > | <= | >= | == | != | && | ||
 // [condition] = [variableValue] [relational] [variableValue] | [variableValue] // EG i+1 > 15-j
 
-struct Program {
+struct Printable {
+	virtual String toString() = 0;
+};
+
+struct Program : Printable {
 	std::vector<Include> includes;
 	std::vector<FunctionDeclaration> functionDeclarations;
 	bool tryBuild(TokenList& tokens);
+	virtual String toString();
 };
 const int nAllowedTypes = 6;
 const std::string allowedTypes[] = {"int", "long", "char", "float", "double", "bool"};
@@ -106,16 +111,18 @@ const int nRelationals = 8;
 const std::string relationals[] = {">", "<", ">=", "<=", "==", "!=", "&&", "||"};
 const int nCombinators = 4;
 const std::string combinators[] = {"+", "-", "*", "/"};
-struct DataType {
+struct DataType : Printable {
 	std::string name;
 	int pointerDepth; // 0: 'no' pointer, 1: pointer, 2: pointer to pointer, etc
 	bool tryBuild(TokenList& tokens);
+	virtual String toString();
 };
 
 // Abstract
-struct Statement {
-virtual bool tryBuild(TokenList& tokens) = 0;
-virtual StatementType getType() = 0;
+struct Statement : Printable {
+	virtual bool tryBuild(TokenList& tokens) = 0;
+	virtual StatementType getType() = 0;
+	virtual String toString() = 0;
 };
 
 struct While : Statement {
@@ -123,12 +130,14 @@ struct While : Statement {
 	Statement* statement;
 	virtual bool tryBuild(TokenList& tokens);
 	virtual StatementType getType() { return TYPE_WHILE; }
+	virtual String toString();
 };
 struct If : Statement {
 	Condition* condition;
 	Statement* statement;
 	virtual bool tryBuild(TokenList& tokens);
 	virtual StatementType getType() { return TYPE_IF; }
+	virtual String toString();
 };
 struct VariableDeclaration : Statement {
 	DataType* dataType;
@@ -136,6 +145,7 @@ struct VariableDeclaration : Statement {
 	VariableValue* value;
 	virtual bool tryBuild(TokenList& tokens);
 	virtual StatementType getType() { return TYPE_VAR_DECLARATION; }
+	virtual String toString();
 };
 struct VariableAssignment : Statement {
 	String name;
@@ -143,6 +153,7 @@ struct VariableAssignment : Statement {
 	int derefDepth;
 	virtual bool tryBuild(TokenList& tokens);
 	virtual StatementType getType() { return TYPE_VAR_ASSIGNMENT; }
+	virtual String toString();
 };
 struct FunctionCall : Statement {
 	String name;
@@ -150,21 +161,24 @@ struct FunctionCall : Statement {
 	Variable* returnVariable; // NULL if no return variable. [returnVariable] = fName();
 	virtual bool tryBuild(TokenList& tokens);
 	virtual StatementType getType() { return TYPE_FUNCTIONCALL; }
+	virtual String toString();
 };
 
 struct Return : Statement {
 	VariableValue* variable; // NULL if the return does not return anything.
 	virtual StatementType getType() { return TYPE_RETURN; }
 	virtual bool tryBuild(TokenList& tokens);
+	virtual String toString();
 };
 
 struct CodeBlock : Statement {
 	std::vector<Statement*> statements;
 	virtual bool tryBuild(TokenList& tokens);
 	virtual StatementType getType() { return TYPE_CODEBLOCK; }
+	virtual String toString();
 };
 
-struct VariableValue {
+struct VariableValue : Printable {
 	virtual bool tryBuild(TokenList& tokens) = 0;
 	virtual ValueType getType() = 0;
 	virtual std::string toString() = 0;
@@ -176,7 +190,7 @@ struct Variable : VariableValue {
 	int derefDepth;
 	virtual bool tryBuild(TokenList& tokens);
 	virtual ValueType getType() { return VALUE_VARIABLE; }
-	virtual std::string toString() { return value; }
+	virtual std::string toString();
 	virtual bool equals (VariableValue* other)
 	{
 	    if (other->getType() == VALUE_VARIABLE)
@@ -194,7 +208,7 @@ struct Combination : VariableValue {
 	String combinator;
 	virtual bool tryBuild(TokenList& tokens);
 	virtual ValueType getType() { return VALUE_COMBINATION; }
-	virtual std::string toString() { return (value1->toString() + combinator.c_str()+value2->toString());}
+	virtual std::string toString();
 	virtual bool equals (VariableValue* other)
 	{
 	    if (other->getType() == VALUE_COMBINATION)
@@ -212,7 +226,7 @@ struct Allocation : VariableValue {
 	VariableValue* value; // That is, value of the object, not the pointer.
 	virtual bool tryBuild(TokenList& tokens);
     virtual ValueType getType() { return VALUE_ALLOCATION; }
-    virtual std::string toString() { return "alloc";}
+    virtual std::string toString();
     virtual bool equals (VariableValue* other)
     {
         return (other->getType() == VALUE_ALLOCATION);
@@ -221,29 +235,32 @@ struct Allocation : VariableValue {
 struct Unknown : VariableValue { // Uninitialized variables get this value.
 	virtual bool tryBuild(TokenList& tokens);
 	virtual ValueType getType() { return VALUE_UNKNOWN; }
-	virtual std::string toString() { return "unknown"; }
+	virtual std::string toString();
 	virtual bool equals (VariableValue* other)
 	{
 	    return (other->getType() == VALUE_UNKNOWN);
 	}
 };
 
-struct FunctionDeclaration {
+struct FunctionDeclaration : Printable {
 	DataType* dataType;
 	String name;
 	std::vector<std::pair<Variable*, DataType*>> arguments;
 	CodeBlock* codeBlock;
 	bool tryBuild(TokenList& tokens);
+	virtual String toString();
 };
 
-struct Include {
+struct Include : Printable {
 	String filename;
 	bool tryBuild(TokenList& tokens);
+	virtual String toString();
 };
 
-struct Condition {
+struct Condition : Printable {
 	virtual bool tryBuild(TokenList& tokens) = 0;
 	virtual ConditionType getType() = 0;
+	virtual String toString() = 0;
 };
 
 struct RelationalCondition : Condition {
@@ -252,6 +269,7 @@ struct RelationalCondition : Condition {
 	String conditional;
 	virtual bool tryBuild(TokenList& tokens);
 	virtual ConditionType getType() { return CONDITION_RELATIONAL; }
+	virtual String toString();
 };
 
 struct ConstantCondition : Condition {
@@ -259,6 +277,7 @@ struct ConstantCondition : Condition {
 	String variable;
 	virtual bool tryBuild(TokenList& tokens);
 	virtual ConditionType getType() { return CONDITION_CONSTANT; }
+	virtual String toString();
 };
 
 }

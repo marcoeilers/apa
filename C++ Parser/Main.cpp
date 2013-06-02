@@ -14,9 +14,9 @@ int main() {
 
 	CPPParser::TokenList tokens = parser.getTokens();
 
-	CPPParser::TokenList::iterator it;
+	/*CPPParser::TokenList::iterator it;
 	for (it = tokens.begin(); it < tokens.end(); it++)
-		printf("Token #%lu: '%s'\n", it->id, it->name.c_str());
+		printf("Token #%lu: '%s'\n", it->id, it->name.c_str());*/
 
 	CPPParser::Program program;
 	try {

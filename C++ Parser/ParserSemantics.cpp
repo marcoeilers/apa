@@ -36,7 +36,6 @@ bool Program::tryBuild(TokenList& tokens) {
 		throw ParseError("Expected FunctionDeclaration in Program");
 		return false;
 	}
-
 	return true;
 }
 bool DataType::tryBuild(TokenList& tokens) {
@@ -114,7 +113,6 @@ bool While::tryBuild(TokenList& tokens) {
 
 	statement = tryStatement(tokens);
 	if (statement == NULL) throw ParseError("Expected Statement in While");
-
 	return true;
 }
 /** Note: If this function returns false, it must not have modified the token list.
@@ -178,7 +176,7 @@ bool VariableDeclaration::tryBuild(TokenList& tokens) {
 		throw ParseError("Expected \';\' in VariableDeclaration");
 		return false;
 	}
-
+	
 	return true;
 }
 /** Note: If this function returns false, it must not have modified the token list.
@@ -219,6 +217,7 @@ bool VariableAssignment::tryBuild(TokenList& tokens) {
 		throw ParseError("Expected \';\' in VariableAssignment");
 		return false;
 	}
+	
 	return true;
 }
 /** Note: If this function returns false, it must not have modified the token list.
@@ -269,6 +268,7 @@ bool FunctionCall::tryBuild(TokenList& tokens) {
 	pop(tokens); // )
 
 	pop(tokens); // ';'
+	
 	return true;
 }
 bool Return::tryBuild(TokenList& tokens) {
@@ -290,6 +290,7 @@ bool Return::tryBuild(TokenList& tokens) {
 		return false;
 	}
 	pop(tokens); // ;
+	
 	return true;
 }
 bool CodeBlock::tryBuild(TokenList& tokens) {
@@ -308,7 +309,7 @@ bool CodeBlock::tryBuild(TokenList& tokens) {
 	}
 
 	pop(tokens); // Remove the last '}'
-
+	
 	return true;
 }
 
@@ -321,6 +322,7 @@ bool Variable::tryBuild(TokenList& tokens) {
 	}
 
 	value = pop(tokens).name;
+	
 	return true;
 }
 bool Combination::tryBuild(TokenList& tokens) {
@@ -361,7 +363,7 @@ bool Combination::tryBuild(TokenList& tokens) {
         if (!value2->tryBuild(tokens))
             throw ParseError("Something entirely different went wrong");
     }
-
+	
 	return true;
 }
 bool Allocation::tryBuild(TokenList& tokens) {
@@ -382,7 +384,7 @@ bool Allocation::tryBuild(TokenList& tokens) {
 	}
 	if (tokens[0].name.compare(")") != 0) throw ParseError("Expected ) in Allocation");
 	pop(tokens); // )
-
+	
 	return true;
 }
 bool Unknown::tryBuild(TokenList& tokens) {
@@ -435,6 +437,7 @@ bool FunctionDeclaration::tryBuild(TokenList& tokens) {
 		throw ParseError("Expected CodeBlock in FunctionDeclaration");
 		return false;
 	}
+	
 	return true;
 }
 bool Include::tryBuild(TokenList& tokens) {
@@ -506,6 +509,7 @@ bool RelationalCondition::tryBuild(TokenList& tokens) {
 	}
 
 	pop(tokens); // )
+
 	return true;
 }
 
@@ -522,8 +526,130 @@ bool ConstantCondition::tryBuild(TokenList& tokens) {
 	} else negative = false;
 
 	pop(tokens); // )
-
+	
 	return true;
+}
+
+String Program::toString() {
+	char c[201];
+	sprintf(c, "Program|%i includes|%i functionDeclarations", this->includes.size(), this->functionDeclarations.size());
+	c[200] = 0;
+	return String(c);
+}
+
+String DataType::toString() {
+	char c[201];
+	sprintf(c, "DataType|%s", this->name.c_str());
+	String result = String(c);
+	for (int i = 0; i < this->pointerDepth; i++) 
+		result += "*";
+	c[200] = 0;
+	return result;
+}
+
+String While::toString() {
+	char c[201];
+	sprintf(c, "While(%s)", this->condition->toString().c_str());
+	c[200] = 0;
+	return String(c);
+}
+String If::toString() {
+	char c[201];
+	sprintf(c, "If(%s)", this->condition->toString().c_str());
+	c[200] = 0;
+	return String(c);
+}
+String VariableDeclaration::toString() {
+	char c[201];
+	sprintf(c, "VariableDecl|(%s) %s = (%s)", this->dataType->toString().c_str(), this->name.c_str(), this->value->toString().c_str());
+	c[200] = 0;
+	return String(c);
+}
+String VariableAssignment::toString() {
+	char c[201];
+	String deref = "";
+	for (int i = 0; i < this->derefDepth; i++)
+		deref += "&";
+	sprintf(c, "VariableAssignment|%s%s = (%s)", deref.c_str(), this->name.c_str(), this->value->toString().c_str());
+	c[200] = 0;
+	return String(c);
+}
+String FunctionCall::toString() {
+	char c[201];
+	String ret;
+	if (this->returnVariable == NULL) ret = "";
+	else ret = "(" + returnVariable->toString() + ") = ";
+	String vars = "";
+	for (int i = 0; i < this->variables.size(); i++) {
+		if (i != 0) vars += ",";
+		vars += "(" + variables[i]->toString() + ")";
+	}
+	sprintf(c, "FunctionCall|%s%s(%s)", ret.c_str(), this->name.c_str(), vars.c_str());
+	c[200] = 0;
+	return String(c);
+}
+String Return::toString() {
+	char c[201];
+	String val;
+	if (this->variable == NULL) val = "void";
+	else val = variable->toString();
+	sprintf(c, "Return|val:(%s)", val.c_str());
+	c[200] = 0;
+	return String(c);
+}
+String CodeBlock::toString() {
+	return "CodeBlock";
+}
+String Variable::toString() {
+	char c[201];
+	String deref = "";
+	for (int i = 0; i < this->derefDepth; i++)
+		deref += "*";
+	sprintf(c, "Variable|val:%s%s", deref.c_str(), this->value.c_str());
+	c[200] = 0;
+	return String(c);
+}
+String Combination::toString() {
+	char c[201];
+	sprintf(c, "Combination|(%s) %s (%s)", this->value1->toString().c_str(), combinator.c_str(), this->value2->toString().c_str());
+	c[200] = 0;
+	return String(c);
+}
+String Allocation::toString() {
+	char c[201];
+	sprintf(c, "Allocation|(%s) (%s)", this->type->toString().c_str(),this->value->toString().c_str());
+	c[200] = 0;
+	return String(c);
+}
+String Unknown::toString() {
+	return "Unknown";
+}
+String FunctionDeclaration::toString() {
+	char c[201];
+	String args = "";
+	for (int i = 0; i < arguments.size(); i++) {
+		if (i != 0) args += ",";
+		sprintf(c, "(%s %s)", arguments[i].second->toString().c_str(), arguments[i].first->toString().c_str());
+		args += String(c);
+	}
+	sprintf(c, "FunctionDeclaration|(%s) %s(%s)", this->dataType->toString().c_str(), this->name.c_str(), args.c_str());
+	c[200] = 0;
+	return String(c);
+}
+String Include::toString() {
+	return "Include|fName:" + this->filename;
+}
+String RelationalCondition::toString() {
+	char c[201];
+	sprintf(c, "RelationalCondition|(%s) %s (%s)", this->variable1->toString().c_str(), this->conditional.c_str(), this->variable2->toString().c_str());
+	c[200] = 0;
+	return String(c);
+}
+String ConstantCondition::toString() {
+	char c[201];
+	sprintf(c, "ConstantCondition|%s%s", this->negative ? "!" : "", this->variable.c_str());
+	c[200] = 0;
+	return String(c);
 }
 
 }
