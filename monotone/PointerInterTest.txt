@@ -1,0 +1,21 @@
+int main() {
+	int i = 5;
+	int j = 6;
+	int* k = new int(2);
+	int* p = &i;
+	int* q = &j;
+	if (true)
+		p = q;
+	int** ptr = &q;
+	*ptr = &i;
+	k = func(7, k, ptr);
+	
+	
+}
+
+int* func(int i, int* a, int** w) {
+	int* inside = new int(5);
+	*w = inside;
+	int* toReturn = new int(7);
+	return toReturn;	
+}
