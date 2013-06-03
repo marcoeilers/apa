@@ -26,6 +26,7 @@ public:
 	// to the result of the analysis.
 	std::pair<std::map<std::string, T>, std::map<std::string, T> >* solve(EMFramework<T>*);
 protected:
+	std::string printContext(std::string);
 	int k;
 	std::string prepend(int, std::string);
 	T getResult(std::map<std::string, T>*, int, std::string, EMFramework<T>*);

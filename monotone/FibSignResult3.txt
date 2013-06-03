@@ -1,0 +1,726 @@
+Select the file to load:
+1.FibTest.txt
+2.PointerTest.txt
+3.RecursionTest.txt
+4.SignTest.txt
+Alternatively, type in a filename:1
+Selected FibTest.txt.
+
+Select the type of analysis:
+1.Available Expression Analysis
+2.Sign Analysis
+3.Pointer Analysis
+:2
+Chosen: 2
+
+CallString size: 3
+CallString size: 3
+Label 0 is VariableDecl|(DataType|int) y = (Variable|val:0).
+Label 1 is FunctionCall|(Variable|val:y) = fib((Variable|val:5)).
+Label 2 is SKIP (function entry or exit).
+Label 3 is If(RelationalCondition|(Variable|val:z) < (Variable|val:3)).
+Label 4 is Return|val:(Variable|val:1).
+Label 5 is VariableDecl|(DataType|int) u = (Variable|val:0).
+Label 6 is VariableDecl|(DataType|int) v = (Variable|val:0).
+Label 7 is FunctionCall|(Variable|val:u) = fib((Combination|(Variable|val:z) - (Variable|val:2))).
+Label 8 is FunctionCall|(Variable|val:u) = fib((Combination|(Variable|val:z) - (Variable|val:2))).
+Label 9 is FunctionCall|(Variable|val:v) = fib((Combination|(Variable|val:z) - (Variable|val:1))).
+Label 10 is FunctionCall|(Variable|val:v) = fib((Combination|(Variable|val:z) - (Variable|val:1))).
+Label 11 is VariableAssignment|v = (Combination|(Variable|val:u) + (Variable|val:v)).
+Label 12 is Return|val:(Variable|val:v).
+Label 13 is SKIP (function entry or exit).
+Label 14 is FunctionCall|(Variable|val:y) = fib((Variable|val:5)).
+Transitions from 0: 1
+Transitions from 2: 3
+Transitions from 3: 4, 5
+Transitions from 4: 13
+Transitions from 5: 6
+Transitions from 6: 7
+Transitions from 8: 9
+Transitions from 10: 11
+Transitions from 11: 12
+Transitions from 12: 13
+Call 1, entry 2, exit 13, return 14.
+Call 7, entry 2, exit 13, return 8.
+Call 9, entry 2, exit 13, return 10.
+For label 0:
+Context value:
+For call string '', value is:
+
+
+Effect value:
+For call string '', value is:
+
+For variable y:
+ZERO
+
+
+For label 1:
+Context value:
+For call string '', value is:
+
+For variable y:
+ZERO
+
+Effect value:
+For call string '', value is:
+
+For variable z:
+PLUS
+
+
+For label 2:
+Context value:
+For call string '1', value is:
+
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+Effect value:
+For call string '1', value is:
+
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+
+For label 3:
+Context value:
+For call string '1', value is:
+
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+Effect value:
+For call string '1', value is:
+
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+
+For label 4:
+Context value:
+For call string '1', value is:
+
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+Effect value:
+For call string '1', value is:
+
+For variable return:
+PLUS
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable return:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable return:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+
+For label 5:
+Context value:
+For call string '1', value is:
+
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+Effect value:
+For call string '1', value is:
+
+For variable u:
+ZERO
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable u:
+ZERO
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable u:
+ZERO
+For variable z:
+PLUS, MINUS, ZERO
+
+
+For label 6:
+Context value:
+For call string '1', value is:
+
+For variable u:
+ZERO
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable u:
+ZERO
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable u:
+ZERO
+For variable z:
+PLUS, MINUS, ZERO
+
+Effect value:
+For call string '1', value is:
+
+For variable u:
+ZERO
+For variable v:
+ZERO
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable u:
+ZERO
+For variable v:
+ZERO
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable u:
+ZERO
+For variable v:
+ZERO
+For variable z:
+PLUS, MINUS, ZERO
+
+
+For label 7:
+Context value:
+For call string '1', value is:
+
+For variable u:
+ZERO
+For variable v:
+ZERO
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable u:
+ZERO
+For variable v:
+ZERO
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable u:
+ZERO
+For variable v:
+ZERO
+For variable z:
+PLUS, MINUS, ZERO
+
+Effect value:
+For call string '1', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '7', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+
+For label 8:
+Context value:
+For call string '1', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+Effect value:
+For call string '1', value is:
+
+For variable u:
+PLUS
+For variable v:
+ZERO
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable u:
+PLUS
+For variable v:
+ZERO
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable u:
+PLUS
+For variable v:
+ZERO
+For variable z:
+PLUS, MINUS, ZERO
+
+
+For label 9:
+Context value:
+For call string '1', value is:
+
+For variable u:
+PLUS
+For variable v:
+ZERO
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable u:
+PLUS
+For variable v:
+ZERO
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable u:
+PLUS
+For variable v:
+ZERO
+For variable z:
+PLUS, MINUS, ZERO
+
+Effect value:
+For call string '1', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '7', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable z:
+PLUS, MINUS, ZERO
+
+
+For label 10:
+Context value:
+For call string '1', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+Effect value:
+For call string '1', value is:
+
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+
+For label 11:
+Context value:
+For call string '1', value is:
+
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+Effect value:
+For call string '1', value is:
+
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+
+For label 12:
+Context value:
+For call string '1', value is:
+
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+Effect value:
+For call string '1', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+
+For label 13:
+Context value:
+For call string '1', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+Effect value:
+For call string '1', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+
+For label 14:
+Context value:
+For call string '1', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS
+
+For call string '7', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+For call string '9', value is:
+
+For variable return:
+PLUS
+For variable u:
+PLUS
+For variable v:
+PLUS
+For variable z:
+PLUS, MINUS, ZERO
+
+Effect value:
+For call string '', value is:
+
+For variable y:
+PLUS
+
+
+Press any key to exit..

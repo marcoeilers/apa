@@ -44,7 +44,6 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 		// for each subsequent label
 		set<int>::iterator it;
 		for (it = next.begin(); it != next.end(); it++) {
-			printf("Now working on transition %i to %i.\n", current.first, *it);
 
 			// s is the current statement
 			CPPParser::Statement* s = mf->getLabels().at(current.first);
@@ -325,13 +324,13 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 
 		typename map<string, T>::iterator it;
 		for (it = current.first.begin(); it != current.first.end(); it++) {
-			printf("For call string '%s', value is:\n%s\n", it->first.c_str(),
+			printf("For call string '%s', value is:\n%s\n", printContext(it->first).c_str(),
 					mf->toString(it->second).c_str());
 		}
 		printf("Effect value:\n");
 
 		for (it = current.second.begin(); it != current.second.end(); it++) {
-			printf("For call string '%s', value is:\n%s\n", it->first.c_str(),
+			printf("For call string '%s', value is:\n%s\n", printContext(it->first).c_str(),
 					mf->toString(it->second).c_str());
 		}
 		printf("\n");
@@ -356,8 +355,9 @@ T MVP<T>::getResult(map<string, T>* result, int label, string context,
 // cuts of the end to make the result at most k chars long
 template<typename T>
 string MVP<T>::prepend(int label, string context) {
+	char c = label;
 	stringstream ss;
-	ss << label;
+	ss << c;
 	ss << context;
 	string result = ss.str();
 	result.resize(k);
@@ -365,10 +365,21 @@ string MVP<T>::prepend(int label, string context) {
 }
 
 template<typename T>
+string MVP<T>::printContext(string s){
+	stringstream ss;
+	for (int i = 0; i < s.length(); i++){
+		if (i != 0)
+			ss << ", ";
+		char c = s[i];
+		int label = c;
+		ss << label;
+	}
+	return ss.str();
+}
+
+template<typename T>
 void MVP<T>::addToWorkList(set<pair<int, string> >* wl, int label,
 		string context, EMFramework<T>* mf) {
-	//printf("adding label %i context %s.\n", label, context.c_str());
-	//printf("worklist has length %i.\n", wl->size());
 	pair<int, string> p(label, context);
 	wl->insert(p);
 

@@ -1,0 +1,205 @@
+Select the file to load:
+1.FibTest.txt
+2.PointerTest.txt
+3.RecursionTest.txt
+4.SignTest.txt
+Alternatively, type in a filename:PointerTest.txt
+Selected PointerTest.txt.
+
+Select the type of analysis:
+1.Available Expression Analysis
+2.Sign Analysis
+3.Pointer Analysis
+:3
+Chosen: 3
+
+CallString size: 1
+CallString size: 1
+Label 0 is VariableDecl|(DataType|int) i = (Variable|val:5).
+Label 1 is VariableDecl|(DataType|int) j = (Variable|val:6).
+Label 2 is VariableDecl|(DataType|int*) k = (Allocation|(DataType|int) (Variable|val:2)).
+Label 3 is VariableDecl|(DataType|int*) p = (Variable|val:&i).
+Label 4 is VariableDecl|(DataType|int*) q = (Variable|val:&j).
+Label 5 is If(ConstantCondition|true).
+Label 6 is VariableAssignment|p = (Variable|val:q).
+Label 7 is VariableDecl|(DataType|int**) ptr = (Variable|val:&q).
+Label 8 is VariableAssignment|&ptr = (Variable|val:&i).
+Transitions from 0: 1
+Transitions from 1: 2
+Transitions from 2: 3
+Transitions from 3: 4
+Transitions from 4: 5
+Transitions from 5: 6, 7
+Transitions from 6: 7
+Transitions from 7: 8
+For label 0:
+Context value:
+For call string '', value is:
+
+
+Effect value:
+For call string '', value is:
+
+
+
+For label 1:
+Context value:
+For call string '', value is:
+
+
+Effect value:
+For call string '', value is:
+
+
+
+For label 2:
+Context value:
+For call string '', value is:
+
+For variable k (label 2):
+
+Effect value:
+For call string '', value is:
+
+For variable k (label 2):
+Points to new int (label 2).
+
+
+For label 3:
+Context value:
+For call string '', value is:
+
+For variable k (label 2):
+Points to new int (label 2).
+For variable p (label 3):
+
+Effect value:
+For call string '', value is:
+
+For variable k (label 2):
+Points to new int (label 2).
+For variable p (label 3):
+Points to i (label 0).
+
+
+For label 4:
+Context value:
+For call string '', value is:
+
+For variable k (label 2):
+Points to new int (label 2).
+For variable p (label 3):
+Points to i (label 0).
+For variable q (label 4):
+
+Effect value:
+For call string '', value is:
+
+For variable k (label 2):
+Points to new int (label 2).
+For variable p (label 3):
+Points to i (label 0).
+For variable q (label 4):
+Points to j (label 1).
+
+
+For label 5:
+Context value:
+For call string '', value is:
+
+For variable k (label 2):
+Points to new int (label 2).
+For variable p (label 3):
+Points to i (label 0).
+For variable q (label 4):
+Points to j (label 1).
+
+Effect value:
+For call string '', value is:
+
+For variable k (label 2):
+Points to new int (label 2).
+For variable p (label 3):
+Points to i (label 0).
+For variable q (label 4):
+Points to j (label 1).
+
+
+For label 6:
+Context value:
+For call string '', value is:
+
+For variable k (label 2):
+Points to new int (label 2).
+For variable p (label 3):
+Points to i (label 0).
+For variable q (label 4):
+Points to j (label 1).
+
+Effect value:
+For call string '', value is:
+
+For variable k (label 2):
+Points to new int (label 2).
+For variable p (label 3):
+Points to j (label 1).
+For variable q (label 4):
+Points to j (label 1).
+
+
+For label 7:
+Context value:
+For call string '', value is:
+
+For variable k (label 2):
+Points to new int (label 2).
+For variable p (label 3):
+Points to i (label 0).
+Points to j (label 1).
+For variable ptr (label 7):
+For variable q (label 4):
+Points to j (label 1).
+
+Effect value:
+For call string '', value is:
+
+For variable k (label 2):
+Points to new int (label 2).
+For variable p (label 3):
+Points to i (label 0).
+Points to j (label 1).
+For variable ptr (label 7):
+Points to q (label 4).
+For variable q (label 4):
+Points to j (label 1).
+
+
+For label 8:
+Context value:
+For call string '', value is:
+
+For variable k (label 2):
+Points to new int (label 2).
+For variable p (label 3):
+Points to i (label 0).
+Points to j (label 1).
+For variable ptr (label 7):
+Points to q (label 4).
+For variable q (label 4):
+Points to j (label 1).
+
+Effect value:
+For call string '', value is:
+
+For variable k (label 2):
+Points to new int (label 2).
+For variable p (label 3):
+Points to i (label 0).
+Points to j (label 1).
+For variable ptr (label 7):
+Points to q (label 4).
+For variable q (label 4):
+Points to i (label 0).
+
+
+Press any key to exit..
