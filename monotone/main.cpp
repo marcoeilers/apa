@@ -158,7 +158,7 @@ int main() {
 		SignAnalysis* s = new SignAnalysis(icf);
 
 		MVP<map<string, set<Sign> > >* mvp = new MVP<map<string, set<Sign> > >(
-				1);
+				callString);
 
 		pair<map<string, map<string, set<Sign> > >,
 				map<string, map<string, set<Sign> > > >* result = mvp->solve(s);
@@ -168,7 +168,7 @@ int main() {
 		PointerAnalysis* p = new PointerAnalysis(icf);
 
 		MVP<map<string, set<string> > >* mvp =
-				new MVP<map<string, set<string> > >(2);
+				new MVP<map<string, set<string> > >(callString);
 
 		pair<map<string, map<string, set<string> > >,
 				map<string, map<string, set<string> > > >* result = mvp->solve(
