@@ -134,7 +134,9 @@ set<string> PointerAnalysis::evaluateRhs(CPPParser::VariableValue* v,
 }
 
 map<string, set<string> > PointerAnalysis::f(map<string, set<string> >& old,
-		CPPParser::Statement* s) {
+		int label) {
+	CPPParser::Statement* s = cflow->getLabels().at(label);
+
 	map<string, set<string> > result;
 	result.insert(old.begin(), old.end());
 
@@ -203,7 +205,9 @@ map<string, set<string> > PointerAnalysis::f(map<string, set<string> >& old,
 }
 
 map<string, set<string> > PointerAnalysis::fcall(map<string, set<string> >& old,
-		CPPParser::Statement* s, CPPParser::FunctionDeclaration* fd) {
+		int label, CPPParser::FunctionDeclaration* fd) {
+	CPPParser::Statement* s = cflow->getLabels().at(label);
+
 	map<string, set<string> > result;
 	CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
 
@@ -253,7 +257,9 @@ map<string, set<string> > PointerAnalysis::fexit(
 
 map<string, set<string> > PointerAnalysis::freturn(
 		map<string, set<string> >& beforeCall,
-		map<string, set<string> >& afterFunc, CPPParser::Statement* s) {
+		map<string, set<string> >& afterFunc, int label) {
+	CPPParser::Statement* s = cflow->getLabels().at(label);
+
 	map<string, set<string> > result;
 	result.insert(beforeCall.begin(), beforeCall.end());
 

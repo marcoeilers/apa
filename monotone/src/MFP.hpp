@@ -42,7 +42,7 @@ pair<T, T> * MFP<T>::solve(MFramework<T>* mf) {
 		set<int>::iterator it;
 		for (it = next.begin(); it != next.end(); it++) {
 			// apply transfer function
-			T iterated = mf->f(result[current], mf->getLabels().at(current));
+			T iterated = mf->f(result[current], current);
 
 			// if there is a change
 			if (!mf->lessThan(iterated, result[*it])) {
@@ -64,7 +64,7 @@ pair<T, T> * MFP<T>::solve(MFramework<T>* mf) {
 
 	for (int i = 0; i < mf->getLabels().size(); i++) {
 		T context = result[i];
-		T effect = mf->f(result[i], mf->getLabels().at(i));
+		T effect = mf->f(result[i], i);
 		pair<T, T> p(context, effect);
 		final[i] = p;
 	}

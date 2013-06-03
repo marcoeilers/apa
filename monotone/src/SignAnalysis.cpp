@@ -112,7 +112,8 @@ map<string, set<Sign> > SignAnalysis::join(map<string, set<Sign> >& first,
 }
 
 map<string, set<Sign> > SignAnalysis::f(map<string, set<Sign> >& old,
-		CPPParser::Statement* s) {
+		int label) {
+	CPPParser::Statement* s = cflow->getLabels().at(label);
 	map<string, set<Sign> > result;
 
 	// add all old vars and signs
@@ -242,7 +243,9 @@ void SignAnalysis::addAllCombinations(SignArray op, set<Sign>& first,
 }
 
 map<string, set<Sign> > SignAnalysis::fcall(map<string, set<Sign> >& old,
-		CPPParser::Statement* s, CPPParser::FunctionDeclaration* fd) {
+		int label, CPPParser::FunctionDeclaration* fd) {
+	CPPParser::Statement* s = cflow->getLabels().at(label);
+
 	// start out with an empty environment
 	map<string, set<Sign> > result;
 
@@ -279,7 +282,9 @@ map<string, set<Sign> > SignAnalysis::fexit(map<string, set<Sign> >& old) {
 
 map<string, set<Sign> > SignAnalysis::freturn(
 		map<string, set<Sign> >& beforeCall,
-		map<string, set<Sign> >& afterFunction, CPPParser::Statement* s) {
+		map<string, set<Sign> >& afterFunction, int label) {
+	CPPParser::Statement* s = cflow->getLabels().at(label);
+
 	// add everything from the environment before the call
 	// TODO: stuff could be changed via pointers, how to do that?
 	map<string, set<Sign> > result;

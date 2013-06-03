@@ -39,9 +39,9 @@ public:
 
 	// transfer functions
 	virtual std::map<std::string, std::set<Sign> > f(
-			std::map<std::string, std::set<Sign> >&, CPPParser::Statement*);
+			std::map<std::string, std::set<Sign> >&, int);
 	virtual std::map<std::string, std::set<Sign> > fcall(
-			std::map<std::string, std::set<Sign> >&, CPPParser::Statement*,
+			std::map<std::string, std::set<Sign> >&, int,
 			CPPParser::FunctionDeclaration*);
 	virtual std::map<std::string, std::set<Sign> > fenter(
 			std::map<std::string, std::set<Sign> >& t);
@@ -49,7 +49,7 @@ public:
 			std::map<std::string, std::set<Sign> >& t);
 	virtual std::map<std::string, std::set<Sign> > freturn(
 			std::map<std::string, std::set<Sign> >&,
-			std::map<std::string, std::set<Sign> >&, CPPParser::Statement*);
+			std::map<std::string, std::set<Sign> >&, int);
 
 	// initial value for extremal labels
 	virtual std::map<std::string, std::set<Sign> > getExtremalValue();

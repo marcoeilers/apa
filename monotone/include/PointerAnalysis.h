@@ -25,12 +25,12 @@ public:
 	virtual bool lessThan(std::map<std::string, std::set<std::string> >&, std::map<std::string, std::set<std::string> >&);
 
 	// transfer functions
-	virtual std::map<std::string, std::set<std::string> > f(std::map<std::string, std::set<std::string> >&, CPPParser::Statement*);
-	virtual std::map<std::string, std::set<std::string> > fcall(std::map<std::string, std::set<std::string> >&, CPPParser::Statement*,
+	virtual std::map<std::string, std::set<std::string> > f(std::map<std::string, std::set<std::string> >&, int);
+	virtual std::map<std::string, std::set<std::string> > fcall(std::map<std::string, std::set<std::string> >&, int,
 			CPPParser::FunctionDeclaration*);
 	virtual std::map<std::string, std::set<std::string> > fenter(std::map<std::string, std::set<std::string> >& t);
 	virtual std::map<std::string, std::set<std::string> > fexit(std::map<std::string, std::set<std::string> >& t);
-	virtual std::map<std::string, std::set<std::string> > freturn(std::map<std::string, std::set<std::string> >&, std::map<std::string, std::set<std::string> >&, CPPParser::Statement*);
+	virtual std::map<std::string, std::set<std::string> > freturn(std::map<std::string, std::set<std::string> >&, std::map<std::string, std::set<std::string> >&, int);
 
 	// initial value for extremal labels
 	virtual std::map<std::string, std::set<std::string> > getExtremalValue();

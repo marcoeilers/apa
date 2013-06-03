@@ -58,7 +58,7 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 				T old = getResult(result, current.first, current.second, mf);
 
 				// apply transfer function
-				T iterated = mf->f(old, s);
+				T iterated = mf->f(old, current.first);
 
 				// if changed
 				if (!mf->lessThan(iterated, result[*it][current.second])) {
@@ -101,7 +101,7 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 				T old = getResult(result, current.first, current.second, mf);
 
 				// apply transfer function fcall
-				T iterated = mf->fcall(old, s, calledFun);
+				T iterated = mf->fcall(old, current.first, calledFun);
 
 				// as before
 				if (!mf->lessThan(iterated, result[*it][newContext])) {
@@ -189,7 +189,7 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 								current.second, mf);
 
 						// apply transfer function freturn
-						T iterated = mf->freturn(beforeCall, afterFunc, s);
+						T iterated = mf->freturn(beforeCall, afterFunc, current.first);
 
 						// if changed
 						if (!mf->lessThan(iterated, result[*it][oldContext])) {
@@ -251,7 +251,7 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 			for (finalIt = context.begin(); finalIt != context.end();
 					finalIt++) {
 				effect[finalIt->first] = mf->fcall(context[finalIt->first],
-						mf->getLabels().at(i), calledFun);
+						i, calledFun);
 			}
 			break;
 		}
@@ -261,7 +261,7 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 			for (finalIt = context.begin(); finalIt != context.end();
 					finalIt++) {
 				effect[finalIt->first] = mf->f(context[finalIt->first],
-						mf->getLabels().at(i));
+						i);
 			}
 			break;
 		case LABEL_ENTER:
@@ -299,7 +299,7 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 
 						T old = getResult(result, callLbl, conIt->first, mf);
 						T newVal = mf->freturn(beforeCall, afterFunc,
-								mf->getLabels().at(callLbl));
+								callLbl);
 						effect[conIt->first] = newVal;
 					}
 				}

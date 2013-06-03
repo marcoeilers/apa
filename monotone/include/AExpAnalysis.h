@@ -23,7 +23,7 @@ class AExpAnalysis : public MFramework<std::set<CPPParser::VariableValue*> >
         std::set<CPPParser::VariableValue*> bottom();
         std::set<CPPParser::VariableValue*> join(std::set<CPPParser::VariableValue*>&, std::set<CPPParser::VariableValue*>&);
         bool lessThan(std::set<CPPParser::VariableValue*>&, std::set<CPPParser::VariableValue*>&);
-        std::set<CPPParser::VariableValue*> f (std::set<CPPParser::VariableValue*>&, CPPParser::Statement*);
+        std::set<CPPParser::VariableValue*> f (std::set<CPPParser::VariableValue*>&, int);
         std::set<CPPParser::VariableValue*> getExtremalValue();
         std::set<int> getExtremalLabels();
         std::set<int> getNext(int);

@@ -39,11 +39,11 @@ public:
        virtual bool lessThan(T&, T&) = 0;
 
        // transfer functions
-       virtual T f(T&, CPPParser::Statement*) = 0;
-       virtual T fcall(T&, CPPParser::Statement*, CPPParser::FunctionDeclaration*) = 0;
+       virtual T f(T&, int) = 0;
+       virtual T fcall(T&, int, CPPParser::FunctionDeclaration*) = 0;
        virtual T fenter(T& t) = 0;
        virtual T fexit(T& t) = 0;
-       virtual T freturn(T&, T&, CPPParser::Statement*) = 0;
+       virtual T freturn(T&, T&, int) = 0;
 
 
        // initial value for extremal labels
