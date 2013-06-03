@@ -1,0 +1,13 @@
+int main() {
+	int b = 5;
+	int c = 2013;
+	int i = 0;
+	while (i < 10) {
+		if (i > 5) b = b + 1;
+		int a = b + i;
+		doSomething(a);
+	}
+	if (i > 9)
+		while(i < 15)
+			i = i + c;
+}
