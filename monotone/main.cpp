@@ -74,20 +74,32 @@ int main() {
 	int choice = -1;
 	while (true) {
 		printf("\n");
-		printf(
-				"Select the type of analysis:\n1.Available Expression Analysis\n2.Sign Analysis\n3.Pointer Analysis\n:");
+		printf("Select the type of analysis:\n1.Available Expression Analysis\n2.Sign Analysis\n3.Pointer Analysis\n:");
 		char buffer[5];
 		gets(buffer);
 		buffer[4] = 0;
-		filename = std::string(buffer);
-		choice = static_cast<int>(filename[0] - '0');
+		choice = stoi(std::string(buffer));
 		// See if we can open the file:
 		if (choice > 0 && choice < 4) {
 			break;
 		}
 		printf("Invalid input, please type a valid number.\n");
-		printf("\n");
 	}
+	printf("Chosen: %i\n", choice);
+
+	int callString = -1;
+
+	while (true) {
+		printf("\n");
+		printf("CallString size: " );
+		char buffer[5];
+		gets(buffer);
+		buffer[4] = 0;
+		callString = stoi(std::string(buffer));
+		if (callString > 0 && callString < 31) break;
+		printf("Invalid input, please type a number 1-30.");
+	}
+	printf("CallString size: %i\n", callString);
 
 	InterControlFlow* icf = new InterControlFlow(program);
 
