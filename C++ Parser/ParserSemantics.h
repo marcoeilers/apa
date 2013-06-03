@@ -106,7 +106,7 @@ struct Program : Printable {
 	virtual String toString();
 };
 const int nAllowedTypes = 6;
-const std::string allowedTypes[] = {"int", "long", "char", "float", "double", "bool"};
+const std::string allowedTypes[] = {"int", "long", "char", "float", "double", "bool", "void"};
 const int nRelationals = 8;
 const std::string relationals[] = {">", "<", ">=", "<=", "==", "!=", "&&", "||"};
 const int nCombinators = 4;

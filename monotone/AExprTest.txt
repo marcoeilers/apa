@@ -1,0 +1,12 @@
+// This is the example from the slides
+int main() {
+	int a = 1;
+	int b = 2;
+	int x = 3;
+	x = (a + b) * x;
+	int y = a * b;
+	while (a * b > a + b) {
+		a = a + 1;
+		x = a + b;
+	}
+}
