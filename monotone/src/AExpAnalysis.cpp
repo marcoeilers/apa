@@ -7,9 +7,11 @@ AExpAnalysis::AExpAnalysis(ControlFlow* cf) {
 
 	// collect all (sub-)expressions that occur in the program
 	// and save them to aexp
+	int i = -1;
 	vector<CPPParser::Statement*>::iterator it;
 	vector<CPPParser::Statement*> lbls = cf->getLabels();
 	for (it = lbls.begin(); it != lbls.end(); it++) {
+		i++;
 		switch ((*it)->getType()) {
 
 		// for var declarations and assignments, just save the rhs
@@ -17,6 +19,7 @@ AExpAnalysis::AExpAnalysis(ControlFlow* cf) {
 			CPPParser::VariableDeclaration* d =
 					(CPPParser::VariableDeclaration*) *it;
 			addToExpressions(d->value);
+			break;
 		}
 		case CPPParser::TYPE_VAR_ASSIGNMENT: {
 			CPPParser::VariableAssignment* a =
@@ -63,7 +66,8 @@ void AExpAnalysis::addToExpressions(CPPParser::VariableValue* v) {
 	switch (v->getType()) {
 	case CPPParser::VALUE_COMBINATION: {
 		CPPParser::Combination* c = (CPPParser::Combination*) v;
-		aexp.insert(v);
+		if (!setContains(aexp, v))
+			aexp.insert(v);
 		addToExpressions(c->value1);
 		addToExpressions(c->value2);
 		return;
@@ -144,15 +148,8 @@ set<CPPParser::VariableValue*> AExpAnalysis::varUnion(
 
 	set<CPPParser::VariableValue*>::iterator it;
 	for (it = second.begin(); it != second.end(); it++) {
-		bool found = false;
-		set<CPPParser::VariableValue*>::iterator secIt;
-		for (secIt = result.begin(); secIt != result.end(); secIt++) {
-			if ((*it)->equals(*secIt))
-				found = true;
-		}
-		if (!found) {
+		if (!setContains(result, *it))
 			result.insert(*it);
-		}
 	}
 
 	return result;
@@ -202,7 +199,7 @@ set<CPPParser::VariableValue*> AExpAnalysis::gen(CPPParser::Statement* s) {
 	}
 }
 
-// adds all (sub-)expressions in v to *2
+// adds all (sub-)expressions in v to *s
 void AExpAnalysis::addSubExpressions(set<CPPParser::VariableValue*>* s,
 		CPPParser::VariableValue* v) {
 	switch (v->getType()) {
@@ -212,7 +209,8 @@ void AExpAnalysis::addSubExpressions(set<CPPParser::VariableValue*>* s,
 	case CPPParser::VALUE_COMBINATION: {
 		// add this combination plus subexpressions
 		CPPParser::Combination* c = (CPPParser::Combination*) v;
-		s->insert(v);
+		if (!setContains(*s, v))
+			s->insert(v);
 		addSubExpressions(s, c->value1);
 		addSubExpressions(s, c->value2);
 		return;
@@ -288,5 +286,15 @@ string AExpAnalysis::toString(set<CPPParser::VariableValue*>& s){
 		ss << (*it)->toString();
 	}
 	ss << "\n";
+	return ss.str();
+}
+
+bool AExpAnalysis::setContains(set<CPPParser::VariableValue*>& s, CPPParser::VariableValue* v){
+	set<CPPParser::VariableValue*>::iterator it;
+	for (it = s.begin(); it != s.end(); it++){
+		if (v->equals(*it))
+			return true;
+	}
+	return false;
 }
 

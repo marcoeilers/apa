@@ -36,6 +36,7 @@ class AExpAnalysis : public MFramework<std::set<CPPParser::VariableValue*> >
         bool contains(CPPParser::VariableValue*, std::string);
         std::set<CPPParser::VariableValue*> varUnion(std::set<CPPParser::VariableValue*>&, std::set<CPPParser::VariableValue*>&);
         void addSubExpressions(std::set<CPPParser::VariableValue*>*, CPPParser::VariableValue*);
+        bool setContains(std::set<CPPParser::VariableValue*>&, CPPParser::VariableValue*);
 };
 
 #endif // AEXPANALYSIS_H

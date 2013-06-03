@@ -13,6 +13,20 @@ ControlFlow::ControlFlow(CPPParser::FunctionDeclaration& f) {
 
 	// first statement is always label 0
 	first.insert(0);
+
+	// print transitions
+	map<int, set<int> >::iterator it2;
+	for (it2 = transitions.begin(); it2 != transitions.end(); it2++) {
+		printf("Transitions from %i: ", it2->first);
+
+		set<int>::iterator setIt;
+		for (setIt = it2->second.begin(); setIt != it2->second.end(); setIt++) {
+			if (setIt != it2->second.begin())
+				printf(", ");
+			printf("%i", *setIt);
+		}
+		printf("\n");
+	}
 }
 
 ControlFlow::ControlFlow() {
