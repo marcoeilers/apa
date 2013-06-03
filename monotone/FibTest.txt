@@ -1,0 +1,15 @@
+int main() {
+	int y = 0;
+	y = fib(5);
+}
+
+int fib(int z) {
+	if (z < 3)
+		return 1;
+	int u = 0;
+	int v = 0;
+	u = fib(z - 2);
+	v = fib(z - 1);
+	v = u + v;
+	return v;
+}
