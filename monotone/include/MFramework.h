@@ -22,7 +22,7 @@ public:
 	virtual bool lessThan(T&, T&) = 0;
 
 	// transfer function
-	virtual T f(T&, CPPParser::Statement*) = 0;
+	virtual T f(T&, int) = 0;
 
 	// initial value for extremal labels
 	virtual T getExtremalValue() = 0;
