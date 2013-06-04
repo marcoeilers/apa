@@ -1,8 +1,9 @@
 /*
  * PointerAnalysis.h
  *
- *  Created on: Jun 1, 2013
- *      Author: marco
+ *      Author: Marco Eilers (F121763)
+ *              Bas in het Veld (3710971)
+ *
  */
 
 #ifndef POINTERANALYSIS_H_
@@ -13,6 +14,11 @@
 #include "EMFramework.h"
 #include "InterControlFlow.h"
 
+/*
+ * An embellished monotone framework for performing points-to analysis.
+ * Built on the idea of Andersen's pointer analysis, extended to work
+ * interprocedurally.
+ */
 class PointerAnalysis: virtual public EMFramework<
 		std::map<std::string, std::set<std::string> > > {
 public:
@@ -41,8 +47,12 @@ public:
 	virtual std::string toString(std::map<std::string, std::set<std::string> >&);
 
 protected:
-	virtual std::set<std::string> evaluateLhs(int, std::string, std::map<std::string, std::set<std::string> >&);
-	virtual std::set<std::string> evaluateRhs(CPPParser::VariableValue*, std::map<std::string, std::set<std::string> >&);
+	virtual void addLabels(int, std::string);
+	virtual std::set<std::string> evaluateLhs(int, int, std::string, std::map<std::string, std::set<std::string> >&);
+	virtual std::set<std::string> evaluateRhs(int, CPPParser::VariableValue*, std::map<std::string, std::set<std::string> >&);
+	std::map<std::string, std::set<int> > functionLabels;
+	std::map<std::string, std::map<std::string, std::string> > varIDs;
+	std::string getID(int, std::string);
 };
 
 #endif /* POINTERANALYSIS_H_ */

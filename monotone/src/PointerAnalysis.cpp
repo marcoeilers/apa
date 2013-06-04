@@ -1,8 +1,9 @@
 /*
  * PointerAnalysis.cpp
  *
- *  Created on: Jun 1, 2013
- *      Author: marco
+ *      Author: Marco Eilers (F121763)
+ *              Bas in het Veld (3710971)
+ *
  */
 
 #include "PointerAnalysis.h"
@@ -15,7 +16,7 @@ PointerAnalysis::PointerAnalysis(InterControlFlow* icf) {
 	// make a list of the labels for each function
 	addLabels(*(icf->getFirstLabels().begin()), "main");
 
-	// for each function, for variable name, generate a unique string
+	// for each function, for each variable name, generate a unique string
 	map<string, set<int> >::iterator it;
 	for (it = functionLabels.begin(); it != functionLabels.end(); it++) {
 

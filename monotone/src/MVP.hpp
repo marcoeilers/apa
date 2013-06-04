@@ -1,3 +1,11 @@
+/*
+ * MVP.hpp
+ *
+ *      Author: Marco Eilers (F121763)
+ *              Bas in het Veld (3710971)
+ *
+ */
+
 #include <sstream>
 
 using namespace std;

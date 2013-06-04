@@ -1,3 +1,11 @@
+/*
+ * MFramework.h
+ *
+ *      Author: Marco Eilers (F121763)
+ *              Bas in het Veld (3710971)
+ *
+ */
+
 #ifndef MFRAMEWORK_H
 #define MFRAMEWORK_H
 

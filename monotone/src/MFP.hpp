@@ -1,3 +1,11 @@
+/*
+ * MFP.hpp
+ *
+ *      Author: Marco Eilers (F121763)
+ *              Bas in het Veld (3710971)
+ *
+ */
+
 using namespace std;
 
 template<typename T>

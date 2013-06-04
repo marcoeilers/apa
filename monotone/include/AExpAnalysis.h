@@ -1,3 +1,11 @@
+/*
+ * AExpAnalysis.h
+ *
+ *      Author: Marco Eilers (F121763)
+ *              Bas in het Veld (3710971)
+ *
+ */
+
 #ifndef AEXPANALYSIS_H
 #define AEXPANALYSIS_H
 

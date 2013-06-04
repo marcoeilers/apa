@@ -1,3 +1,11 @@
+/*
+ * ControlFlow.cpp
+ *
+ *      Author: Marco Eilers (F121763)
+ *              Bas in het Veld (3710971)
+ *
+ */
+
 #include "ControlFlow.h"
 
 using namespace std;

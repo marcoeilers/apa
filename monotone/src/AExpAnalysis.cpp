@@ -1,3 +1,11 @@
+/*
+ * AExpAnalysis.cpp
+ *
+ *      Author: Marco Eilers (F121763)
+ *              Bas in het Veld (3710971)
+ *
+ */
+
 #include "AExpAnalysis.h"
 
 using namespace std;

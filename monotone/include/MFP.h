@@ -1,3 +1,11 @@
+/*
+ * MFP.h
+ *
+ *      Author: Marco Eilers (F121763)
+ *              Bas in het Veld (3710971)
+ *
+ */
+
 #ifndef MFP_H
 #define MFP_H
 

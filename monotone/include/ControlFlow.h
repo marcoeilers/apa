@@ -1,3 +1,11 @@
+/*
+ * ControlFlow.h
+ *
+ *      Author: Marco Eilers (F121763)
+ *              Bas in het Veld (3710971)
+ *
+ */
+
 #ifndef CONTROLFLOW_H
 #define CONTROLFLOW_H
 

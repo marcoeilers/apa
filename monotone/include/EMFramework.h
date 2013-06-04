@@ -1,8 +1,9 @@
 /*
  * EMFramework.h
  *
- *  Created on: May 27, 2013
- *      Author: marco
+ *      Author: Marco Eilers (F121763)
+ *              Bas in het Veld (3710971)
+ *
  */
 
 #ifndef EMFRAMEWORK_H_

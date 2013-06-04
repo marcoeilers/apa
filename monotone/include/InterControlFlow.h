@@ -1,8 +1,9 @@
 /*
  * InterControlFlow.h
  *
- *  Created on: May 26, 2013
- *      Author: marco
+ *      Author: Marco Eilers (F121763)
+ *              Bas in het Veld (3710971)
+ *
  */
 
 #ifndef INTERCONTROLFLOW_H_

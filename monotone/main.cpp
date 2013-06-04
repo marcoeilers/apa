@@ -1,3 +1,11 @@
+/*
+ * main.c++
+ *
+ *      Author: Bas in het Veld (3710971)
+ *              Marco Eilers (F121763)
+ *
+ */
+
 #include <iostream>
 #include <cstdio>
 
@@ -74,7 +82,8 @@ int main() {
 	int choice = -1;
 	while (true) {
 		printf("\n");
-		printf("Select the type of analysis:\n1.Available Expression Analysis\n2.Sign Analysis\n3.Pointer Analysis\n:");
+		printf(
+				"Select the type of analysis:\n1.Available Expression Analysis\n2.Sign Analysis\n3.Pointer Analysis\n:");
 		char buffer[5];
 		gets(buffer);
 		buffer[4] = 0;
@@ -89,17 +98,20 @@ int main() {
 
 	int callString = -1;
 
-	while (true) {
-		printf("\n");
-		printf("CallString size: " );
-		char buffer[5];
-		gets(buffer);
-		buffer[4] = 0;
-		callString = stoi(std::string(buffer));
-		if (callString > 0 && callString < 31) break;
-		printf("Invalid input, please type a number 1-30.");
+	if (choice == 1 || choice == 2) {
+		while (true) {
+			printf("\n");
+			printf("CallString size: ");
+			char buffer[5];
+			gets(buffer);
+			buffer[4] = 0;
+			callString = stoi(std::string(buffer));
+			if (callString > -1 && callString < 31)
+				break;
+			printf("Invalid input, please type a number 0-30.");
+		}
+		printf("CallString size: %i\n", callString);
 	}
-	printf("CallString size: %i\n", callString);
 
 	InterControlFlow* icf = new InterControlFlow(program);
 
@@ -140,14 +152,14 @@ int main() {
 			solver->solve(a);
 
 			/*
-			for (int i = 0; i < cf->getLabels().size(); i++) {
-				printf("Result for label %i (size %i):\n", i, result[i].size());
-				set<CPPParser::VariableValue*>::iterator it;
-				for (it = result[i].begin(); it != result[i].end(); it++) {
-					printf("%s\n", (*it)->toString().c_str());
-				}
-			}
-			*/
+			 for (int i = 0; i < cf->getLabels().size(); i++) {
+			 printf("Result for label %i (size %i):\n", i, result[i].size());
+			 set<CPPParser::VariableValue*>::iterator it;
+			 for (it = result[i].begin(); it != result[i].end(); it++) {
+			 printf("%s\n", (*it)->toString().c_str());
+			 }
+			 }
+			 */
 
 		} else {
 			printf("No main function found.\n");
