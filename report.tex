@@ -8,7 +8,7 @@
 \usepackage{fancyhdr}
 \usepackage{lastpage}
 \usepackage{graphicx}
-\usepackage{fullpage}
+%\usepackage{fullpage}
 \usepackage{tikz}
 \usepackage{listings}
 
@@ -23,10 +23,10 @@
 \usetikzlibrary{arrows,automata}
 
 \lhead{\textbf{Project 1: Dataflow and Abstract Interpretation}}
-\rhead{(Submission: 03.06.2013)}
+\rhead{}
 
 \cfoot{}
-\lfoot{Marco Eilers, Bas in het Veld, Rik Vermeulen}
+\lfoot{Marco Eilers, Bas in het Veld}
 \rfoot{\thepage\ of \pageref{LastPage}}
 \pagestyle{fancy}
 \renewcommand{\footrulewidth}{0.4pt}
@@ -36,12 +36,92 @@
 \begin{document}
 
 \title{Automatic Program Analysis\\Project 1: Dataflow and Abstract Interpretation}
-\author{Marco Eilers - F121763, Bas in het Veld - TODO,\\Rik Vermeulen - TODO}
+\author{Marco Eilers - F121763, Bas in het Veld - 3710971}
 
 \maketitle
 
-\section{Introduction}
+\section{Language to be Analyzed}
+We decided to analyze a subset of C++. 
+Since C++ is quite a complicated language, we have created our own parser for it. That way, instead of having to choose what C++ featured we could omit, we could choose the parts we wanted to include. In essence, we are dealing with a complex version of the While-language, with a C++ oriented syntax. Since we are doing a pointer analysis, we included pointers, dereferencing, function calls, function arguments, function return values and more. The next section describes the full grammar used by our parser:
 
-\section{Other stuff}
+\begin{lstlisting}
+[program] := [include]* [functionDeclaration]+
+[statement] := [while] | [if] | [variableDeclaration] | [variableAssignment] | [functionCall] | [return] | [codeBlock]
+[while] := while ([condition]) [statement]
+[if] := if ([condition]) [statement]
+[variableDeclaration] := [type] <name> = [variableValue] | [type] <name>;
+[variableAssignment] := <name> = [variableValue];
+[combination] := [variableValue] [combinator] [variableValue]
+[allocation] := new [type]([variableValue])
+[variableValue] := [variable] | [combination] | [allocation] | [unknown]
+[functionCall] := <functionName>( [variable]* ); | [variable] = <functionName>( [variable]* );
+[functionDeclaration] := [type] <functionName>( [variableDeclaration]* ) [codeBlock]
+[return] := return [variableValue]? ;
+[codeBlock] := { [statement]* }
+[include] := #include "<filename>"
+[condition] := [variableValue] [relational] [variableValue] | 	[variableValue]
+[type] := int | float | long | char | double | bool
+[relational] := > | < | >= | <= | == | != | && | ||
+[combinator] := + | - | * | /
+\end{lstlisting}
+
+Since we are dealing with pointers, we need some way to know whether variables are actually pointers. To do this, we added a data member 'pointerDepth' to the [type] token. For example, the variable 'int a' has pointer depth 0, 'int* b' has depth 1 and 'int** c' has depth 2. We can deal with any depth, and we can also deal with dereferenced variables like '*c'.
+
+\section{General Architecture}
+We have implemented a general platform to perform intraprocedural as well as interprocedural analyses using (embellished) monotone frameworks. The classes used for intra- and interprocedural analyses are mostly kept separate in order to prevent the (relatively simple) intraprocedural analysis from inheriting the overhead of the (much more complicated) interprocedural analysis.
+
+\subsection{Monotone Frameworks}
+The general architecture for intraprocedural analyses is as follows:
+ControlFlow stores all the relevant information about a single C++ function. For its only input, a function declaration (which it can obtain from the parser), it assigns labels to all statements, stores the possible transitions between statements and provides some methods to work with this data. ControlFlow therefore stores all information that is specific to the program itself, but is not restricted to any particular kind of analysis. It can therefore be used for both forward and backward analyses.
+MFramework is the abstract superclass which has to be extended in order to implement an intraprocedural analysis. Subclasses of MFramework have to provide all the information necessary to perform a specific kind of analysis. They contain information about the used lattice, like bottom element and the join operation, as well as the transfer functions, initial values for extremal labels etc. While an MFramework has only one actual transfer function (f), this gets a reference to the current statement so that it can do different things for different statements. A subclass of MFramework also decides which flow (forward or backward) should be used by the analysis.
+MFramework is a class template that takes one type parameter; the data type on which the analysis operates. In the case of an available expressions analysis, this could for example be a set of expressions.
+The class MFP computes the Maximal Fixed Point solution for a given monotone framework using the work list algorithm proposed in the course slides. It, too, takes a type parameter specifying which data type the analysis works on. The function solve(MFramework*) returns an array of pairs of that data type, which contains, for each label, both the context and the effect value. 
+The result computed by MFP is therefore always the result of a flow sensitive analysis.
+
+\subsection{Embellished Monotone Frameworks}
+The general structure for interprocedural analyses is very similar:
+InterControlFlow extends ControlFlow, but works on an entire program instead of a single procedure, i.e. it also stores information about interprocedural control flow. 
+EMFramework is very similar to MFramework. It is the abstract superclass of all embellished monotone frameworks. The main difference between the two is that EMFramework offers additional transfer functions for procedure calls, entries, exits and returns.
+MVP (similar to MFP) computes the Meet over Valid Paths solution for an embellished monotone framework. Its constructor takes an integer argument which specifies the maximal length of the call strings used as contexts. If this argument is zero, the result of the analysis will therefore be context insensitive, otherwise it is context sensitive.
+Unlike the normal monotone frameworks, our solution for embellished monotone frameworks can only be used for forward analyses, since the call and return transfer functions would need different arguments otherwise.
+
+\section{Analyses}
+While our main goal for this project was the pointer analysis, we have implemented two other kinds of analyses to test our frameworks and check their flexibility and usability in general. As it turned out, interprocedural sign analysis also works as a strong case for the necessity of pointer analyses in a language like C++.
+
+\subsection{Intraprocedural Available Expressions Analysis}
+Available expressions analysis for single functions is implemented in the class AExpAnalysis, which extends MFramework. First, all existing and relevant expressions in the program are identified, these include declarations, assignments, if-statements and while-statements.
+TODO lattice, example(s)
+\begin{align*}
+  L &= \mathcal{P}(\textbf{$AExp_*$})\\
+  \sqcup &= \cap \\
+  \bot  &= \textbf{$AExp_*$}\\
+  \top &= \emptyset \\
+  \forall x, y \in L, x \sqsubseteq y &= x \supseteq y
+\end{align*}
+
+\subsection{Interprocedural Sign Analysis}
+Sign analysis is implemented in the class SignAnalysis, which extends EMFramework.
+\begin{align*}
+  L &= \{ f | f: \textbf{$NumVar_*$} \rightarrow \mathcal{P}(\{PLUS, MINUS, ZERO\}) \} \\
+  \sqcup &= \cup \\
+  \bot  &= \emptyset\\
+  \top &= \{ v \rightarrow \{PLUS, MINUS, ZERO\}| v \in \textbf{$NumVar_*$}\} \\
+  \forall x, y \in L, x \sqsubseteq y &= x \subseteq y
+\end{align*}
+
+\subsection{Interprocedural Pointer Analysis}
+
+\section{Evaluation of our Solution}
+
+\section{How to run}
+libboost-regex1.46-dev works
+
+\begin{lstlisting}
+  g++ -o prog -O3 -std=c++0x main.cpp PointerAnalysis.cpp 
+  SignAnalysis.cpp MVP.h MFramework.h MFP.h InterControlFlow.cpp 
+  EMFramework.h ControlFlow.cpp AExpAnalysis.cpp MFP.h Parser.cpp 
+  ParserSemantics.cpp StringUtil.cpp /usr/lib/libboost_regex.so
+
+\end{lstlisting}
 
 \end{document}
