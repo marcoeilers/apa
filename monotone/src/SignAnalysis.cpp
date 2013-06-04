@@ -10,34 +10,8 @@
 
 using namespace std;
 
-std::set<Sign>* SignAnalysis::getSign(char c) {
-	switch (c) {
-	case 'p':
-		return &plusSet;
-	case 'm':
-		return &minusSet;
-	case 'e':
-		return &emptySet;
-	case 'z':
-		return &zeroSet;
-	case 'a':
-		return &allSet;
-	}
-	throw "This should never happen";
-}
-
-SignAnalysis::SignAnalysis(InterControlFlow* cf)/* :
- op_plus( { { &plusSet, &allSet, &plusSet }, { &allSet, &minusSet,
- &minusSet }, { &plusSet, &minusSet, &zeroSet } }),
- op_minus( { { &allSet, &plusSet, &plusSet },
- { &minusSet, &allSet, &minusSet }, { &minusSet, &plusSet,
- &zeroSet } }),
- op_mult( { { &plusSet, &minusSet,
- &zeroSet }, { &minusSet, &plusSet, &zeroSet }, { &zeroSet,
- &zeroSet, &zeroSet } }),
- op_div( { { &plusSet, &minusSet,
- &emptySet }, { &minusSet, &plusSet, &emptySet }, { &zeroSet,
- &zeroSet, &emptySet } })*/{
+SignAnalysis::SignAnalysis(InterControlFlow* cf) {
+	// initialize operator matrices
 	std::string op_plus_s = "papammpmz";
 	std::string op_minus_s = "appmammpz";
 	std::string op_mult_s = "pmzmpzzzz";
@@ -51,7 +25,6 @@ SignAnalysis::SignAnalysis(InterControlFlow* cf)/* :
 		op_div[y][x] = getSign(op_div_s[i]);
 	}
 
-	// we just initialized the operator matrices
 
 	cflow = cf;
 
@@ -65,18 +38,34 @@ SignAnalysis::SignAnalysis(InterControlFlow* cf)/* :
 }
 
 SignAnalysis::~SignAnalysis() {
-// TODO Auto-generated destructor stub
+}
+
+std::set<Sign>* SignAnalysis::getSign(char c) {
+	switch (c) {
+	case 'p':
+		return &plusSet;
+	case 'm':
+		return &minusSet;
+	case 'e':
+		return &emptySet;
+	case 'z':
+		return &zeroSet;
+	case 'a':
+		return &allSet;
+	}
+	throw EMFError("This should never happen");
 }
 
 map<string, set<Sign> > SignAnalysis::bottom() {
 	map<string, set<Sign> > result;
+	// empty map
 	return result;
 }
 
 // returns true if the second contains all variables the first contains
 // and for each of those variables, the set of signs contains all the first
 // contains
-bool SignAnalysis::lessThan(map<string, set<Sign> >& first,
+bool SignAnalysis::lessOrEqual(map<string, set<Sign> >& first,
 		map<string, set<Sign> >& second) {
 	map<string, set<Sign> >::iterator it;
 	for (it = first.begin(); it != first.end(); it++) {
@@ -134,6 +123,12 @@ map<string, set<Sign> > SignAnalysis::f(map<string, set<Sign> >& old,
 			for (it = old.begin(); it != old.end(); it++) {
 				result[it->first].insert(newOnes.begin(), newOnes.end());
 			}
+			// since the pointer could also point to something outside the
+			// current function, we must remember this
+			// store it as '0all' (which is not a valid variable name,
+			// therefore cannot interfere with any other variable, and which
+			// is not printed)
+			result["0all"].insert(newOnes.begin(), newOnes.end());
 		} else {
 			// otherwise these are the new signs of the lhs variable
 			if (old.count(va->name)) {
@@ -146,8 +141,11 @@ map<string, set<Sign> > SignAnalysis::f(map<string, set<Sign> >& old,
 		// for a declaration
 		CPPParser::VariableDeclaration* vd = (CPPParser::VariableDeclaration*) s;
 
-		// if it is an int, and not a pointer
-		if (vd->dataType->name.compare("int") == 0
+		// if it is a numeral, and not a pointer
+		if ((vd->dataType->name.compare("int") == 0
+				|| vd->dataType->name.compare("long") == 0
+				|| vd->dataType->name.compare("float") == 0
+				|| vd->dataType->name.compare("double") == 0)
 				&& vd->dataType->pointerDepth == 0) {
 			// add a new entry for the var, put its current signs in there
 			set<Sign> newOnes = getSigns(vd->value, old);
@@ -189,13 +187,22 @@ set<Sign> SignAnalysis::getSigns(CPPParser::VariableValue* v,
 					mappings[var->value].end());
 		} else {
 			// for a numeral (since those are parsed as Variable objects)
-			int intVal;
+			// just insert its sign
+			long intVal;
+			double floatVal;
 			stringstream ss;
 			ss << var->value;
 			if (!(ss >> intVal).fail()) {
 				if (intVal > 0)
 					result.insert(SIGN_PLUS);
 				else if (intVal < 0)
+					result.insert(SIGN_MINUS);
+				else
+					result.insert(SIGN_ZERO);
+			} else if (!(ss >> floatVal).fail()) {
+				if (floatVal > 0.0)
+					result.insert(SIGN_PLUS);
+				else if (floatVal < 0.0)
 					result.insert(SIGN_MINUS);
 				else
 					result.insert(SIGN_ZERO);
@@ -287,11 +294,24 @@ map<string, set<Sign> > SignAnalysis::freturn(
 	CPPParser::Statement* s = cflow->getLabels().at(label);
 
 	// add everything from the environment before the call
-	// TODO: stuff could be changed via pointers, how to do that?
 	map<string, set<Sign> > result;
 	result.insert(beforeCall.begin(), beforeCall.end());
 
+	// if a pointer was accessed within the function
+	if (afterFunction.count("0all")){
+
+		// add the signs in 0all to all old variables
+		map<string, set<Sign> >::iterator it;
+		for (it = result.begin(); it != result.end(); it++){
+			it->second.insert(afterFunction["0all"].begin(), afterFunction["0all"].end());
+		}
+
+		// and propagate, since we could be in a nested function call
+		result["0all"] = afterFunction["0all"];
+	}
+
 	// add the value of "return" as the new value of the return variable
+	// if there is an assignment of the result
 	CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
 	if (fc->returnVariable != NULL) {
 		result[fc->returnVariable->value] = afterFunction["return"];
@@ -318,30 +338,33 @@ string SignAnalysis::toString(map<string, set<Sign> >& m) {
 	ss << "\n";
 
 	map<string, set<Sign> >::iterator map2It;
-	for (map2It = m.begin(); map2It != m.end();
-			map2It++) {
-		ss << "For variable ";
-		ss << map2It->first;
-		ss << ":\n";
+	for (map2It = m.begin(); map2It != m.end(); map2It++) {
+		// ignore '0all', since this is not an actual variable
+		// and is used to transport information for the return
+		if (map2It->first.compare("0all") != 0) {
+			ss << "For variable ";
+			ss << map2It->first;
+			ss << ":\n";
 
-		set<Sign>::iterator setIt;
-		for (setIt = map2It->second.begin(); setIt != map2It->second.end();
-				setIt++) {
-			if (setIt != map2It->second.begin())
-				ss << ", ";
-			switch (*setIt) {
-			case SIGN_PLUS:
-				ss << "PLUS";
-				break;
-			case SIGN_MINUS:
-				ss << "MINUS";
-				break;
-			case SIGN_ZERO:
-				ss << "ZERO";
-				break;
+			set<Sign>::iterator setIt;
+			for (setIt = map2It->second.begin(); setIt != map2It->second.end();
+					setIt++) {
+				if (setIt != map2It->second.begin())
+					ss << ", ";
+				switch (*setIt) {
+				case SIGN_PLUS:
+					ss << "PLUS";
+					break;
+				case SIGN_MINUS:
+					ss << "MINUS";
+					break;
+				case SIGN_ZERO:
+					ss << "ZERO";
+					break;
+				}
 			}
+			ss << "\n";
 		}
-		ss << "\n";
 	}
 	return ss.str();
 }

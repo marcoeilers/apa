@@ -64,10 +64,6 @@ int main() {
 
 	CPPParser::TokenList tokens = parser.getTokens();
 
-	/*CPPParser::TokenList::iterator it;
-	 for (it = tokens.begin(); it < tokens.end(); it++)
-	 printf("Token #%lu: '%s'\n", it->id, it->name.c_str());*/
-
 	CPPParser::Program* program = new CPPParser::Program();
 	bool success = false;
 	try {
@@ -98,7 +94,7 @@ int main() {
 
 	int callString = -1;
 
-	if (choice == 1 || choice == 2) {
+	if (choice == 2 || choice == 3) {
 		while (true) {
 			printf("\n");
 			printf("CallString size: ");
@@ -112,8 +108,6 @@ int main() {
 		}
 		printf("CallString size: %i\n", callString);
 	}
-
-	InterControlFlow* icf = new InterControlFlow(program);
 
 	switch (choice) { // Note: If we add more, make sure to modify the break check in the while statement preceding this.
 	case 1: {
@@ -129,37 +123,31 @@ int main() {
 
 		if (foundMain) {
 
-			ControlFlow* cf = new ControlFlow(fd);
-			AExpAnalysis* a = new AExpAnalysis(cf);
+			try {
+				ControlFlow* cf = new ControlFlow(fd);
+				AExpAnalysis* a = new AExpAnalysis(cf);
 
-			CPPParser::VariableAssignment* s =
-					new CPPParser::VariableAssignment();
+				CPPParser::VariableAssignment* s =
+						new CPPParser::VariableAssignment();
 
-			s->name = "s";
-			CPPParser::Combination* c = new CPPParser::Combination();
-			s->value = c;
-			CPPParser::Variable* v1 = new CPPParser::Variable();
-			CPPParser::Variable* v2 = new CPPParser::Variable();
-			v1->value = "a";
-			v2->value = "b";
-			c->value1 = v1;
-			c->value2 = v2;
-			c->combinator = "+";
+				s->name = "s";
+				CPPParser::Combination* c = new CPPParser::Combination();
+				s->value = c;
+				CPPParser::Variable* v1 = new CPPParser::Variable();
+				CPPParser::Variable* v2 = new CPPParser::Variable();
+				v1->value = "a";
+				v2->value = "b";
+				c->value1 = v1;
+				c->value2 = v2;
+				c->combinator = "+";
 
-			MFP<set<CPPParser::VariableValue*> > * solver = new MFP<
-					set<CPPParser::VariableValue*> >();
+				MFP<set<CPPParser::VariableValue*> > * solver = new MFP<
+						set<CPPParser::VariableValue*> >();
 
-			solver->solve(a);
-
-			/*
-			 for (int i = 0; i < cf->getLabels().size(); i++) {
-			 printf("Result for label %i (size %i):\n", i, result[i].size());
-			 set<CPPParser::VariableValue*>::iterator it;
-			 for (it = result[i].begin(); it != result[i].end(); it++) {
-			 printf("%s\n", (*it)->toString().c_str());
-			 }
-			 }
-			 */
+				solver->solve(a);
+			} catch (ControlFlowError e) {
+				printf(e.getMessage().c_str());
+			}
 
 		} else {
 			printf("No main function found.\n");
@@ -167,24 +155,36 @@ int main() {
 		break;
 	}
 	case 2: {
-		SignAnalysis* s = new SignAnalysis(icf);
+		try {
+			InterControlFlow* icf = new InterControlFlow(program);
 
-		MVP<map<string, set<Sign> > >* mvp = new MVP<map<string, set<Sign> > >(
-				callString);
+			SignAnalysis* s = new SignAnalysis(icf);
 
-		pair<map<string, map<string, set<Sign> > >,
-				map<string, map<string, set<Sign> > > >* result = mvp->solve(s);
+			MVP<map<string, set<Sign> > >* mvp =
+					new MVP<map<string, set<Sign> > >(callString);
+
+			mvp->solve(s);
+		} catch (ControlFlowError e) {
+			printf(e.getMessage().c_str());
+		} catch (EMFError e) {
+			printf(e.getMessage().c_str());
+		}
 		break;
 	}
 	case 3: {
-		PointerAnalysis* p = new PointerAnalysis(icf);
+		try {
+			InterControlFlow* icf = new InterControlFlow(program);
+			PointerAnalysis* p = new PointerAnalysis(icf);
 
-		MVP<map<string, set<string> > >* mvp =
-				new MVP<map<string, set<string> > >(callString);
+			MVP<map<string, set<string> > >* mvp = new MVP<
+					map<string, set<string> > >(callString);
 
-		pair<map<string, map<string, set<string> > >,
-				map<string, map<string, set<string> > > >* result = mvp->solve(
-				p);
+			mvp->solve(p);
+		} catch (ControlFlowError e) {
+			printf(e.getMessage().c_str());
+		} catch (EMFError e) {
+			printf(e.getMessage().c_str());
+		}
 		break;
 	}
 	}

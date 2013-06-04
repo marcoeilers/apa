@@ -37,7 +37,7 @@ public:
        // methods defining the lattice
        virtual T join(T&,T&) = 0;
        virtual T bottom() = 0;
-       virtual bool lessThan(T&, T&) = 0;
+       virtual bool lessOrEqual(T&, T&) = 0;
 
        // transfer functions
        virtual T f(T&, int) = 0;
@@ -52,19 +52,29 @@ public:
 
        // set of extremal (i.e. first) labels, usually a singleton set
        virtual std::set<int> getExtremalLabels() = 0;
+
+       // gets the set of labels following label l
+       // (including interprocedural transitions)
        virtual std::set<int> getNext(int l) { return cflow->getNext(l); }
 
+       // gets the type of a label (e.g. call, enter, exit, return, default)
        virtual LabelType getLabelType(int label) {return cflow->getType(label);}
 
+       // gets the respective call label that belongs to a return
        virtual int getCallFromReturn(int label) {return cflow->getCallForReturn(label); }
+
+       // gets the respective return label that belongs to a call
        virtual int getReturnFromCall(int label) {return cflow->getReturnForCall(label); }
 
+       // list of all statements sorted by their labels
        virtual std::vector<CPPParser::Statement*> getLabels() {return cflow->getLabels();}
 
        virtual CPPParser::Program* getProg() { return cflow->getProg(); }
 
+       // creates a string describing an object of the lattice's type
        virtual std::string toString(T& t) { return ""; }
 protected:
+       // information about the analyzed program
        InterControlFlow* cflow;
    private:
 };

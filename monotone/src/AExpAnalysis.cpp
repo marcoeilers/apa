@@ -9,6 +9,7 @@
 #include "AExpAnalysis.h"
 
 using namespace std;
+
 AExpAnalysis::AExpAnalysis(ControlFlow* cf) {
 
 	cflow = cf;
@@ -66,7 +67,6 @@ AExpAnalysis::AExpAnalysis(ControlFlow* cf) {
 }
 
 AExpAnalysis::~AExpAnalysis() {
-	//dtor
 }
 
 // Adds expressions (= Combinations) to aexp
@@ -92,7 +92,7 @@ set<CPPParser::VariableValue*> AExpAnalysis::bottom() {
 }
 
 // return (first is bigger or equal to second)
-bool AExpAnalysis::lessThan(set<CPPParser::VariableValue*>& first,
+bool AExpAnalysis::lessOrEqual(set<CPPParser::VariableValue*>& first,
 		set<CPPParser::VariableValue*>& second) {
 	set<CPPParser::VariableValue*>::iterator it;
 
@@ -113,7 +113,7 @@ bool AExpAnalysis::lessThan(set<CPPParser::VariableValue*>& first,
 	return true;
 }
 
-// Transition function for the given statement s
+// Transition function for the given label
 set<CPPParser::VariableValue*> AExpAnalysis::f(
 		set<CPPParser::VariableValue*>& current, int label) {
 	CPPParser::Statement* s = cflow->getLabels().at(label);
@@ -139,6 +139,10 @@ set<CPPParser::VariableValue*> AExpAnalysis::f(
 				}
 			}
 		}
+	} else if (s->getType() == CPPParser::TYPE_FUNCTIONCALL) {
+		// for function call, result is empty
+		// since a function call could kill all statements
+		// through pointers
 	} else {
 		// for all other statements simply add the gen set
 		result.insert(un.begin(), un.end());
@@ -156,6 +160,7 @@ set<CPPParser::VariableValue*> AExpAnalysis::varUnion(
 
 	set<CPPParser::VariableValue*>::iterator it;
 	for (it = second.begin(); it != second.end(); it++) {
+		// make sure we don't get duplicates
 		if (!setContains(result, *it))
 			result.insert(*it);
 	}
@@ -180,7 +185,7 @@ set<CPPParser::VariableValue*> AExpAnalysis::gen(CPPParser::Statement* s) {
 		addSubExpressions(&result, va->value);
 		return result;
 	}
-	// for while and if, the expressions used in the condition
+		// for while and if, the expressions used in the condition
 	case CPPParser::TYPE_IF: {
 		CPPParser::If* i = (CPPParser::If*) s;
 		if (i->condition->getType() == CPPParser::CONDITION_RELATIONAL) {
@@ -259,6 +264,7 @@ set<CPPParser::VariableValue*> AExpAnalysis::getExtremalValue() {
 }
 
 // returns true iff v contains a reference to the variable name
+// used to determine if an assignment kills an expression
 bool AExpAnalysis::contains(CPPParser::VariableValue* v, string name) {
 	switch (v->getType()) {
 	case CPPParser::VALUE_VARIABLE: {
@@ -285,10 +291,11 @@ set<int> AExpAnalysis::getNext(int l) {
 	return cflow->getNext(l);
 }
 
-string AExpAnalysis::toString(set<CPPParser::VariableValue*>& s){
+string AExpAnalysis::toString(set<CPPParser::VariableValue*>& s) {
 	stringstream ss;
+	// just output all values
 	set<CPPParser::VariableValue*>::iterator it;
-	for (it = s.begin(); it != s.end(); it++){
+	for (it = s.begin(); it != s.end(); it++) {
 		if (it != s.begin())
 			ss << ", ";
 		ss << (*it)->toString();
@@ -297,9 +304,11 @@ string AExpAnalysis::toString(set<CPPParser::VariableValue*>& s){
 	return ss.str();
 }
 
-bool AExpAnalysis::setContains(set<CPPParser::VariableValue*>& s, CPPParser::VariableValue* v){
+// returns true iff s contains a VariableValue equal to *v
+bool AExpAnalysis::setContains(set<CPPParser::VariableValue*>& s,
+		CPPParser::VariableValue* v) {
 	set<CPPParser::VariableValue*>::iterator it;
-	for (it = s.begin(); it != s.end(); it++){
+	for (it = s.begin(); it != s.end(); it++) {
 		if (v->equals(*it))
 			return true;
 	}

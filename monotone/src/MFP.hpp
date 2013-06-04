@@ -53,7 +53,7 @@ pair<T, T> * MFP<T>::solve(MFramework<T>* mf) {
 			T iterated = mf->f(result[current], current);
 
 			// if there is a change
-			if (!mf->lessThan(iterated, result[*it])) {
+			if (!mf->lessOrEqual(iterated, result[*it])) {
 				// join with old value
 				result[*it] = mf->join(result[*it], iterated);
 

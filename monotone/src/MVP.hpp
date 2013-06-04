@@ -17,21 +17,21 @@ MVP<T>::MVP(int limit) {
 
 template<typename T>
 MVP<T>::~MVP() {
-	// Auto-generated destructor stub
 }
 
 template<typename T>
 pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
+
+	// initialize extremal labels
 	map<string, T> *result = new map<string, T> [mf->getLabels().size()];
 	for (int i = 0; i < mf->getLabels().size(); i++) {
 		if (mf->getExtremalLabels().count(i)) {
-			// for extremal labels, assign extremal value for empty context
+			// assign extremal value for empty context
 			result[i][""] = mf->getExtremalValue();
 		}
 	}
 
 	// worklist contains of pairs of label and context
-
 	set<pair<int, string> > workList;
 
 	// insert all label/context combinations that will happen so that
@@ -62,13 +62,13 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 				// if it is a normal statement, i.e. no function call or return
 
 				// get current value
-				T old = getResult(result, current.first, current.second, mf);
+				T old = getCurrentValue(result, current.first, current.second, mf);
 
 				// apply transfer function
 				T iterated = mf->f(old, current.first);
 
 				// if changed
-				if (!mf->lessThan(iterated, result[*it][current.second])) {
+				if (!mf->lessOrEqual(iterated, result[*it][current.second])) {
 					// update with join of old and new
 					result[*it][current.second] = mf->join(
 							result[*it][current.second], iterated);
@@ -105,13 +105,13 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 				}
 
 				// get current value
-				T old = getResult(result, current.first, current.second, mf);
+				T old = getCurrentValue(result, current.first, current.second, mf);
 
 				// apply transfer function fcall
 				T iterated = mf->fcall(old, current.first, calledFun);
 
 				// as before
-				if (!mf->lessThan(iterated, result[*it][newContext])) {
+				if (!mf->lessOrEqual(iterated, result[*it][newContext])) {
 					result[*it][newContext] = mf->join(result[*it][newContext],
 							iterated);
 
@@ -129,11 +129,11 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 			}
 			case LABEL_ENTER: {
 				// enter is like default
-				T old = getResult(result, current.first, current.second, mf);
+				T old = getCurrentValue(result, current.first, current.second, mf);
 
 				// except we use fenter as the transfer function
 				T iterated = mf->fenter(old);
-				if (!mf->lessThan(iterated, result[*it][current.second])) {
+				if (!mf->lessOrEqual(iterated, result[*it][current.second])) {
 					result[*it][current.second] = mf->join(
 							result[*it][current.second], iterated);
 					set<int> toRevisit = mf->getNext(*it);
@@ -149,11 +149,11 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 			}
 			case LABEL_EXIT: {
 				// exit is like default
-				T old = getResult(result, current.first, current.second, mf);
+				T old = getCurrentValue(result, current.first, current.second, mf);
 
 				// except we use fexit as the transfer function
 				T iterated = mf->fexit(old);
-				if (!mf->lessThan(iterated, result[*it][current.second])) {
+				if (!mf->lessOrEqual(iterated, result[*it][current.second])) {
 					result[*it][current.second] = mf->join(
 							result[*it][current.second], iterated);
 					set<int> toRevisit = mf->getNext(*it);
@@ -188,18 +188,18 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 						string oldContext = conIt->first;
 
 						// get the value before the call
-						T beforeCall = getResult(result, callLbl, oldContext,
+						T beforeCall = getCurrentValue(result, callLbl, oldContext,
 								mf);
 
 						// and the current one, i.e. the one at the return
-						T afterFunc = getResult(result, current.first,
+						T afterFunc = getCurrentValue(result, current.first,
 								current.second, mf);
 
 						// apply transfer function freturn
 						T iterated = mf->freturn(beforeCall, afterFunc, current.first);
 
 						// if changed
-						if (!mf->lessThan(iterated, result[*it][oldContext])) {
+						if (!mf->lessOrEqual(iterated, result[*it][oldContext])) {
 							// add to the result with the context from before the call
 							result[*it][oldContext] = mf->join(
 									result[*it][oldContext], iterated);
@@ -304,7 +304,7 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 						T beforeCall = result[callLbl][conIt->first];
 						T afterFunc = context[finalIt->first];
 
-						T old = getResult(result, callLbl, conIt->first, mf);
+						T old = getCurrentValue(result, callLbl, conIt->first, mf);
 						T newVal = mf->freturn(beforeCall, afterFunc,
 								callLbl);
 						effect[conIt->first] = newVal;
@@ -350,7 +350,7 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 // gets the value (of type T) for a specific label and a specific context from an array of maps
 // if there is no value for the selected context, returns bottom
 template<typename T>
-T MVP<T>::getResult(map<string, T>* result, int label, string context,
+T MVP<T>::getCurrentValue(map<string, T>* result, int label, string context,
 		EMFramework<T>* mf) {
 	if (result[label].count(context)) {
 		return result[label][context];
@@ -359,7 +359,8 @@ T MVP<T>::getResult(map<string, T>* result, int label, string context,
 	}
 }
 
-// prepends a label to the current call string
+// prepends a label to the current call string (expressing the label
+// as a char)
 // cuts of the end to make the result at most k chars long
 template<typename T>
 string MVP<T>::prepend(int label, string context) {
@@ -368,10 +369,13 @@ string MVP<T>::prepend(int label, string context) {
 	ss << c;
 	ss << context;
 	string result = ss.str();
-	result.resize(k);
+	if (result.size() > k)
+		result.resize(k);
 	return result;
 }
 
+// turns the internal representaton of a call string
+// into a readable form
 template<typename T>
 string MVP<T>::printContext(string s){
 	stringstream ss;
@@ -385,6 +389,8 @@ string MVP<T>::printContext(string s){
 	return ss.str();
 }
 
+// adds the given label/context combination and all subsequent labels
+// to the work list (first param) if not already in there
 template<typename T>
 void MVP<T>::addToWorkList(set<pair<int, string> >* wl, int label,
 		string context, EMFramework<T>* mf) {
@@ -393,13 +399,15 @@ void MVP<T>::addToWorkList(set<pair<int, string> >* wl, int label,
 
 	switch (mf->getLabelType(label)) {
 	case LABEL_CALL: {
+		// call string after the call
 		string newContext = prepend(label, context);
 
+		// for all following labels
 		set<int> next = mf->getNext(label);
 		set<int>::iterator it;
 		for (it = next.begin(); it != next.end(); it++) {
-			pair<int, string> pNew(*it, newContext);
 
+			// check if already in there
 			set<pair<int, string> >::iterator wlIt;
 			bool found = false;
 			for (wlIt = wl->begin(); wlIt != wl->end(); wlIt++) {
@@ -409,6 +417,7 @@ void MVP<T>::addToWorkList(set<pair<int, string> >* wl, int label,
 					break;
 				}
 			}
+			// otherwise add
 			if (!found) {
 				addToWorkList(wl, *it, newContext, mf);
 			}
@@ -419,8 +428,7 @@ void MVP<T>::addToWorkList(set<pair<int, string> >* wl, int label,
 		int returnLbl = mf->getReturnFromCall(label);
 		next = mf->getNext(returnLbl);
 		for (it = next.begin(); it != next.end(); it++) {
-			pair<int, string> pNew(*it, newContext);
-
+			// check if already there
 			set<pair<int, string> >::iterator wlIt;
 			bool found = false;
 			for (wlIt = wl->begin(); wlIt != wl->end(); wlIt++) {
@@ -430,6 +438,7 @@ void MVP<T>::addToWorkList(set<pair<int, string> >* wl, int label,
 					break;
 				}
 			}
+			// otherwise add
 			if (!found) {
 				addToWorkList(wl, *it, context, mf);
 			}
@@ -442,11 +451,12 @@ void MVP<T>::addToWorkList(set<pair<int, string> >* wl, int label,
 		break;
 	}
 	default: {
+		// add all following labels with same context
 		set<int> next = mf->getNext(label);
 		set<int>::iterator it;
 		for (it = next.begin(); it != next.end(); it++) {
-			pair<int, string> pNew(*it, context);
 
+			// check if already in list
 			set<pair<int, string> >::iterator wlIt;
 			bool found = false;
 			for (wlIt = wl->begin(); wlIt != wl->end(); wlIt++) {
@@ -455,7 +465,7 @@ void MVP<T>::addToWorkList(set<pair<int, string> >* wl, int label,
 					break;
 				}
 			}
-
+			// otherwise add
 			if (!found) {
 				addToWorkList(wl, *it, context, mf);
 			}

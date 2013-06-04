@@ -35,7 +35,7 @@ public:
 			std::map<std::string, std::set<Sign> >&,
 			std::map<std::string, std::set<Sign> >&);
 	virtual std::map<std::string, std::set<Sign> > bottom();
-	virtual bool lessThan(std::map<std::string, std::set<Sign> >&,
+	virtual bool lessOrEqual(std::map<std::string, std::set<Sign> >&,
 			std::map<std::string, std::set<Sign> >&);
 
 	// transfer functions
@@ -60,16 +60,27 @@ public:
 
 	virtual std::string toString(std::map<std::string, std::set<Sign> >&);
 protected:
+	// computes the signs that a given expression can have in the
+	// current environment
 	virtual std::set<Sign> getSigns(CPPParser::VariableValue*,
 			std::map<std::string, std::set<Sign> >&);
+	// adds the result of the operation param2 (operator defined by param1) param3 to param4
 	virtual void addAllCombinations(SignArray, std::set<Sign>&, std::set<Sign>&, std::set<Sign>*);
+	// converts a char to a sign (used for initialization)
 	std::set<Sign>* getSign(char c);
+	// set containing only plus
 	std::set<Sign> plusSet;
+	// set containing only minus
 	std::set<Sign> minusSet;
+	// set containing only zero
 	std::set<Sign> zeroSet;
+	// set containing plus, minus, zero
 	std::set<Sign> allSet;
+	// guess what
 	std::set<Sign> emptySet;
 
+	// arrays of sets specifying the signs that may result from an operation
+	// with the given operator
 	SignArray op_plus;
 	SignArray op_minus;
 	SignArray op_mult;

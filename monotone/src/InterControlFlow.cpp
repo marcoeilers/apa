@@ -13,12 +13,21 @@ using namespace std;
 InterControlFlow::InterControlFlow(CPPParser::Program* p) {
 	prog = p;
 	last.insert(-1);
+
+	// set to collect return statements
 	set<int>* rets = new set<int>();
+
+	// add main function (and all functions called by it)
 	addFunction("main", 0, rets);
+
+	// all return statements are also last statements
 	last.insert(rets->begin(), rets->end());
+
+	// first statement is always labeled 0
 	first.insert(0);
 
 	// complete interflow information for recursive calls
+	// (exit label is still missing)
 	map<string, set<pair<int, int> > >::iterator it;
 	for (it = toComplete.begin(); it != toComplete.end(); toComplete.erase(it++)){
 		set<pair<int, int> >::iterator compIt;
@@ -26,6 +35,7 @@ InterControlFlow::InterControlFlow(CPPParser::Program* p) {
 
 		pair<int, int> complete = *compIt;
 
+		// get entry and exit label of function
 		pair<int, int> funcInfo = functions[it->first];
 
 		set<InterFlow*>::iterator iIt;
@@ -59,7 +69,6 @@ InterControlFlow::InterControlFlow(CPPParser::Program* p) {
 }
 
 InterControlFlow::~InterControlFlow() {
-	// TODO Auto-generated destructor stub
 }
 
 // adds all statements and transitions in function name,
@@ -75,26 +84,6 @@ int InterControlFlow::addFunction(string name, int label, set<int>* rets) {
 	}
 	if (!found)
 		throw ControlFlowError("Undeclared function called.");
-	return -1;
-}
-
-// gets the entry from the call
-int InterControlFlow::getEntry(int label) {
-	set<InterFlow*>::iterator it;
-	for (it = inter.begin(); it != inter.end(); it++) {
-		if ((*it)->call == label)
-			return (*it)->enter;
-	}
-	return -1;
-}
-
-// gets the return from the exit
-int InterControlFlow::getReturn(int label) {
-	set<InterFlow*>::iterator it;
-	for (it = inter.begin(); it != inter.end(); it++) {
-		if ((*it)->exit == label)
-			return (*it)->ret;
-	}
 	return -1;
 }
 
@@ -173,11 +162,14 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 			i->enter = enter;
 			i->ret = label;
 
+			// exit label is unknown at this point
 			inter.insert(i);
 
 			last.insert(label);
 
 			pair<int, int> complete (startLabel, label);
+
+			// remember to add exit label later
 			toComplete[fc->name].insert(complete);
 
 		} else {
@@ -198,7 +190,6 @@ int InterControlFlow::addStatement(CPPParser::Statement* s, int label,
 			last.insert(label);
 			label++;
 
-			// TODO add only once!!!!
 			// add called Function
 			set<int>* rets = new set<int>();
 			CPPParser::FunctionCall* fc = (CPPParser::FunctionCall*) s;
@@ -353,6 +344,8 @@ set<int> InterControlFlow::getNext(int label) {
 	if (transitions.count(label)) {
 		result.insert(transitions[label].begin(), transitions[label].end());
 	}
+
+	// also check if call or exit label
 	set<InterFlow*>::iterator it;
 	for (it = inter.begin(); it != inter.end(); it++) {
 		if ((*it)->call == label)

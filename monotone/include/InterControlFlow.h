@@ -33,7 +33,9 @@ enum LabelType
 
 /*
  * Stores all the information about a program that is relevant for an
- * interprocedural analysis.
+ * interprocedural analysis. I.e. in addition to everything ControlFlow does,
+ * saves inter flow information.
+ * In contrast to ControlFlow, operates on an entire program.
  */
 class InterControlFlow : public virtual ControlFlow {
 public:
@@ -42,9 +44,6 @@ public:
 	virtual ~InterControlFlow();
 
 	// get information about interprocedural transitions
-	// TODO see which ones are unused
-	int getEntry(int);
-	int getReturn(int);
 	int getReturnForCall(int);
 	int getCallForReturn(int);
 
@@ -58,14 +57,28 @@ public:
 	// including interprocedural jumps
 	std::set<int> getNext(int);
 protected:
+	// adds a statement with the given label to the list of statements
+	// if it is a return statement, adds it to the set of ints as well
 	virtual int addStatement(CPPParser::Statement*, int, std::set<int>*);
+
+	// adds all statements in the function with the given name
+	// return labels will be saved to the set of ints as well
 	int addFunction(std::string, int, std::set<int>*);
-private:
 	CPPParser::Program* prog;
+
+	// interprocedural flow information
 	std::set<InterFlow*> inter;
-	std::set<int> returnLabels;
+
+	// maps all function names to a pair containing their
+	// entry and exit labels
 	std::map<std::string, std::pair<int, int> > functions;
+
+	// maps function names for functions which have not been completely
+	// added yet to their entry labels
 	std::map<std::string, int> incompleteFuncs;
+
+	// maps all function names which have not been completely added
+	// (i.e. still have to be completed) to their call and return labels
 	std::map<std::string, std::set<std::pair<int, int> > > toComplete;
 };
 

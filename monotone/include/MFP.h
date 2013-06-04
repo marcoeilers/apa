@@ -26,8 +26,7 @@ public:
     virtual ~MFP();
 
     // takes a MFramework object describing the analysis
-    // to be performed and a ControlFlow object describing the
-    // program that is to be analyzed.
+    // to be performed.
     // returns an array of pairs.
     // result[i].first is the context value of statement s (i.e.
     // the analysis result before the statement), result[i].second

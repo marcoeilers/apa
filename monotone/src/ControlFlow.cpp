@@ -133,10 +133,6 @@ int ControlFlow::addStatement(CPPParser::Statement* s, int label) {
 
 		return ++label;
 	}
-	case CPPParser::TYPE_FUNCTIONCALL: {
-		throw ControlFlowError(
-				"No function calls allowed in intraprocedural analysis.");
-	}
 	default: {
 		// add this stmt to labels
 		addLabel(label, s);

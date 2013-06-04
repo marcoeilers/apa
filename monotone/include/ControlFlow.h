@@ -52,15 +52,28 @@ public:
 	// the last labels of the program
 	std::set<int> getLastLabels();
 protected:
+	// adds a statement with the given label to the list of statements
 	virtual int addStatement(CPPParser::Statement*, int);
+	// adds a statement to 'labels' at the given position
+	// and prints that it is doing so
 	void addLabel(int, CPPParser::Statement*);
+	// adds a transition between two labels to 'transitions'
+	// also calls addTransitionR
 	void addTransition(int, int);
+	// adds a transition to 'transitionsR'
 	void addTransitionR(int, int);
+	// the function's statements, sorted by their labels
 	std::vector<CPPParser::Statement*> labels;
+	// transitions in forward direction
 	std::map<int, std::set<int> > transitions;
+	// transitions in backward direction
 	std::map<int, std::set<int> > transitionsR;
+	// first label (can only contain one label)
 	std::set<int> first;
+	// last labels
 	std::set<int> last;
+	// set used to temporarily collect labels of return
+	// statements, later added to 'last'
 	std::set<int> rets;
 private:
 };

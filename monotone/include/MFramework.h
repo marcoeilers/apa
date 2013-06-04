@@ -12,7 +12,7 @@
 #include "ParserSemantics.h"
 #include "ControlFlow.h"
 
-// Abstract base class for different kinds of intraprocedural analyses.
+// Abstract base class for different kinds of intraprocedural analyses.v
 // Contains only information that is specific for one type of analysis
 // but is independent from the program that is analyzed.
 // Can be used for both forward and backward analyses.
@@ -27,7 +27,7 @@ public:
 	// methods defining the lattice
 	virtual T join(T&, T&) = 0;
 	virtual T bottom() = 0;
-	virtual bool lessThan(T&, T&) = 0;
+	virtual bool lessOrEqual(T&, T&) = 0;
 
 	// transfer function
 	virtual T f(T&, int) = 0;
@@ -41,14 +41,17 @@ public:
 	// gets the next (i.e. following or preceding) labels for a given label
 	virtual std::set<int> getNext(int) = 0;
 
+	// gets the list of all statements in the function
+	// in order of their labels
 	virtual std::vector<CPPParser::Statement*> getLabels() {
 		return cflow->getLabels();
 	}
 
+	// creates a string that describes an object of the type
+	// the lattice works on
 	virtual std::string toString(T& t) {return ""; }
 protected:
 	ControlFlow* cflow;
-private:
 };
 
 #endif // MFRAMEWORK_H
