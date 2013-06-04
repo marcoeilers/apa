@@ -1,3 +1,11 @@
+/*
+ * Parser.h
+ *
+ *      Author: Bas in het Veld (3710971)
+ *              Marco Eilers (F121763)
+ *
+ */
+
 #ifndef PARSER_H
 #define PARSER_H
 

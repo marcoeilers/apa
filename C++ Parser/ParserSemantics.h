@@ -1,3 +1,11 @@
+/*
+ * ParserSemantics.h
+ *
+ *      Author: Bas in het Veld (3710971)
+ *              Marco Eilers (F121763)
+ *
+ */
+
 #ifndef PARSERSEMANTICS_H
 #define PARSERSEMANTICS_H
 

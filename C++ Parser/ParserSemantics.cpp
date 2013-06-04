@@ -1,3 +1,11 @@
+/*
+ * ParserSemantics.cpp
+ *
+ *      Author: Bas in het Veld (3710971)
+ *              Marco Eilers (F121763)
+ *
+ */
+
 #include "ParserSemantics.h"
 
 namespace CPPParser {

@@ -1,3 +1,11 @@
+/*
+ * StringUtil.cpp
+ *
+ *      Author: Bas in het Veld (3710971)
+ *              Marco Eilers (F121763)
+ *
+ */
+
 #include "StringUtil.h"
 #include <string>
 

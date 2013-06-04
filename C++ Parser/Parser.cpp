@@ -1,3 +1,11 @@
+/*
+ * Parser.cpp
+ *
+ *      Author: Bas in het Veld (3710971)
+ *              Marco Eilers (F121763)
+ *
+ */
+
 #include "Parser.h"
 #include "StringUtil.h"
 #include <string>

@@ -1,5 +1,5 @@
 /*
- * main.c++
+ * main.cpp
  *
  *      Author: Bas in het Veld (3710971)
  *              Marco Eilers (F121763)
@@ -170,7 +170,7 @@ int main() {
 		SignAnalysis* s = new SignAnalysis(icf);
 
 		MVP<map<string, set<Sign> > >* mvp = new MVP<map<string, set<Sign> > >(
-				callString);
+				1);
 
 		pair<map<string, map<string, set<Sign> > >,
 				map<string, map<string, set<Sign> > > >* result = mvp->solve(s);
@@ -180,7 +180,7 @@ int main() {
 		PointerAnalysis* p = new PointerAnalysis(icf);
 
 		MVP<map<string, set<string> > >* mvp =
-				new MVP<map<string, set<string> > >(callString);
+				new MVP<map<string, set<string> > >(2);
 
 		pair<map<string, map<string, set<string> > >,
 				map<string, map<string, set<string> > > >* result = mvp->solve(

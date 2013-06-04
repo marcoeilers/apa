@@ -1,9 +1,18 @@
+/*
+ * StringUtil.h
+ *
+ *      Author: Bas in het Veld (3710971)
+ *              Marco Eilers (F121763)
+ *
+ */
+
 #ifndef NIGHTFALL_STRINGUTIL_H_
 #define NIGHTFALL_STRINGUTIL_H_
 
 #include <cstdlib>
 #include <cstdio>
 #include <vector>
+#include <string>
 
 namespace Utils {
 
@@ -23,9 +32,9 @@ public:
 	static void removeComments(std::string& string);
 	/** Split up a string into a vector of string, divided by the spaces in it.
 		Example: "Hello World" becomes ["Hello", "World"].
-		@param 
+		@param
 			string The string to split
-		@return 
+		@return
 			A vector of strings
 	 */
 	static std::vector<std::string> split(std::string string);
