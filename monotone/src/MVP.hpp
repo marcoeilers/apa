@@ -62,7 +62,8 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 				// if it is a normal statement, i.e. no function call or return
 
 				// get current value
-				T old = getCurrentValue(result, current.first, current.second, mf);
+				T old = getCurrentValue(result, current.first, current.second,
+						mf);
 
 				// apply transfer function
 				T iterated = mf->f(old, current.first);
@@ -73,15 +74,9 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 					result[*it][current.second] = mf->join(
 							result[*it][current.second], iterated);
 
-					// add next labels with current context to work list
-					set<int> toRevisit = mf->getNext(*it);
-
-					set<int>::iterator trIt;
-					for (trIt = toRevisit.begin(); trIt != toRevisit.end();
-							trIt++) {
-						pair<int, string> workItem(*it, current.second);
-						workList.insert(workItem);
-					}
+					// add next label with current context to work list
+					pair<int, string> workItem(*it, current.second);
+					workList.insert(workItem);
 				}
 				break;
 			}
@@ -105,7 +100,8 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 				}
 
 				// get current value
-				T old = getCurrentValue(result, current.first, current.second, mf);
+				T old = getCurrentValue(result, current.first, current.second,
+						mf);
 
 				// apply transfer function fcall
 				T iterated = mf->fcall(old, current.first, calledFun);
@@ -115,55 +111,43 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 					result[*it][newContext] = mf->join(result[*it][newContext],
 							iterated);
 
-					set<int> toRevisit = mf->getNext(*it);
-
-					// add next labels with NEW context to work list
-					set<int>::iterator trIt;
-					for (trIt = toRevisit.begin(); trIt != toRevisit.end();
-							trIt++) {
-						pair<int, string> workItem(*it, newContext);
-						workList.insert(workItem);
-					}
+					// add next label with NEW context to work list
+					pair<int, string> workItem(*it, newContext);
+					workList.insert(workItem);
 				}
 				break;
 			}
 			case LABEL_ENTER: {
 				// enter is like default
-				T old = getCurrentValue(result, current.first, current.second, mf);
+				T old = getCurrentValue(result, current.first, current.second,
+						mf);
 
 				// except we use fenter as the transfer function
 				T iterated = mf->fenter(old);
 				if (!mf->lessOrEqual(iterated, result[*it][current.second])) {
 					result[*it][current.second] = mf->join(
 							result[*it][current.second], iterated);
-					set<int> toRevisit = mf->getNext(*it);
 
-					set<int>::iterator trIt;
-					for (trIt = toRevisit.begin(); trIt != toRevisit.end();
-							trIt++) {
-						pair<int, string> workItem(*it, current.second);
-						workList.insert(workItem);
-					}
+					pair<int, string> workItem(*it, current.second);
+					workList.insert(workItem);
+
 				}
 				break;
 			}
 			case LABEL_EXIT: {
 				// exit is like default
-				T old = getCurrentValue(result, current.first, current.second, mf);
+				T old = getCurrentValue(result, current.first, current.second,
+						mf);
 
 				// except we use fexit as the transfer function
 				T iterated = mf->fexit(old);
 				if (!mf->lessOrEqual(iterated, result[*it][current.second])) {
 					result[*it][current.second] = mf->join(
 							result[*it][current.second], iterated);
-					set<int> toRevisit = mf->getNext(*it);
 
-					set<int>::iterator trIt;
-					for (trIt = toRevisit.begin(); trIt != toRevisit.end();
-							trIt++) {
-						pair<int, string> workItem(*it, current.second);
-						workList.insert(workItem);
-					}
+					pair<int, string> workItem(*it, current.second);
+					workList.insert(workItem);
+
 				}
 				break;
 			}
@@ -188,30 +172,28 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 						string oldContext = conIt->first;
 
 						// get the value before the call
-						T beforeCall = getCurrentValue(result, callLbl, oldContext,
-								mf);
+						T beforeCall = getCurrentValue(result, callLbl,
+								oldContext, mf);
 
 						// and the current one, i.e. the one at the return
 						T afterFunc = getCurrentValue(result, current.first,
 								current.second, mf);
 
 						// apply transfer function freturn
-						T iterated = mf->freturn(beforeCall, afterFunc, current.first);
+						T iterated = mf->freturn(beforeCall, afterFunc,
+								current.first);
 
 						// if changed
-						if (!mf->lessOrEqual(iterated, result[*it][oldContext])) {
+						if (!mf->lessOrEqual(iterated,
+								result[*it][oldContext])) {
 							// add to the result with the context from before the call
 							result[*it][oldContext] = mf->join(
 									result[*it][oldContext], iterated);
-							set<int> toRevisit = mf->getNext(*it);
 
-							// add all next labels with context from before the call
-							set<int>::iterator trIt;
-							for (trIt = toRevisit.begin();
-									trIt != toRevisit.end(); trIt++) {
-								pair<int, string> workItem(*it, oldContext);
-								workList.insert(workItem);
-							}
+							// add next label with context from before the call
+							pair<int, string> workItem(*it, oldContext);
+							workList.insert(workItem);
+
 						}
 					}
 				}
@@ -255,32 +237,31 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 			}
 
 			// apply fcall
-			for (finalIt = context.begin(); finalIt != context.end();
+			for (finalIt = result[i].begin(); finalIt != result[i].end();
 					finalIt++) {
-				effect[finalIt->first] = mf->fcall(context[finalIt->first],
-						i, calledFun);
+				effect[finalIt->first] = mf->fcall(result[i][finalIt->first], i,
+						calledFun);
 			}
 			break;
 		}
 		case LABEL_DEFAULT:
 			// for default, enter and exit, just apply the transfer function and
 			// save the result in effect
-			for (finalIt = context.begin(); finalIt != context.end();
+			for (finalIt = result[i].begin(); finalIt != result[i].end();
 					finalIt++) {
-				effect[finalIt->first] = mf->f(context[finalIt->first],
-						i);
+				effect[finalIt->first] = mf->f(result[i][finalIt->first], i);
 			}
 			break;
 		case LABEL_ENTER:
-			for (finalIt = context.begin(); finalIt != context.end();
+			for (finalIt = result[i].begin(); finalIt != result[i].end();
 					finalIt++) {
-				effect[finalIt->first] = mf->fenter(context[finalIt->first]);
+				effect[finalIt->first] = mf->fenter(result[i][finalIt->first]);
 			}
 			break;
 		case LABEL_EXIT:
-			for (finalIt = context.begin(); finalIt != context.end();
+			for (finalIt = result[i].begin(); finalIt != result[i].end();
 					finalIt++) {
-				effect[finalIt->first] = mf->fexit(context[finalIt->first]);
+				effect[finalIt->first] = mf->fexit(result[i][finalIt->first]);
 			}
 			break;
 		case LABEL_RETURN: {
@@ -288,7 +269,7 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 			int callLbl = mf->getCallFromReturn(i);
 
 			// for every context at this label
-			for (finalIt = context.begin(); finalIt != context.end();
+			for (finalIt = result[i].begin(); finalIt != result[i].end();
 					finalIt++) {
 
 				// for every context at the call label
@@ -301,12 +282,12 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 					// if this is the one we are currently working on
 					if (finalIt->first.compare(callContext) == 0) {
 						// apply freturn , save result in effect
-						T beforeCall = result[callLbl][conIt->first];
-						T afterFunc = context[finalIt->first];
+						T beforeCall = final[callLbl].first[conIt->first];
+						T afterFunc = result[i][finalIt->first];
 
-						T old = getCurrentValue(result, callLbl, conIt->first, mf);
-						T newVal = mf->freturn(beforeCall, afterFunc,
-								callLbl);
+						T old = getCurrentValue(result, callLbl, conIt->first,
+								mf);
+						T newVal = mf->freturn(beforeCall, afterFunc, callLbl);
 						effect[conIt->first] = newVal;
 					}
 				}
@@ -332,13 +313,15 @@ pair<map<string, T>, map<string, T> >* MVP<T>::solve(EMFramework<T>* mf) {
 
 		typename map<string, T>::iterator it;
 		for (it = current.first.begin(); it != current.first.end(); it++) {
-			printf("For call string '%s', value is:\n%s\n", printContext(it->first).c_str(),
+			printf("For call string '%s', value is:\n%s\n",
+					printContext(it->first).c_str(),
 					mf->toString(it->second).c_str());
 		}
 		printf("Effect value:\n");
 
 		for (it = current.second.begin(); it != current.second.end(); it++) {
-			printf("For call string '%s', value is:\n%s\n", printContext(it->first).c_str(),
+			printf("For call string '%s', value is:\n%s\n",
+					printContext(it->first).c_str(),
 					mf->toString(it->second).c_str());
 		}
 		printf("\n");
@@ -377,9 +360,9 @@ string MVP<T>::prepend(int label, string context) {
 // turns the internal representaton of a call string
 // into a readable form
 template<typename T>
-string MVP<T>::printContext(string s){
+string MVP<T>::printContext(string s) {
 	stringstream ss;
-	for (int i = 0; i < s.length(); i++){
+	for (int i = 0; i < s.length(); i++) {
 		if (i != 0)
 			ss << ", ";
 		char c = s[i];
@@ -432,8 +415,7 @@ void MVP<T>::addToWorkList(set<pair<int, string> >* wl, int label,
 			set<pair<int, string> >::iterator wlIt;
 			bool found = false;
 			for (wlIt = wl->begin(); wlIt != wl->end(); wlIt++) {
-				if (wlIt->first == *it
-						&& wlIt->second.compare(context) == 0) {
+				if (wlIt->first == *it && wlIt->second.compare(context) == 0) {
 					found = true;
 					break;
 				}

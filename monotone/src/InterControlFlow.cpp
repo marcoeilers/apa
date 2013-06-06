@@ -83,7 +83,7 @@ int InterControlFlow::addFunction(string name, int label, set<int>* rets) {
 		}
 	}
 	if (!found)
-		throw ControlFlowError("Undeclared function called.");
+		throw ControlFlowError("Undeclared function called: "+name);
 	return -1;
 }
 

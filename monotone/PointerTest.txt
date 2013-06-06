@@ -1,9 +1,16 @@
 int main() {
+	int a = 4;
 	int i = 5;
 	int j = 6;
+	int* m = &a;
 	int* p = &i;
 	int* q = &j;
 	if (true)
 		p = q;
 	int** ptr = &q;
+	int** ptr2 = &p;
+	while (*p > i) {
+		*ptr = &q + 2;
+	}
+	*ptr2 = m;
 }

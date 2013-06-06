@@ -3,18 +3,15 @@ Select the file to load:
 2.PointerTest.txt
 3.RecursionTest.txt
 4.SignTest.txt
-Alternatively, type in a filename:4
-Selected SignTest.txt.
+Alternatively, type in a filename:Selected SignTest.txt.
 
 Select the type of analysis:
 1.Available Expression Analysis
 2.Sign Analysis
 3.Pointer Analysis
-:2
-Chosen: 2
+:Chosen: 2
 
-CallString size: 1
-CallString size: 1
+CallString size: CallString size: 0
 Label 0 is VariableDecl|(DataType|int) i = (Variable|val:5).
 Label 1 is VariableDecl|(DataType|int) j = (Variable|val:-3).
 Label 2 is VariableDecl|(DataType|int) k = (Variable|val:0).
@@ -351,7 +348,7 @@ ZERO
 
 For label 11:
 Context value:
-For call string '10', value is:
+For call string '', value is:
 
 For variable i:
 ZERO
@@ -361,7 +358,7 @@ For variable k:
 ZERO
 
 Effect value:
-For call string '10', value is:
+For call string '', value is:
 
 For variable i:
 ZERO
@@ -373,7 +370,7 @@ ZERO
 
 For label 12:
 Context value:
-For call string '10', value is:
+For call string '', value is:
 
 For variable i:
 ZERO
@@ -383,7 +380,7 @@ For variable k:
 ZERO
 
 Effect value:
-For call string '10', value is:
+For call string '', value is:
 
 For variable i:
 ZERO
@@ -397,7 +394,7 @@ PLUS
 
 For label 13:
 Context value:
-For call string '10', value is:
+For call string '', value is:
 
 For variable i:
 ZERO
@@ -409,7 +406,7 @@ For variable p:
 PLUS
 
 Effect value:
-For call string '10', value is:
+For call string '', value is:
 
 For variable i:
 ZERO
@@ -425,7 +422,7 @@ PLUS
 
 For label 14:
 Context value:
-For call string '10', value is:
+For call string '', value is:
 
 For variable i:
 ZERO
@@ -439,7 +436,7 @@ For variable q:
 PLUS
 
 Effect value:
-For call string '10', value is:
+For call string '', value is:
 
 For variable i:
 ZERO
@@ -457,7 +454,7 @@ ZERO
 
 For label 15:
 Context value:
-For call string '10', value is:
+For call string '', value is:
 
 For variable i:
 ZERO
@@ -473,7 +470,7 @@ For variable return:
 ZERO
 
 Effect value:
-For call string '10', value is:
+For call string '', value is:
 
 For variable i:
 ZERO
@@ -491,7 +488,7 @@ ZERO
 
 For label 16:
 Context value:
-For call string '10', value is:
+For call string '', value is:
 
 For variable i:
 ZERO

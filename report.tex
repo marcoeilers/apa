@@ -41,10 +41,10 @@
 \maketitle
 
 \section{Language to be Analyzed}
-We decided to analyze a subset of C++. 
-Since C++ is quite a complicated language, we have created our own parser for it. That way, instead of having to choose what C++ featured we could omit, we could choose the parts we wanted to include. In essence, we are dealing with a complex version of the While-language, with a C++ oriented syntax. Since we are doing a pointer analysis, we included pointers, dereferencing, function calls, function arguments, function return values and more. The next section describes the full grammar used by our parser:
+We decided to analyze a subset of C++ (or C, since we do not use classes). 
+Since C++ is quite a complicated language, we have created our own parser for it. That way, instead of having to choose what C++ featured we could omit, we could choose the parts we wanted to include. In essence, we are dealing with a complex version of the While-language, with a C++ oriented syntax. Since we are doing a pointer analysis, we included pointers, dereferencing, function calls, function arguments, function return values and more. This is the full grammar used by our parser:
 
-\begin{lstlisting}
+\begin{lstlisting}[breaklines=true]
 [program] := [include]* [functionDeclaration]+
 [statement] := [while] | [if] | [variableDeclaration] | [variableAssignment] | [functionCall] | [return] | [codeBlock]
 [while] := while ([condition]) [statement]
@@ -53,13 +53,13 @@ Since C++ is quite a complicated language, we have created our own parser for it
 [variableAssignment] := <name> = [variableValue];
 [combination] := [variableValue] [combinator] [variableValue]
 [allocation] := new [type]([variableValue])
-[variableValue] := [variable] | [combination] | [allocation] | [unknown]
+[variableValue] := [variable] | [combination] | [allocation]
 [functionCall] := <functionName>( [variable]* ); | [variable] = <functionName>( [variable]* );
 [functionDeclaration] := [type] <functionName>( [variableDeclaration]* ) [codeBlock]
 [return] := return [variableValue]? ;
 [codeBlock] := { [statement]* }
 [include] := #include "<filename>"
-[condition] := [variableValue] [relational] [variableValue] | 	[variableValue]
+[condition] := [variableValue] [relational] [variableValue] | [variableValue]
 [type] := int | float | long | char | double | bool
 [relational] := > | < | >= | <= | == | != | && | ||
 [combinator] := + | - | * | /
@@ -73,24 +73,28 @@ We have implemented a general platform to perform intraprocedural as well as int
 \subsection{Monotone Frameworks}
 The general architecture for intraprocedural analyses is as follows:
 ControlFlow stores all the relevant information about a single C++ function. For its only input, a function declaration (which it can obtain from the parser), it assigns labels to all statements, stores the possible transitions between statements and provides some methods to work with this data. ControlFlow therefore stores all information that is specific to the program itself, but is not restricted to any particular kind of analysis. It can therefore be used for both forward and backward analyses.
+
 MFramework is the abstract superclass which has to be extended in order to implement an intraprocedural analysis. Subclasses of MFramework have to provide all the information necessary to perform a specific kind of analysis. They contain information about the used lattice, like bottom element and the join operation, as well as the transfer functions, initial values for extremal labels etc. While an MFramework has only one actual transfer function (f), this gets a reference to the current statement so that it can do different things for different statements. A subclass of MFramework also decides which flow (forward or backward) should be used by the analysis.
+
 MFramework is a class template that takes one type parameter; the data type on which the analysis operates. In the case of an available expressions analysis, this could for example be a set of expressions.
+
 The class MFP computes the Maximal Fixed Point solution for a given monotone framework using the work list algorithm proposed in the course slides. It, too, takes a type parameter specifying which data type the analysis works on. The function solve(MFramework*) returns an array of pairs of that data type, which contains, for each label, both the context and the effect value. 
 The result computed by MFP is therefore always the result of a flow sensitive analysis.
 
 \subsection{Embellished Monotone Frameworks}
 The general structure for interprocedural analyses is very similar:
 InterControlFlow extends ControlFlow, but works on an entire program instead of a single procedure, i.e. it also stores information about interprocedural control flow. 
+
 EMFramework is very similar to MFramework. It is the abstract superclass of all embellished monotone frameworks. The main difference between the two is that EMFramework offers additional transfer functions for procedure calls, entries, exits and returns.
-MVP (similar to MFP) computes the Meet over Valid Paths solution for an embellished monotone framework. Its constructor takes an integer argument which specifies the maximal length of the call strings used as contexts. If this argument is zero, the result of the analysis will therefore be context insensitive, otherwise it is context sensitive.
-Unlike the normal monotone frameworks, our solution for embellished monotone frameworks can only be used for forward analyses, since the call and return transfer functions would need different arguments otherwise.
+
+MVP (similar to MFP) computes the Meet over Valid Paths solution for an embellished monotone framework. Its constructor takes an integer argument which specifies the maximal length of the call strings used as contexts. If this argument is zero, the result of the analysis will therefore be context insensitive, otherwise it is context sensitive. The algorithm to compute the solution is based on the work list algorithm used in MFP, but extended to work with call strings as context, and call different transfer functions for call, entry, exit and return labels.
+Unlike the normal monotone frameworks, our solution for embellished monotone frameworks can only be used for forward analyses, since the call and return transfer functions would need different parameters otherwise.
 
 \section{Analyses}
-While our main goal for this project was the pointer analysis, we have implemented two other kinds of analyses to test our frameworks and check their flexibility and usability in general. As it turned out, interprocedural sign analysis also works as a strong case for the necessity of pointer analyses in a language like C++.
+While our main goal for this project was the pointer analysis, we have implemented two other kinds of analyses to test our frameworks and check their flexibility and usability in general.
 
 \subsection{Intraprocedural Available Expressions Analysis}
-Available expressions analysis for single functions is implemented in the class AExpAnalysis, which extends MFramework. First, all existing and relevant expressions in the program are identified, these include declarations, assignments, if-statements and while-statements.
-TODO lattice, example(s)
+Available expressions analysis for single functions is implemented in the class AExpAnalysis, which extends MFramework. Its constructor identifies all existing and relevant expressions in the program, including declarations, assignments, if-statements and while-statements. These are collected into the set $AExp_*$, which serves as the bottom of our lattice. The other parts of the lattice are defined as follows:
 \begin{align*}
   L &= \mathcal{P}(\textbf{$AExp_*$})\\
   \sqcup &= \cap \\
@@ -98,30 +102,113 @@ TODO lattice, example(s)
   \top &= \emptyset \\
   \forall x, y \in L, x \sqsubseteq y &= x \supseteq y
 \end{align*}
+In this lattice, like in the other lattices we used, we have ACC by default (since all our lattices are naturally finite), so there is no need to use widening. 
+
+The transfer function $f$ first lets another function, $gen$, compute the gen-set for the current statement, which simply consists of all non-trivial expressions that occur in the statement. Then it takes the union of the old value and the gen set and checks for each element of the union, if it is also killed by the statement (i.e. in the case of an assignment, if the variable that is assigned to occurs in the expression), and inserts it into the result if this is not the case. In essence, $f$ computes $(oldValue \cup genSet) \backslash killSet$.
+
+There are two special cases that have to do with pointers. Whenever any value is assigned to a dereferenced pointer, all values are killed. This is necessary because we do not know what the pointer refers to, and therefore cannot rule out for any variable that it has been killed. Since available expressions analysis is a must-analysis, we can only add expressions to the result if we are sure they are available. But since we cannot be sure for any variable, the result must be empty.
+
+A similar situation occurs with function calls: Since this is an intraprocedural analysis, we do not analyze what happens in called functions, and therefore must assume the worst, i.e. that they assign something to a pointer which may point to any of the current variables. Therefore function calls also kill all expressions.
 
 \subsection{Interprocedural Sign Analysis}
-Sign analysis is implemented in the class SignAnalysis, which extends EMFramework.
+Sign analysis is implemented in the class SignAnalysis, which extends EMFramework. It determines for all numeric non-pointer variables (i.e. ints, floats, longs and doubles) whether they can be positive, negative or zero. We implemented it as an independent attribute analysis, i.e. the analysis only determines which sets of signs can occur for which variables, but not which combinations of of signs can occur for different variables. Since this is a may-analysis, the lattice is defined as follows:
 \begin{align*}
   L &= \{ f | f: \textbf{$NumVar_*$} \rightarrow \mathcal{P}(\{PLUS, MINUS, ZERO\}) \} \\
-  \sqcup &= \cup \\
+  \forall x, y \in L, x \sqcup y &= {v \rightarrow x(v) \cup y(v) | v \in vars(x) \cup vars(y) } \\
   \bot  &= \emptyset\\
   \top &= \{ v \rightarrow \{PLUS, MINUS, ZERO\}| v \in \textbf{$NumVar_*$}\} \\
-  \forall x, y \in L, x \sqsubseteq y &= x \subseteq y
+  \forall x, y \in L, x \sqsubseteq y &= vars(x) \subseteq vars(y) \land \forall v \in vars(x), x(v) \subseteq y(v)
 \end{align*}
+\noindent where $NumVar_*$ is the set of all variables with numeric types and $vars$ returns the set of all NumVars with which a value is associated. The data type used is therefore a map from strings (variable names) to sets of signs.
+The normal transfer function $f$ is very intuitive: If the current statement declares a new numeric variable, its initial value is evaluated for its possible signs and saved in the map under the variable's name. If the current statement is an assignment, we first check if the variable that we assign to is already in the map. If it is, it must be a numeric variable and we evaluate the right hand side of the assignment and assign its signs to the variable. Otherwise it may be a pointer or a variable of a different kind, and we just ignore it. 
+
+If a value is assigned to a dereferenced pointer, however, we have a similar problem as in available expressions analysis. Since we don't know what the pointer points to, we must assume that the assignment could have been made to any variable in our program. Therefore we must add the signs of the right hand side of the assignment to all numeric variables in order to stay sound. We must not, however, overwrite the current values completely, since it is also possible for any given variable that the pointer did not point to it, and it therefore still has its old value.
+
+The transfer function for function calls, $fcall$, simply adds the numeric parameter variables of the called function (if any) to an empty map and assigns the signs of the respective arguments to them. The map will therefore only contain variables that are accessible in the function.
+
+While $fenter$ and $fexit$ both simply return the input value, $freturn$ is more complicated. Starting with the map from before the function call, $freturn$ first assigns the signs of the returned value (which is temporarily saved in the map under the name 'return') to the variable which the function's result is assigned to, if any. But if an assignment to a dereferenced pointer has been made within the function, this may not be enough: The pointer could point to something outside the function (i.e. in the scope of the return label). For this reason, we had to use a slightly dirty trick: Every assignment to a dereferenced pointer adds the signs of the right hand side to a variable called '0all' (called like this because it could refer to any variable, and starting with a zero because this is not a valid variable name in C++, and therefore it cannot collide with any actual variable in the program). This variable is not printed, but $freturn$ looks at it and, if it is not empty, adds all signs that '0all' has to every variable in the current scope. It also propagates '0all' itself along with its value to the current scope, since there may have been a nested function call, and the variables in the function that has called the current function may be affected as well.
+
+$getSigns$ evaluates the potential signs of an expression in the current context. For a numeral, it just returns the sign of the numeral. For a variable, it looks up the current signs of the variable in the current map. For a Combination, i.e. an arithmetic expression, it uses one of four different lookup tables (one for each possible operator) to compute the possible signs of the result.
 
 \subsection{Interprocedural Pointer Analysis}
+Both of the two former analyses have made it obvious that it is important to know which variables a given pointer can potentially point to at any given statement in the program. The points-to analysis, which tries to find out exactly that, is implemented in the class PointerAnalysis, which, being an interprocedural analysis, also extends EMFramework. 
+
+This, too, is implemented as an independent attribute analysis. It operates on a map from strings (variable identifiers) to the sets of strings (other variable identifiers) they may point to. The entire lattice is defined as follows:
+\begin{align*}
+  L &= \{ f | f: \textbf{$VarID_*$} \rightarrow \mathcal{P}(\textbf{$VarID_*$}) \} \\
+  \forall x, y \in L, x \sqcup y &= {v \rightarrow x(v) \cup y(v) | v \in vars(x) \cup vars(y) } \\
+  \bot  &= \emptyset\\
+  \top &= \{ v \rightarrow \textbf{$VarID_*$}| v \in \textbf{$VarID_*$}\} \\
+  \forall x, y \in L, x \sqsubseteq y &= vars(x) \subseteq vars(y) \land \forall v \in vars(x), x(v) \subseteq y(v)
+\end{align*}
+\noindent where $VarID_*$ is a set of strings uniquely identifying each variable or allocation in the program.
+
+Our approach is based on a simple implementation of Andersen's pointer analysis as found in here\footnote{\url{http://drona.csa.iisc.ernet.in/~raghavan/pav2012/ptr-analysis-notes.pdf}}, adapted for interprocedural use. The basic idea is to compute, for every assignment, which pointer variables the left hand side can refer to, which variables' addresses the right hand side evaluates to, and assign the latter to the former. The concrete implementation in the general transfer function $f$ is a little more subtle:
+
+If the current statement is a declaration of a new pointer variable, the unique identifier of the variable is added to the map along with its initial value, which is computed from the right hand side of the initial assignment. If it is an assignment, both sides of the assignment are evaluated. What happens then depends on the exact shape of the left hand side. If the left hand side evaluated to something that is not already in the map, it cannot be a pointer variable, so our analysis does not care about it and does nothing. If it does evaluate to one or several identifiers that are in the map, there are two possibilities. The left hand side could simply be a variable name, or it could be a dereferenced pointer. The functions for evaluating the both sides of the assignment $evaluateLhs$ and $evaluateRhs$ (here shown in a simplified way, as taken from the above-mentioned link), show that this distinction is important:
+\begin{lstlisting}
+evaluateLhs("x") = { "x" }
+evaluateLhs("*e") = evaluateRhs("e")
+evaluateRhs("&x") = { "x" }
+evaluateRhs("x") = PT["x"]
+evaluateRhs("*e") = { PT[p] | p in evaluateRhs("e") }
+\end{lstlisting}
+If the left hand side is simply a variable name, as in the first case, we know with certainty that this variable, and none other, will be assigned the value on the right hand side. In this case, we can set the new value of this variable to be the result of evaluating the right hand side. If, however, it is a dereferenced pointer, the analysis first computes what this pointer can point to. Since this is a may analysis, it is possible for all of the results that the pointer actually does point to it, but it it also possible that it doesn't. Because of the latter case, we cannot overwrite the current value of each of those variables by the result of evaluating the right hand side. Instead, we must add this result to the current value (take the union of both sets). 
+
+One special case for $evaluateRhs$ that is not mentioned above is if the right hand side is a combination, i.e. an arithmetic expression. Since we have no way of evaluating what the result of a calculation might point to (it does not actually make much sense without structs or arrays), we will just have to assume that it can point to any variable in the program.
+
+When applying the general algorithm to interprocedural analysis, one encounters the problem that different variables from different scopes may have the same name. The standard solution for this problem is to identify variables by the line numbers or labels where they are declared. In our approach, we use a string containing both the name and the line number, which is both unique and easily readable by humans. The function $getID$ computes the identifier of a variable given the variable's name and the current label in the program. Both $evaluateLhs$ and $evaluateRhs$ always take the original variable names as input and output sets of IDs.
+
+The transfer functions for interprocedural calls are comparatively simple. $fcall$ checks for all parameters of the called function if they are pointer variables and, if so, adds them to the map along with the output of $evaluateRhs$ of the respective argument. In contrast to sign analysis, it also propagates all current mappings into the function call. This is necessary because pointers, by their very nature, can refer to something outside the current scope, and the transfer functions need the information about all pointers within the called function as well. Since we are using unique identifiers, we have no problems with variables sharing the same name. 
+
+Agian, $fenter$ and $fexit$ are simply the identity function. $freturn$ looks at all mappings that result from the function call. For each one of them that describes a variable that was already present before the call (and is therefore in scope again after the function call), it takes the new value resulting from the function call. If the function has not changed the specific variable, it will simply be the same, otherwise it will definitely be changed, so there is no risk of getting unsound here. Finally, as usual, it assigns the returned value (again temporarily saved in the map under the name 'return') to the value that takes the function's output, if any. 
 
 \section{Evaluation of our Solution}
+All three analyses produce correct results for all sample programs we have tested. We are therefore convinced that their implementations are correct for most cases. It may be that in some special cases we didn't think of, our program will either compute false results or just segfault. Implementing the analyses in C++ definitely did not make things easier and proved to be a real challenge in some places, but we managed to produce something that works.
 
-\section{How to run}
-libboost-regex1.46-dev works
+The language subset of C++ or C that we are dealing with is obviously very limited and it would have been nicer to work with something that more closely resembles a complete programming language. In the special case of pointer analysis, it would have been very interesting (and very difficult) to deal with structs or arrays, but we did not have time to include those features. Similarly, since the analysis results of available expressions analysis and sign analysis can be quite imprecise if many pointers are used (since we always have to assume the worst case), it would make sense to try to use the results of pointer analysis in the sign analysis, but again, we lacked the time. However, the analyses we \emph{do} have produce sound results that are as precise as possible without knowing what the pointers point to, so we are happy with the result in general.
 
+We believe the general architecture of our solution is solid and not too specific to the kinds of analysis we wanted to perform. It would have to have a framework for performing interprocedural backward analyses as well, but we only support that for intraprocedural analyses. All in all, we think we have implemented a good framework for all kinds of analyses with monotone frameworks. The solver classes (MFP and MVP) as well as the abstract classes for the frameworks (MFramework and EMFramework) are also almost completely independent from the C++ parser (and could therefore with very few minor changes also be used for other languages), although the control flow classes are not.
+
+In terms of architecture, maybe it would have been possible to reuse more of the intraprocedural analysis architecture for the interprocedural analyses. As mentioned before, we consciously decided not to do this so that we wouldn't have to compromise the very simple architecture of the intraprocedural analysis framework in any way to make the much more complicated interprocedural part work.
+
+\section{Compiling and Running our Code}
+\subsection{How to Compile}
+The Boost library, more specifically its regex-module, is required to compile our solution. We have tested with version 1.46, but other (newer) versions should work as well. In addition to that, the compiler must support C++ 11, since we have used a few of its features. For g++ (we used version 4.6.3), this can be enabled via the command line argument \texttt{-std=c++0x}, resulting in the following command:
 \begin{lstlisting}
-  g++ -o prog -O3 -std=c++0x main.cpp PointerAnalysis.cpp 
+  g++ -o analysis -O3 -std=c++0x main.cpp PointerAnalysis.cpp 
   SignAnalysis.cpp MVP.h MFramework.h MFP.h InterControlFlow.cpp 
   EMFramework.h ControlFlow.cpp AExpAnalysis.cpp MFP.h Parser.cpp 
   ParserSemantics.cpp StringUtil.cpp /usr/lib/libboost_regex.so
-
 \end{lstlisting}
+The location of the boost module can, of course, differ on other systems, but generally this should work on Linux systems. Since we do not own any machines running OS X, we are unfortunately unable to give any proper advice for compiling it for such systems.
+
+In case you find yourself unable to compile the program on your MacBook, you are of course welcome to try it on our machine.
+
+\subsection{How to Run}
+If you run the generated executable from the command line without any arguments, you will be asked to enter the name of a file with code you want to analyze. Alternatively, you can choose between a number of our example programs. Once you have chosen a file, you will be asked to select which kind of analysis to perform. If you select an interprocedural analysis (i.e. sign or pointer analysis), you will subsequently be asked to specify the length of the call string. After that, the program will be analyzed and the results will be printed to the screen.
+
+\section{Example Programs and Results}
+We have included at least two sample programs for each analysis including the analysis results. Since the results take up a lot of space when printed out, we will not include them in the report. Instead, you will find the result for 'NameTest.txt' in 'NameResult.txt' or 'NameResult2.txt' where the number at the end indicates the call string length for interprocedural analyses.
+
+I will walk through one of the examples for pointer analysis here. The example program looks as follows:
+
+\lstinputlisting[caption=Example program PointerInterTest.txt]{PointerInterTest.txt}
+
+The initial value is an empty set, so that is the context value for the first statement. The first two statements are declarations of non-pointer variables, so they have no effect. For the third statement, two things happen: since k is a pointer, an entry for its ID (which is 'k (label 2)' because its declaration is at label 2) is inserted into the map, with the value being 'new int (label 2)'. Similarly, two more entries are inserted for p and q in the subsequent statements, pointing to the already defined variables i and j.
+
+So far, the control flow was entirely linear and the effect value of one statement was always simply propagated into the context value of the next statement. Now there's an if clause, which in itself has no effect. If the condition is true, q is assigned to p, meaning that p now also points to j instead of i. Now the effect value of the assignment and the effect value of the if condition are both propagated into the next label (label 7). The union for all entries is computed to get the context value of label 7, meaning that p is now said to possibly point to i or to j.
+
+Now we declare a pointer to an int pointer named ptr, which is set to point to q. This happens as before, a new entry is put into the map, its value is the ID of q. In the next statement, we assign something to *ptr. This means that the algorithm looks up what ptr points to, which is a set containing only q, and every entry in this set (i.e. q) is set to point to i. 
+
+The next statement is a function call from label 9. For this, the values of the arguments are looked up and assigned to the parameters' IDs. Notice that while there are two variables named j, they have different IDs based on their label. Notice also that all values that were in the map before the call remain there after. From now on, the call string is also '9' instead of the empty string.
+
+Again there is a declaration of a new variable inside which is handled as before. Then we assign inside to the target of w. Since w was assigned ptr and there fore points to q, q now points to the newly allocated integer. This is why it is important to have all variables in the context even in the function call. Then we return a newly created variable, i.e. store its points-to set under the name 'return'. 
+
+Back outside the function, the context is back to the empty string. Now the variables declared inside the function are out of scope again. Values of variables that existed before the call but have been changed inside the function (in this case q) are also changed at the return label. Finally, the value that was stored as 'return' is now assigned to k.
+
+The entire analysis result can be seen here. 
+
+\lstinputlisting[caption=Pointer analysis result for PointerInterTest.txt,breaklines=true]{PointerInterResult1.txt}
 
 \end{document}

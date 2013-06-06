@@ -1,0 +1,156 @@
+Select the file to load:
+1.FibTest.txt
+2.PointerTest.txt
+3.RecursionTest.txt
+4.SignTest.txt
+Alternatively, type in a filename:Selected AExpr2Test.txt.
+
+Select the type of analysis:
+1.Available Expression Analysis
+2.Sign Analysis
+3.Pointer Analysis
+:Chosen: 1
+Label 0 is VariableDecl|(DataType|int) b = (Variable|val:5).
+Label 1 is VariableDecl|(DataType|int*) p = (Variable|val:&b).
+Label 2 is VariableDecl|(DataType|int) c = (Variable|val:2013).
+Label 3 is VariableDecl|(DataType|int) i = (Combination|(Variable|val:b) + (Variable|val:c)).
+Label 4 is VariableDecl|(DataType|int) res = (Variable|val:0).
+Label 5 is While(RelationalCondition|(Combination|(Variable|val:i) + (Variable|val:res)) < (Variable|val:10)).
+Label 6 is If(RelationalCondition|(Variable|val:i) > (Combination|(Variable|val:5) + (Variable|val:res))).
+Label 7 is VariableAssignment|b = (Combination|(Variable|val:b) + (Variable|val:1)).
+Label 8 is VariableDecl|(DataType|int) a = (Combination|(Variable|val:b) + (Variable|val:i)).
+Label 9 is FunctionCall|doSomething((Variable|val:a)).
+Label 10 is If(RelationalCondition|(Variable|val:i) > (Variable|val:9)).
+Label 11 is While(RelationalCondition|(Variable|val:i) < (Variable|val:15)).
+Label 12 is VariableAssignment|i = (Combination|(Variable|val:i) + (Variable|val:c)).
+Label 13 is VariableAssignment|res = (Combination|(Variable|val:i) + (Variable|val:b)).
+Label 14 is VariableAssignment|c = (Combination|(Variable|val:i) + (Variable|val:5)).
+Label 15 is VariableAssignment|&p = (Variable|val:17).
+Transitions from 0: 1
+Transitions from 1: 2
+Transitions from 2: 3
+Transitions from 3: 4
+Transitions from 4: 5
+Transitions from 5: 6, 10
+Transitions from 6: 7, 8
+Transitions from 7: 8
+Transitions from 8: 9
+Transitions from 9: 5
+Transitions from 10: 11, 14
+Transitions from 11: 12, 14
+Transitions from 12: 13
+Transitions from 13: 11
+Transitions from 14: 15
+For label 0:
+Context value:
+
+
+Effect value:
+
+
+For label 1:
+Context value:
+
+
+Effect value:
+
+
+For label 2:
+Context value:
+
+
+Effect value:
+
+
+For label 3:
+Context value:
+
+
+Effect value:
+Combination|(Variable|val:b) + (Variable|val:c)
+
+For label 4:
+Context value:
+Combination|(Variable|val:b) + (Variable|val:c)
+
+Effect value:
+Combination|(Variable|val:b) + (Variable|val:c)
+
+For label 5:
+Context value:
+
+
+Effect value:
+
+
+For label 6:
+Context value:
+
+
+Effect value:
+Combination|(Variable|val:5) + (Variable|val:res)
+
+For label 7:
+Context value:
+Combination|(Variable|val:5) + (Variable|val:res)
+
+Effect value:
+Combination|(Variable|val:5) + (Variable|val:res)
+
+For label 8:
+Context value:
+Combination|(Variable|val:5) + (Variable|val:res)
+
+Effect value:
+Combination|(Variable|val:5) + (Variable|val:res), Combination|(Variable|val:b) + (Variable|val:i)
+
+For label 9:
+Context value:
+Combination|(Variable|val:5) + (Variable|val:res), Combination|(Variable|val:b) + (Variable|val:i)
+
+Effect value:
+
+
+For label 10:
+Context value:
+
+
+Effect value:
+
+
+For label 11:
+Context value:
+
+
+Effect value:
+
+
+For label 12:
+Context value:
+
+
+Effect value:
+
+
+For label 13:
+Context value:
+
+
+Effect value:
+Combination|(Variable|val:i) + (Variable|val:b)
+
+For label 14:
+Context value:
+
+
+Effect value:
+Combination|(Variable|val:i) + (Variable|val:5)
+
+For label 15:
+Context value:
+Combination|(Variable|val:i) + (Variable|val:5)
+
+Effect value:
+
+
+Press any key to exit..

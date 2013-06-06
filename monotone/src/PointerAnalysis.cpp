@@ -259,6 +259,13 @@ set<string> PointerAnalysis::evaluateRhs(int label, CPPParser::VariableValue* v,
 		// we will not evaluate this
 		// add all known pointers and vars to be safe
 		// since it could point to anything
+		map<string, map<string, string> >::iterator idIt;
+		for (idIt = varIDs.begin(); idIt != varIDs.end(); idIt++){
+			map<string, string>::iterator it;
+			for (it = idIt->second.begin(); it != idIt->second.end(); it++){
+				result.insert(it->second);
+			}
+		}
 		map<string, set<string> >::iterator it;
 		for (it = old.begin(); it != old.end(); it++) {
 			result.insert(it->first);
@@ -304,9 +311,16 @@ map<string, set<string> > PointerAnalysis::f(map<string, set<string> >& old,
 		// for every var in lhs
 		set<string>::iterator it;
 		for (it = lhs.begin(); it != lhs.end(); it++) {
-			set<string> oldVal = old[*it];
-			// assign new value rhs
-			result[*it] = rhs;
+			if (va->derefDepth > 0)
+				// add new value rhs to current value
+				// since lhs is a dereferenced pointer and we cannot be
+				// sure that it actually points to the current value
+				// therefore we cannot overwrite
+				result[*it].insert(rhs.begin(), rhs.end());
+			else
+				// set value to rhs
+				// we definitely know that the value of lhs will be overwritten
+				result[*it] = rhs;
 		}
 		break;
 	}
@@ -422,8 +436,12 @@ map<string, set<string> > PointerAnalysis::freturn(
 		// for every var in lhs
 		set<string>::iterator it;
 		for (it = lhs.begin(); it != lhs.end(); it++) {
-			// set new value rhs
-			result[*it] = rhs;
+			if (fc->returnVariable->derefDepth > 0)
+				// add new value
+				result[*it].insert(rhs.begin(), rhs.end());
+			else
+				// assign new value
+				result[*it] = rhs;
 		}
 	}
 

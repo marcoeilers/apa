@@ -1,9 +1,8 @@
-// This is the example from the slides
 int main() {
 	int a = 1;
 	int b = 2;
 	int x = 3;
-	x = (a + b) * x;
+	x = x * (a + b);
 	int y = a * b;
 	while (a * b > a + b) {
 		a = a + 1;

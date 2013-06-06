@@ -57,10 +57,8 @@ pair<T, T> * MFP<T>::solve(MFramework<T>* mf) {
 				// join with old value
 				result[*it] = mf->join(result[*it], iterated);
 
-				// add following labels to work list
-				set<int> toRevisit = mf->getNext(*it);
-
-				workList.insert(toRevisit.begin(), toRevisit.end());
+				// add next label to work list
+				workList.insert(*it);
 			}
 		}
 	}

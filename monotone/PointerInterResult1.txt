@@ -3,18 +3,15 @@ Select the file to load:
 2.PointerTest.txt
 3.RecursionTest.txt
 4.SignTest.txt
-Alternatively, type in a filename:PointerInterTest.txt
-Selected PointerInterTest.txt.
+Alternatively, type in a filename:Selected PointerInterTest.txt.
 
 Select the type of analysis:
 1.Available Expression Analysis
 2.Sign Analysis
 3.Pointer Analysis
-:3
-Chosen: 3
+:Chosen: 3
 
-CallString size: 2
-CallString size: 2
+CallString size: CallString size: 1
 Label 0 is VariableDecl|(DataType|int) i = (Variable|val:5).
 Label 1 is VariableDecl|(DataType|int) j = (Variable|val:6).
 Label 2 is VariableDecl|(DataType|int*) k = (Allocation|(DataType|int) (Variable|val:2)).
@@ -71,7 +68,6 @@ For label 2:
 Context value:
 For call string '', value is:
 
-For variable k (label 2):
 
 Effect value:
 For call string '', value is:
@@ -86,7 +82,6 @@ For call string '', value is:
 
 For variable k (label 2):
 Points to new int (label 2).
-For variable p (label 3):
 
 Effect value:
 For call string '', value is:
@@ -105,7 +100,6 @@ For variable k (label 2):
 Points to new int (label 2).
 For variable p (label 3):
 Points to i (label 0).
-For variable q (label 4):
 
 Effect value:
 For call string '', value is:
@@ -171,7 +165,6 @@ Points to new int (label 2).
 For variable p (label 3):
 Points to i (label 0).
 Points to j (label 1).
-For variable ptr (label 7):
 For variable q (label 4):
 Points to j (label 1).
 
@@ -215,14 +208,13 @@ For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
 Points to i (label 0).
+Points to j (label 1).
 
 
 For label 9:
 Context value:
 For call string '', value is:
 
-For variable a (param of func):
-For variable i (param of func):
 For variable k (label 2):
 Points to new int (label 2).
 For variable p (label 3):
@@ -232,14 +224,13 @@ For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
 Points to i (label 0).
-For variable w (param of func):
+Points to j (label 1).
 
 Effect value:
 For call string '', value is:
 
 For variable a (param of func):
 Points to new int (label 2).
-For variable i (param of func):
 For variable k (label 2):
 Points to new int (label 2).
 For variable p (label 3):
@@ -249,17 +240,17 @@ For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
 Points to i (label 0).
+Points to j (label 1).
 For variable w (param of func):
 Points to q (label 4).
 
 
 For label 10:
 Context value:
-For call string '9, 0', value is:
+For call string '9', value is:
 
 For variable a (param of func):
 Points to new int (label 2).
-For variable i (param of func):
 For variable k (label 2):
 Points to new int (label 2).
 For variable p (label 3):
@@ -269,15 +260,15 @@ For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
 Points to i (label 0).
+Points to j (label 1).
 For variable w (param of func):
 Points to q (label 4).
 
 Effect value:
-For call string '9, 0', value is:
+For call string '9', value is:
 
 For variable a (param of func):
 Points to new int (label 2).
-For variable i (param of func):
 For variable k (label 2):
 Points to new int (label 2).
 For variable p (label 3):
@@ -287,18 +278,17 @@ For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
 Points to i (label 0).
+Points to j (label 1).
 For variable w (param of func):
 Points to q (label 4).
 
 
 For label 11:
 Context value:
-For call string '9, 0', value is:
+For call string '9', value is:
 
 For variable a (param of func):
 Points to new int (label 2).
-For variable i (param of func):
-For variable inside (label 11):
 For variable k (label 2):
 Points to new int (label 2).
 For variable p (label 3):
@@ -308,15 +298,15 @@ For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
 Points to i (label 0).
+Points to j (label 1).
 For variable w (param of func):
 Points to q (label 4).
 
 Effect value:
-For call string '9, 0', value is:
+For call string '9', value is:
 
 For variable a (param of func):
 Points to new int (label 2).
-For variable i (param of func):
 For variable inside (label 11):
 Points to new int (label 11).
 For variable k (label 2):
@@ -328,17 +318,17 @@ For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
 Points to i (label 0).
+Points to j (label 1).
 For variable w (param of func):
 Points to q (label 4).
 
 
 For label 12:
 Context value:
-For call string '9, 0', value is:
+For call string '9', value is:
 
 For variable a (param of func):
 Points to new int (label 2).
-For variable i (param of func):
 For variable inside (label 11):
 Points to new int (label 11).
 For variable k (label 2):
@@ -350,15 +340,15 @@ For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
 Points to i (label 0).
+Points to j (label 1).
 For variable w (param of func):
 Points to q (label 4).
 
 Effect value:
-For call string '9, 0', value is:
+For call string '9', value is:
 
 For variable a (param of func):
 Points to new int (label 2).
-For variable i (param of func):
 For variable inside (label 11):
 Points to new int (label 11).
 For variable k (label 2):
@@ -369,6 +359,8 @@ Points to j (label 1).
 For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
+Points to i (label 0).
+Points to j (label 1).
 Points to new int (label 11).
 For variable w (param of func):
 Points to q (label 4).
@@ -376,11 +368,10 @@ Points to q (label 4).
 
 For label 13:
 Context value:
-For call string '9, 0', value is:
+For call string '9', value is:
 
 For variable a (param of func):
 Points to new int (label 2).
-For variable i (param of func):
 For variable inside (label 11):
 Points to new int (label 11).
 For variable k (label 2):
@@ -391,17 +382,17 @@ Points to j (label 1).
 For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
+Points to i (label 0).
+Points to j (label 1).
 Points to new int (label 11).
-For variable toReturn (label 13):
 For variable w (param of func):
 Points to q (label 4).
 
 Effect value:
-For call string '9, 0', value is:
+For call string '9', value is:
 
 For variable a (param of func):
 Points to new int (label 2).
-For variable i (param of func):
 For variable inside (label 11):
 Points to new int (label 11).
 For variable k (label 2):
@@ -412,6 +403,8 @@ Points to j (label 1).
 For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
+Points to i (label 0).
+Points to j (label 1).
 Points to new int (label 11).
 For variable toReturn (label 13):
 Points to new int (label 13).
@@ -421,11 +414,10 @@ Points to q (label 4).
 
 For label 14:
 Context value:
-For call string '9, 0', value is:
+For call string '9', value is:
 
 For variable a (param of func):
 Points to new int (label 2).
-For variable i (param of func):
 For variable inside (label 11):
 Points to new int (label 11).
 For variable k (label 2):
@@ -436,6 +428,8 @@ Points to j (label 1).
 For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
+Points to i (label 0).
+Points to j (label 1).
 Points to new int (label 11).
 For variable toReturn (label 13):
 Points to new int (label 13).
@@ -443,11 +437,10 @@ For variable w (param of func):
 Points to q (label 4).
 
 Effect value:
-For call string '9, 0', value is:
+For call string '9', value is:
 
 For variable a (param of func):
 Points to new int (label 2).
-For variable i (param of func):
 For variable inside (label 11):
 Points to new int (label 11).
 For variable k (label 2):
@@ -458,6 +451,8 @@ Points to j (label 1).
 For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
+Points to i (label 0).
+Points to j (label 1).
 Points to new int (label 11).
 For variable return:
 Points to new int (label 13).
@@ -469,11 +464,10 @@ Points to q (label 4).
 
 For label 15:
 Context value:
-For call string '9, 0', value is:
+For call string '9', value is:
 
 For variable a (param of func):
 Points to new int (label 2).
-For variable i (param of func):
 For variable inside (label 11):
 Points to new int (label 11).
 For variable k (label 2):
@@ -484,6 +478,8 @@ Points to j (label 1).
 For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
+Points to i (label 0).
+Points to j (label 1).
 Points to new int (label 11).
 For variable return:
 Points to new int (label 13).
@@ -493,11 +489,10 @@ For variable w (param of func):
 Points to q (label 4).
 
 Effect value:
-For call string '9, 0', value is:
+For call string '9', value is:
 
 For variable a (param of func):
 Points to new int (label 2).
-For variable i (param of func):
 For variable inside (label 11):
 Points to new int (label 11).
 For variable k (label 2):
@@ -508,6 +503,8 @@ Points to j (label 1).
 For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
+Points to i (label 0).
+Points to j (label 1).
 Points to new int (label 11).
 For variable return:
 Points to new int (label 13).
@@ -519,11 +516,10 @@ Points to q (label 4).
 
 For label 16:
 Context value:
-For call string '9, 0', value is:
+For call string '9', value is:
 
 For variable a (param of func):
 Points to new int (label 2).
-For variable i (param of func):
 For variable inside (label 11):
 Points to new int (label 11).
 For variable k (label 2):
@@ -534,6 +530,8 @@ Points to j (label 1).
 For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
+Points to i (label 0).
+Points to j (label 1).
 Points to new int (label 11).
 For variable return:
 Points to new int (label 13).
@@ -553,6 +551,8 @@ Points to j (label 1).
 For variable ptr (label 7):
 Points to q (label 4).
 For variable q (label 4):
+Points to i (label 0).
+Points to j (label 1).
 Points to new int (label 11).
 
 

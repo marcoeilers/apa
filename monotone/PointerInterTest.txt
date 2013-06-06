@@ -1,7 +1,7 @@
 int main() {
 	int i = 5;
 	int j = 6;
-	int* k = new int(2);
+	int* k = &i;
 	int* p = &i;
 	int* q = &j;
 	if (true)
@@ -9,7 +9,6 @@ int main() {
 	int** ptr = &q;
 	*ptr = &i;
 	k = func(7, k, ptr);
-	
 	
 }
 
