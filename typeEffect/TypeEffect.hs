@@ -4,8 +4,10 @@ module TypeEffect where
 import Data.Map as M
 import Data.Set
 import Data.Maybe
+import Debug.Trace
 
 import AST
+import Parser
 
 import Control.Monad.State
 
@@ -82,16 +84,16 @@ unify Int Int = idSubst
 unify Bool Bool = idSubst
 unify (Func t1 t2 b1) (Func t3 t4 b2) = combine s2 (combine s1 s0)
   where s0 = (M.empty, M.insert b2 b1 M.empty)
-        s1 = unify (subst t1 s0) (subst t3 s1)
+        s1 = unify (subst t1 s0) (subst t3 s0)
         s2 = unify (subst (subst t2 s0) s1) (subst (subst t4 s0) s1)
 unify (TVar v) t = if t == (TVar v) 
                    then result
                    else if not (contains t v) 
                         then result
-                        else error "Error"
+                        else error "Error in unify: var t case"
   where result = (M.insert v t M.empty, M.empty)
 unify t (TVar v) = unify (TVar v) t
-unify _ _ = error "Error"
+unify t1 t2 = error $ "Error in unify: other case" ++ (show t1) ++ "  " ++ (show t2)
 
 getAV :: LS AVar
 getAV = do
@@ -109,34 +111,42 @@ insertTypeMap :: TSubst -> TVar -> SType -> TSubst
 insertTypeMap (ts, as) v t = (M.insert v t ts, as)
 
 infer :: STEnv -> LTerm -> LS (SType, TSubst, Constraint)
-infer _ (LConst _ (CNum _)) = return (Int, idSubst, [])
-infer _ (LConst _ CTrue) = return (Bool, idSubst, [])
-infer _ (LConst _ CFalse) = return (Bool, idSubst, [])
-infer e (LFn l v t) = do
+infer e t = do
+  (ty, sub, constr) <- infer' e t
+  return $ trace ("\n\nFor term " ++ (show t) ++ " get Type " ++ (show ty) ++ " and subst " ++ (show sub) ++" and constr " ++ (show constr)) (ty, sub, constr)
+
+infer' _ (LConst _ (CNum _)) = return (Int, idSubst, [])
+infer' _ (LConst _ CTrue) = return (Bool, idSubst, [])
+infer' _ (LConst _ CFalse) = return (Bool, idSubst, [])
+infer' e (LIdent _ v) = if M.member v e
+                        then return (fromJust (M.lookup v e), idSubst, [])
+                        else error $ "Var not found in environment: " ++ (show v)
+infer' e (LFn l v e0) = do
   ax <- getTV
-  (t0, s0, c0) <- infer (M.insert v (TVar ax) e) t
+  (t0, s0, c0) <- infer (M.insert v (TVar ax) e) e0
   b0 <- getAV
   let axs0 = subst (TVar ax) s0
-  return (Func axs0 t0 b0, s0, (b0, Ann l) : c0 )
-infer e (LFun l v1 v2 t) = do
+      resT = Func axs0 t0 b0
+  return (resT, s0, (b0, Ann l) : c0 )
+infer' e (LFun l f v e0) = do
   ax <- getTV
   a0 <- getTV
   b0 <- getAV
-  let e' = M.insert v2 (TVar ax) e
-      e'' = M.insert v1 (Func (TVar ax) (TVar a0)  b0) e'
-  (t0, s0, c0) <- infer e'' t
+  let e' = M.insert v (TVar ax) e
+      e'' = M.insert f (Func (TVar ax) (TVar a0)  b0) e'
+  (t0, s0, c0) <- infer e'' e0
   let s1 = unify t0 (subst (TVar a0) s0)
       resT = Func (subst (subst (TVar ax) s0) s1) (subst t0 s1) (substA (substA b0 s0) s1)
       resC = (substA (substA b0 s0) s1, Ann l) : (substC c0 s1)
   return (resT, combine s1 s0, resC)
-infer e (LApp l e1 e2) = do
+infer' e (LApp l e1 e2) = do
   (t1, s1, c1) <- infer e e1
   (t2, s2, c2) <- infer (substEnv e s1) e2
   a <- getTV
   b <- getAV
   let s3 = unify (subst t1 s2) (Func t2 (TVar a) b)
   return (subst (TVar a) s3, combine s3 (combine s2 s1), (substC (substC c1 s2) s3) ++ (substC c2 s3))
-infer e (LIf l e0 e1 e2) = do
+infer' e (LIf l e0 e1 e2) = do
   (t0, s0, c0) <- infer e e0
   (t1, s1, c1) <- infer (substEnv e s0) e1
   (t2, s2, c2) <- infer (substEnv (substEnv e s0) s1) e2
@@ -147,11 +157,11 @@ infer e (LIf l e0 e1 e2) = do
       retC1 = substC (substC (substC c1 s2) s3) s4
       retC2 = substC (substC c2 s3) s4
   return (subst (subst t2 s3) s4, retS, retC0 ++ retC1 ++ retC2)
-infer e (LLet l v e1 e2) = do
+infer' e (LLet l v e1 e2) = do
   (t1, s1, c1) <- infer e e1
   (t2, s2, c2) <- infer (M.insert v t1 (substEnv e s1)) e2
   return (t2, combine s2 s1, (substC c1 s2) ++ c2)
-infer e (LBinop l o e1 e2) = do
+infer' e (LBinop l o e1 e2) = do
   (t1, s1, c1) <- infer e e1
   (t2, s2, c2) <- infer (substEnv e s1) e2
   let s3 = unify (subst t1 s2) (argType o)
@@ -160,6 +170,10 @@ infer e (LBinop l o e1 e2) = do
       resC1 = substC (substC (substC c1 s2) s3) s4 
       resC2 = substC (substC c2 s3) s4
   return (resType o, resS, resC1 ++ resC2)
+  
+runInfer :: LTerm -> (SType, TSubst, Constraint)
+runInfer t = let res = infer (M.empty) t
+             in evalState res 0
 
 
 

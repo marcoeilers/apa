@@ -2,6 +2,7 @@ module AST where
 
 import Test.QuickCheck
 import Control.Monad
+import Debug.Trace
 
 -- define an AST tree
 type Var = String
@@ -29,23 +30,25 @@ data LTerm =
   | LBinop Lab Op LTerm LTerm deriving (Show, Eq)
 
 lconvert :: Int -> Term -> (Int, LTerm)
-lconvert i (Const c) = (i+1, LConst i c)
-lconvert i (Ident v) = (i+1, LIdent i v)
-lconvert i (Fn v t) = (ni, LFn i v lt)
+lconvert i t = trace ("Label "++ (show i) ++ " : "++ (show t)) (lconvert' i t)
+
+lconvert' i (Const c) = (i+1, LConst i c)
+lconvert' i (Ident v) = (i+1, LIdent i v)
+lconvert' i (Fn v t) = (ni, LFn i v lt)
   where (ni, lt) = lconvert (i+1) t
-lconvert i (Fun v1 v2 t) = (ni, LFun i v1 v2 lt)
+lconvert' i (Fun v1 v2 t) = (ni, LFun i v1 v2 lt)
   where (ni, lt) = lconvert (i+1) t
-lconvert i (App t1 t2) = (ni2, LApp i lt1 lt2)
+lconvert' i (App t1 t2) = (ni2, LApp i lt1 lt2)
   where (ni1, lt1) = lconvert (i+1) t1
         (ni2, lt2) = lconvert ni1 t2 
-lconvert i (If t1 t2 t3) = (ni3, LIf i lt1 lt2 lt3)
+lconvert' i (If t1 t2 t3) = (ni3, LIf i lt1 lt2 lt3)
   where (ni1, lt1) = lconvert (i+1) t1
         (ni2, lt2) = lconvert ni1 t2
         (ni3, lt3) = lconvert ni2 t3
-lconvert i (Let v t1 t2) = (ni2, LLet i v lt1 lt2)
+lconvert' i (Let v t1 t2) = (ni2, LLet i v lt1 lt2)
   where (ni1, lt1) = lconvert (i+1) t1
         (ni2, lt2) = lconvert ni1 t2
-lconvert i (Binop o t1 t2) = (ni2, LBinop i o lt1 lt2)
+lconvert' i (Binop o t1 t2) = (ni2, LBinop i o lt1 lt2)
   where (ni1, lt1) = lconvert (i+1) t1
         (ni2, lt2) = lconvert ni1 t2
 
