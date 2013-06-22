@@ -72,6 +72,7 @@ simpleTerm =
     <|> pPCase
     <|> pCons
     <|> pLCase
+    <|> pNil
 
 pSingle = pConst
       <|> pIdent
