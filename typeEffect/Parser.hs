@@ -37,6 +37,10 @@ pTerm
   =   pLet
   <|> Fn <$ pKey "fn" <*> pVarid <* pKey "=>" <*> pTerm
   <|> Fun <$ pKey "fun" <*> pVarid <*> pVarid <* pKey "=>" <*> pTerm
+  <|> PCase <$ pKey "case" <*> pTerm <* pKey "Pair(" <*> pVarid <* pKey "," <*> pVarid <* pKey ")" <* pKey "=>" <*> pTerm
+  <|> Cons <$ pKey "Cons(" <*> pTerm <* pKey "," <*> pTerm <* pKey ")"
+  <|> Nil <$ pKey "Nil"
+  <|> ListCase <$ pKey "case" <*> pTerm <* pKey "of" <* pKey "Cons(" <*> pVarid <* pKey "," <*> pVarid <* pKey ")" <* pKey "=>" <*> pTerm <* pKey "or" <*> pTerm <* pKey ")"
 
 pLet 
   =   pIf
@@ -46,6 +50,7 @@ pIf
   =   pOr
   <|> If <$ pKey "if" <*> pTerm <* pKey "then" <*> pTerm <* pKey "else" <*> pIf
   
+
 
 pOr :: TokenParser Term
 pOr
