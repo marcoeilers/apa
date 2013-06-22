@@ -17,7 +17,12 @@ data Term
   | App Term Term
   | If Term Term Term
   | Let Var Term Term
-  | Binop Op Term Term deriving (Show, Eq)
+  | Binop Op Term Term 
+  | TPair Term Term 
+  | PCase Term Var Var Term 
+  | Cons Term Term
+  | Nil 
+  | ListCase Term Var Var Term Term deriving (Show, Eq)
 
 data LTerm =
     LConst Lab Const
@@ -27,7 +32,12 @@ data LTerm =
   | LApp Lab LTerm LTerm
   | LIf Lab LTerm LTerm LTerm
   | LLet Lab Var LTerm LTerm
-  | LBinop Lab Op LTerm LTerm deriving (Show, Eq)
+  | LBinop Lab Op LTerm LTerm 
+  | LTPair Lab LTerm LTerm 
+  | LPCase Lab LTerm Var Var LTerm 
+  | LCons Lab LTerm LTerm
+  | LNil Lab 
+  | LListCase Lab LTerm Var Var LTerm LTerm deriving (Show, Eq)
 
 lconvert :: Int -> Term -> (Int, LTerm)
 lconvert i t = trace ("Label "++ (show i) ++ " : "++ (show t)) (lconvert' i t)
@@ -50,6 +60,20 @@ lconvert' i (Let v t1 t2) = (ni2, LLet i v lt1 lt2)
         (ni2, lt2) = lconvert ni1 t2
 lconvert' i (Binop o t1 t2) = (ni2, LBinop i o lt1 lt2)
   where (ni1, lt1) = lconvert (i+1) t1
+        (ni2, lt2) = lconvert ni1 t2
+lconvert' i (TPair t1 t2) = (ni2, LTPair i lt1 lt2)
+  where (ni1, lt1) = lconvert (i+1) t1
+        (ni2, lt2) = lconvert ni1 t2
+lconvert' i (PCase t1 v1 v2 t2) = (ni2, LPCase i lt1 v1 v2 lt2)
+  where (ni1, lt1) = lconvert (i+1) t1
+        (ni2, lt2) = lconvert ni1 t2
+lconvert' i (Cons t1 t2) = (ni2, LCons i lt1 lt2)
+  where (ni1, lt1) = lconvert (i+1) t1
+        (ni2, lt2) = lconvert ni1 t2
+lconvert' i Nil = (i+1, LNil i)
+lconvert' i (ListCase t0 v1 v2 t1 t2) = (ni2, LListCase i lt0 v1 v2 lt1 lt2)
+  where (ni0, lt0) = lconvert (i+1) t0
+        (ni1, lt1) = lconvert ni0 t1
         (ni2, lt2) = lconvert ni1 t2
 
 data Const

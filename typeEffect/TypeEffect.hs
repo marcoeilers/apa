@@ -16,6 +16,8 @@ type LS = State Int
 data SType = Int
            | Bool
            | Func SType SType AVar
+           | PairT SType SType AVar
+           | ListT SType AVar 
            | TVar TVar deriving (Eq, Show, Ord)
 
 data TVar = TV Int deriving (Eq, Show, Ord)
@@ -44,6 +46,8 @@ subst (TVar v) (ts, _) = if M.member v ts
                               then fromJust (M.lookup v ts) 
                               else (TVar v)
 subst (Func t1 t2 a) ts = Func (subst t1 ts) (subst t2 ts) a
+subst (PairT t1 t2 a) ts = PairT (subst t1 ts) (subst t2 ts) a
+subst (ListT t a) ts = ListT (subst t ts) a
 subst t _ = t
 
 substA :: AVar -> TSubst -> AVar
@@ -66,6 +70,8 @@ combine (ts1, as1) (ts2, as2) = (M.union ts1 ts2, M.union as1 as2)
 contains :: SType -> TVar -> Bool
 contains (TVar v1) v2 = v1 == v2
 contains (Func t1 t2 _) v = contains t1 v || contains t2 v
+contains (PairT t1 t2 _) v = contains t1 v || contains t2 v
+contains (ListT t _) v = contains t v
 contains _ _ = False
 
 argType :: Op -> SType
@@ -86,6 +92,13 @@ unify (Func t1 t2 b1) (Func t3 t4 b2) = combine s2 (combine s1 s0)
   where s0 = (M.empty, M.insert b2 b1 M.empty)
         s1 = unify (subst t1 s0) (subst t3 s0)
         s2 = unify (subst (subst t2 s0) s1) (subst (subst t4 s0) s1)
+unify (PairT t1 t2 b1) (PairT t3 t4 b2) = combine s2 (combine s1 s0)
+  where s0 = (M.empty, M.insert b2 b1 M.empty) -- TODO
+        s1 = unify (subst t1 s0) (subst t3 s0) -- TODO
+        s2 = unify (subst (subst t2 s0) s1) (subst (subst t4 s0) s1) -- TODO
+unify (ListT t1 b1) (ListT t2 b2) = combine s1 s0
+  where s0 = (M.empty, M.insert b2 b1 M.empty) -- TODO
+        s1 = unify (subst t1 s0) (subst t2 s0) -- TODO
 unify (TVar v) t = if t == (TVar v) 
                    then result
                    else if not (contains t v) 
@@ -170,6 +183,44 @@ infer' e (LBinop l o e1 e2) = do
       resC1 = substC (substC (substC c1 s2) s3) s4 
       resC2 = substC (substC c2 s3) s4
   return (resType o, resS, resC1 ++ resC2)
+infer' e (LTPair l e1 e2) = do
+  (t1, s1, c1) <- infer e e1
+  (t2, s2, c2) <- infer (substEnv e s1) e2
+  b <- getAV
+  return (PairT t1 t2 b, combine s1 s2, (substC c1 s2) ++ c2) -- TODO
+infer' e (LPCase l e1 v1 v2 e2) = do
+  (t1, s1, c1) <- infer e e1
+  a1 <- getTV
+  a2 <- getTV
+  b <- getAV
+  let e' = M.insert v1 (TVar a1) e
+      e'' = M.insert v2 (TVar a2) e'
+  (t2, s2, c2) <- infer (substEnv e'' s1) e2
+  let s3 = unify t1 (PairT (subst (subst (TVar a1) s2) s1) (subst (subst (TVar a2) s2) s1) b)
+  return (subst t2 s3, combine s3 (combine s2 s1), (substC (substC c1 s2) s3) ++ (substC c2 s3)) -- TODO
+infer' e (LNil l) = do
+  a <- getTV
+  b <- getAV
+  return (ListT (TVar a) b, idSubst, [(b, Ann l)]) -- TODO
+infer' e (LCons l e1 e2) = do
+  (t1, s1, c1) <- infer e e1
+  (t2, s2, c2) <- infer (substEnv e s1) e2
+  b <- getAV
+  let s3 = unify (ListT t1 b) t2
+  return (subst t2 s3, combine s3 (combine s2 s1), (substC (substC c1 s2) s3) ++ (substC c2 s3)) --TODO
+infer' e (LListCase l e0 v1 v2 e1 e2) = do
+  (t0, s0, c0) <- infer e e0
+  av1 <- getTV
+  bv1 <- getAV
+  bv2 <- getAV
+  let s4 = unify t0 (ListT (TVar av1) bv1)
+      e' = M.insert v1 (subst (TVar av1) s4) (substEnv e s0)
+      e'' = M.insert v2 (ListT (subst (TVar av1) s4) bv2) e'
+  (t1, s1, c1) <- infer e'' e1
+  (t2, s2, c2) <- infer (substEnv (substEnv (substEnv e s0) s1) s4) e2
+  let s5 = unify t1 t2
+  return (subst t2 s5, combine s5 (combine s4 (combine s2 (combine s1 s0))), (substC (substC (substC (substC c0 s1) s2) s4) s5) ++ (substC (substC (substC c1 s2) s4) s5) ++ (substC (substC c2 s4) s5)) --TODO
+  
   
 runInfer :: LTerm -> (SType, TSubst, Constraint)
 runInfer t = let res = infer (M.empty) t
