@@ -53,8 +53,7 @@ pInt = token $ do
   return $ read cs
 
 pTerm :: Parser Term
-pTerm = simpleTerm 
-    <|> pApp
+pTerm = simpleTerm <|> pApp
 
 pParens = do
   symbol "("
@@ -98,7 +97,9 @@ pFn = do
   symbol "fn"
   v <- pVar
   symbol "=>"
-  t <- simpleTerm
+  symbol "("
+  t <- pTerm
+  symbol ")"
   return $ Fn v t
 
 pFun = do
@@ -106,7 +107,9 @@ pFun = do
   v1 <- pVar
   v2 <- pVar
   symbol "=>"
-  t <- simpleTerm
+  symbol "("
+  t <- pTerm
+  symbol ")"
   return $ Fun v1 v2 t
 
 pIf = do
@@ -128,10 +131,11 @@ pLet = do
   return $ Let v t1 t2
 
 pApp :: Parser Term
-pApp = do
+pApp = --chainl1 simpleTerm (symbol "" >> return App)
+  do
   t1 <- simpleTerm
   t2 <- simpleTerm
-  return $ App t1 t2 --chainl1 simpleTerm (symbol "" >> return App)
+  return $ App t1 t2 
 
 pPair = do
   symbol "Pair"
