@@ -11,8 +11,37 @@ import Parser
 
 import Control.Monad.State
 
-type LS = State Int
+-- We use the state monad to keep track of already used
+-- type and annotation variable names.
+-- First element of the pair denotes next type var, second
+-- next annotation var.
+-- Type vars are strings of format 'a, annotation vars '1 
+type LS = State (Int, Int)
 
+-- Gets a fresh annotation variable
+getAV :: LS AVar
+getAV = do
+  (curTV, curAV) <- get
+  put (curTV, curAV + 1)
+  return $ AV ("'" ++ (show curAV))
+  
+-- Gets a fresh type variable
+getTV :: LS TVar
+getTV = do
+  (curTV, curAV) <- get
+  put (curTV + 1, curAV)
+  let varString = getTVarString curTV
+  return $ TV varString
+
+-- Converts an integer to a string denoting a type var
+getTVarString :: Int -> String
+getTVarString i = if i < 26
+                  then ("'" ++ [['a'..'z'] !! i])
+                  else ("'" ++ getTVarString (i - 26))
+
+-- Data type definitions follow NNH p. 306f
+
+-- Simple types
 data SType = Int
            | Bool
            | Func SType SType SAnn
@@ -20,27 +49,38 @@ data SType = Int
            | ListT SType SAnn 
            | TVar TVar deriving (Eq, Show, Ord)
 
-data TVar = TV Int deriving (Eq, Show, Ord)
+-- Type variables
+data TVar = TV String deriving (Eq, Show, Ord)
 
-data AVar = AV Int deriving (Eq, Show, Ord)
+-- Annotation variables
+data AVar = AV String deriving (Eq, Show, Ord)
 
+-- Simple Annotations
 data SAnn = EmptySet
           | Union SAnn SAnn
           | AVar AVar
           | Ann Int deriving (Eq, Show, Ord)
 
+-- Type environment maps variables (strings) to types
 type STEnv = M.Map Var SType 
 
+-- Type substitution maps type vars to types  
+-- and annotation vars to annotation vars
 type TSubst = (M.Map TVar SType, M.Map AVar AVar)
 
+-- A constraint set is a list of mappings from annotation vars
+-- to annotations (ALWAYS Ann l, no vars or sets)
 type Constraint = [(AVar, SAnn)]
 
+-- Type substitution corresponding to the identity function
 idSubst :: TSubst
 idSubst = (M.empty, M.empty)
 
+-- Applies a substitution to an environment
 substEnv :: STEnv -> TSubst -> STEnv
 substEnv e s = M.fromList $ Prelude.map (\(k, a) -> (k, substT a s)) (M.toList e)
 
+-- Applies a substitution to a type
 substT :: SType -> TSubst -> SType
 substT (TVar v) (ts, _) = if M.member v ts 
                               then fromJust (M.lookup v ts) 
@@ -50,23 +90,28 @@ substT (PairT t1 t2 a) ts = PairT (substT t1 ts) (substT t2 ts) (substAnn a ts)
 substT (ListT t a) ts = ListT (substT t ts) (substAnn a ts)
 substT t _ = t
 
+-- Applies a substitution to an annotation var
 substA :: AVar -> TSubst -> AVar
 substA v (_, as) = if M.member v as 
                    then fromJust (M.lookup v as)
                    else v
                         
+-- Applies a substitution to a constraint set
 substC :: Constraint -> TSubst -> Constraint
 substC [] _ = []
 substC ((b, p):cs) s = (substA b s, substAnn p s) : (substC cs s)
   
+-- Applies a substitution to an annotation
 substAnn :: SAnn -> TSubst -> SAnn
 substAnn (Union a1 a2) s = Union (substAnn a1 s) (substAnn a2 s)
 substAnn (AVar a) s = AVar $ substA a s
 substAnn a _ = a
 
+-- Combines two substitution into a new one
 combine :: TSubst -> TSubst -> TSubst
 combine (ts1, as1) (ts2, as2) = (M.union ts1 ts2, M.union as1 as2)
 
+-- Checks if a type contains a given type variable
 contains :: SType -> TVar -> Bool
 contains (TVar v1) v2 = v1 == v2
 contains (Func t1 t2 _) v = contains t1 v || contains t2 v
@@ -74,17 +119,23 @@ contains (PairT t1 t2 _) v = contains t1 v || contains t2 v
 contains (ListT t _) v = contains t v
 contains _ _ = False
 
+-- Gets the type of both inputs to a given operator
 argType :: Op -> SType
 argType And = Bool
 argType Or = Bool
 argType _ = Int
 
+-- Gets the type of the result of a given operator
 resType :: Op -> SType
 resType Plus = Int
 resType Minus = Int
 resType Times = Int
 resType _ = Bool
 
+-- Generates a type substitution which unifies two given types
+-- Fails if impossible
+-- Corresponds to U_CFA in NNH (p. 307) extended with cases for
+-- lists and pairs
 unify :: SType -> SType -> TSubst
 unify Int Int = idSubst
 unify Bool Bool = idSubst
@@ -107,22 +158,13 @@ unify (TVar v) t = if t == (TVar v)
   where result = (M.insert v t M.empty, M.empty)
 unify t (TVar v) = unify (TVar v) t
 unify t1 t2 = error $ "Error in unify: other case" ++ (show t1) ++ "  " ++ (show t2)
-
-getAV :: LS AVar
-getAV = do
-  current <- get
-  put (current + 1)
-  return $ AV current
   
-getTV :: LS TVar
-getTV = do
-  current <- get
-  put (current + 1)
-  return $ TV current
-  
-insertTypeMap :: TSubst -> TVar -> SType -> TSubst
-insertTypeMap (ts, as) v t = (M.insert v t ts, as)
 
+-- For a given term in a given environment,
+-- infers its type, generated substitutions and constraints
+-- Prints results
+-- Corresponds to W_CFA in NNH (p. 310) extended with cases for
+-- lists and pairs
 infer :: STEnv -> LTerm -> LS (SType, TSubst, Constraint)
 infer e t = do
   (ty, sub, constr) <- infer' e t
@@ -192,6 +234,7 @@ infer' e (LBinop l o e1 e2) = do
       resC2 = substC (substC c2 s3) s4
   return (resType o, resS, resC1 ++ resC2)
 
+-- Added: cases for lists and pairs
 infer' e (LTPair l e1 e2) = do
   (t1, s1, c1) <- infer e e1
   (t2, s2, c2) <- infer (substEnv e s1) e2
@@ -239,12 +282,14 @@ infer' e (LListCase l e0 v1 v2 e1 e2) = do
       resC2 = (substC (substC c2 s4) s5)
   return (substT t2 s5, resS, resC0 ++ resC1 ++ resC2) --TODO
   
-  
+-- Calls infer with an empty environment  
 runInfer :: LTerm -> (SType, TSubst, Constraint)
 runInfer t = let res = infer (M.empty) t
-             in evalState res 0
+             in evalState res (0, 0)
 
 
+-- Translates a constraint set into a mapping from annotation vars
+-- to annotations
 solveConstr :: Constraint -> M.Map AVar SAnn
 solveConstr cs = solveConstr' cs M.empty
 
@@ -255,6 +300,8 @@ solveConstr' ((avar, Ann l) : cs) m =
   Nothing -> solveConstr' cs (M.insert avar (Ann l) m)
   Just sann -> solveConstr' cs (M.insert avar (Union sann (Ann l)) m)
 
+-- Applies a mapping generated by solveConstr to a type 
+-- to get the final type
 applyConstr :: SType -> M.Map AVar SAnn -> SType
 applyConstr (Func t1 t2 (AVar a)) m = 
   case M.lookup a m of
