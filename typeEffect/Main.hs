@@ -2,11 +2,7 @@ module Main where
 
 import AST
 import MyParser
---import PrettyPrint
---import Scanner
---import Text.PrettyPrint
---import Test.QuickCheck
-import TypeEffect
+import ControlFlowAnalysis
 
 -- test it
 main :: IO ()

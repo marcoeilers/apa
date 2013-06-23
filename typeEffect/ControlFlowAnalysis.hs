@@ -1,5 +1,5 @@
 
-module TypeEffect where
+module ControlFlowAnalysis where
 
 import Data.Map as M
 import Data.Set
@@ -7,7 +7,6 @@ import Data.Maybe
 import Debug.Trace
 
 import AST
-import Parser
 
 import Control.Monad.State
 
