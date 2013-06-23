@@ -40,7 +40,7 @@ data LTerm =
   | LListCase Lab LTerm Var Var LTerm LTerm deriving (Show, Eq)
 
 lconvert :: Int -> Term -> (Int, LTerm)
-lconvert i t = trace ("Label "++ (show i) ++ " : "++ (show t)) (lconvert' i t)
+lconvert i t = lconvert' i t --trace ("Label "++ (show i) ++ " : "++ (show t)) (lconvert' i t)
 
 lconvert' i (Const c) = (i+1, LConst i c)
 lconvert' i (Ident v) = (i+1, LIdent i v)
@@ -90,6 +90,7 @@ data Op
   | Ls 
   | Gt deriving (Show, Eq, Enum, Bounded)
 
+{-
 instance Arbitrary Op where
   arbitrary = oneof (map return [minBound .. maxBound])
 --  coarbitrary = undefined
@@ -108,7 +109,7 @@ arbTerm 0 = return $  Ident "x"
 arbTerm n =
   oneof [ liftM Const arbitrary
         , return $ Ident "y"
-        , liftM (Fn "f") (arbTerm (n-1))
+    --    , liftM (Fn "f") (arbTerm (n-1))
         , liftM (Fun "f" "x") (arbTerm (n-1))
         , liftM2 App (arbTerm (n `div` 2)) (arbTerm (n `div` 2))
         , liftM3 If (arbTerm (n `div` 2)) (arbTerm (n `div` 2)) (arbTerm (n `div` 2))
@@ -121,9 +122,11 @@ depth :: Term -> Int
 depth t = case t of
     Const _ -> 1
     Ident _ -> 1
-    Fn s e -> 1 + depth e
+  --  Fn s e -> 1 + depth e
     Fun f x e -> 1 + depth e
     App e1 e2 -> 1 + max (depth e1) (depth e2)
     If e1 e2 e3 -> 1 + max (depth e1) (max (depth e2) (depth e3))
     Let x e1 e2 -> 1 + max (depth e1) (depth e2)
     Binop op e1 e2 -> 1 + max (depth e1) (depth e2)
+
+-}

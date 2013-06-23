@@ -19,10 +19,14 @@ main = do
          Right tree -> do 
            let (_, ltree) = lconvert 0 tree
                (ty, sub, constr) = runInfer ltree
+               res = solveConstr constr
+               resTy = applyConstr ty res
            putStrLn "success"
            putStrLn "type:"
            putStrLn $ show ty
            putStrLn "constraints:"
            putStrLn $ show constr
+           putStrLn "type with constraints:"
+           putStrLn $ show resTy
 
 
