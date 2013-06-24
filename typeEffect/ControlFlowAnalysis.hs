@@ -238,7 +238,7 @@ infer' e (LTPair l e1 e2) = do
   (t1, s1, c1) <- infer e e1
   (t2, s2, c2) <- infer (substEnv e s1) e2
   b <- getAV
-  return (PairT t1 t2 (AVar b), combine s1 s2, (substC c1 s2) ++ c2) -- TODO
+  return (PairT t1 t2 (AVar b), combine s1 s2, (b, Ann l) : ((substC c1 s2) ++ c2)) -- TODO
 
 infer' e (LPCase l e1 v1 v2 e2) = do
   (t1, s1, c1) <- infer e e1
@@ -261,7 +261,7 @@ infer' e (LCons l e1 e2) = do
   (t2, s2, c2) <- infer (substEnv e s1) e2
   b <- getAV
   let s3 = unify (ListT t1 (AVar b)) t2
-      resC = (substC (substC c1 s2) s3) ++ (substC c2 s3)
+      resC = (b, Ann l) : ((substC (substC c1 s2) s3) ++ (substC c2 s3))
   return (substT t2 s3, combine s3 (combine s2 s1), resC) --TODO
 
 infer' e (LListCase l e0 v1 v2 e1 e2) = do

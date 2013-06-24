@@ -7,7 +7,7 @@ import ControlFlowAnalysis
 -- test it
 main :: IO ()
 main = do 
-        let fname = "examples/ex1.fun"
+        let fname = "examples/ex2.fun"
         input <- readFile fname
         let res = parseString input
         case res of
