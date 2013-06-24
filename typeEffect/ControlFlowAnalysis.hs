@@ -2,7 +2,7 @@
 module ControlFlowAnalysis where
 
 import Data.Map as M
-import Data.Set
+import Data.Set as S
 import Data.Maybe
 import Debug.Trace
 
@@ -51,6 +51,9 @@ data SType = Int
 -- Type variables
 data TVar = TV String deriving (Eq, Show, Ord)
 
+data TScheme = ST SType
+             | Scheme TVar TScheme
+
 -- Annotation variables
 data AVar = AV String deriving (Eq, Show, Ord)
 
@@ -61,7 +64,7 @@ data SAnn = EmptySet
           | Ann Int deriving (Eq, Show, Ord)
 
 -- Type environment maps variables (strings) to types
-type STEnv = M.Map Var SType 
+type TEnv = M.Map Var TScheme 
 
 -- Type substitution maps type vars to types  
 -- and annotation vars to annotation vars
@@ -71,13 +74,56 @@ type TSubst = (M.Map TVar SType, M.Map AVar AVar)
 -- to annotations (ALWAYS Ann l, no vars or sets)
 type Constraint = [(AVar, SAnn)]
 
+generalise :: TEnv -> SType -> LS TScheme
+generalise e t = do
+  let free = findFreeVars e t
+      freel = S.toList free
+  generalise' t freel
+
+generalise' :: SType -> [TVar] -> LS TScheme
+generalise' t [] = return $ ST t
+generalise' t (tvar : vars) = do
+  a <- getTV
+  ts <- generalise' t vars
+  let s = (M.insert tvar (TVar a) M.empty, M.empty)
+      res = substScheme ts s
+  return $ Scheme a res
+
+findFreeVars :: TEnv -> SType -> S.Set TVar
+findFreeVars e (Func t1 t2 _) = S.union (findFreeVars e t1) (findFreeVars e t2)
+findFreeVars e (PairT t1 t2 _) = S.union (findFreeVars e t1) (findFreeVars e t2)
+findFreeVars e (ListT t _) = findFreeVars e t
+findFreeVars e (TVar tv) = if envContains tv (M.toList e) then S.empty else S.singleton tv
+findFreeVars _ _ = S.empty
+
+
+envContains :: TVar -> [(Var, TScheme)] -> Bool
+envContains tvar [] = False
+envContains tvar ((v, (Scheme var ts)):maps) = if tvar == var 
+                                              then envContains tvar maps
+                                              else envContains tvar ((v, ts) : maps)
+envContains tvar ((v, ST t) : maps) = (contains t tvar) || (envContains tvar maps)
+
+
+instantiate :: TScheme -> LS SType
+instantiate (Scheme tvar t) = do
+  a <- getTV
+  let s = (M.insert tvar (TVar a) (M.empty), M.empty)
+  ti <- instantiate t
+  return $ substT ti s
+instantiate (ST t) = return t
+
 -- Type substitution corresponding to the identity function
 idSubst :: TSubst
 idSubst = (M.empty, M.empty)
 
 -- Applies a substitution to an environment
-substEnv :: STEnv -> TSubst -> STEnv
-substEnv e s = M.fromList $ Prelude.map (\(k, a) -> (k, substT a s)) (M.toList e)
+substEnv :: TEnv -> TSubst -> TEnv
+substEnv e s = M.fromList $ Prelude.map (\(k, a) -> (k, substScheme a s)) (M.toList e)
+
+substScheme :: TScheme -> TSubst -> TScheme
+substScheme (Scheme tvar s) sub = Scheme tvar (substScheme s sub)
+substScheme (ST t) sub = ST $ substT t sub 
 
 -- Applies a substitution to a type
 substT :: SType -> TSubst -> SType
@@ -164,23 +210,27 @@ unify t1 t2 = error $ "Error in unify: other case" ++ (show t1) ++ "  " ++ (show
 -- Prints results
 -- Corresponds to W_CFA in NNH (p. 310) extended with cases for
 -- lists and pairs
-infer :: STEnv -> LTerm -> LS (SType, TSubst, Constraint)
+infer :: TEnv -> LTerm -> LS (SType, TSubst, Constraint)
 infer e t = do
   (ty, sub, constr) <- infer' e t
   let res = solveConstr constr
       finTy = applyConstr ty res
   return $ trace ("\n\nFor term " ++ (show t) ++ " get Type " ++ (show ty) ++ " and final type " ++ (show finTy) ++ " and substT " ++ (show sub) ++" and constr " ++ (show constr)) (ty, sub, constr)
 
+infer' :: TEnv -> LTerm -> LS (SType, TSubst, Constraint)
 infer' _ (LConst _ (CNum _)) = return (Int, idSubst, [])
 infer' _ (LConst _ CTrue) = return (Bool, idSubst, [])
 infer' _ (LConst _ CFalse) = return (Bool, idSubst, [])
-infer' e (LIdent _ v) = if M.member v e
-                        then return (fromJust (M.lookup v e), idSubst, [])
-                        else error $ "Var not found in environment: " ++ (show v)
+infer' e (LIdent _ v) = 
+  if M.member v e
+  then do
+    resT <- instantiate (fromJust (M.lookup v e))
+    return (resT, idSubst, [])
+  else error $ "Var not found in environment: " ++ (show v)
 
 infer' e (LFn l v e0) = do
   ax <- getTV
-  (t0, s0, c0) <- infer (M.insert v (TVar ax) e) e0
+  (t0, s0, c0) <- infer (M.insert v (ST (TVar ax)) e) e0
   b0 <- getAV
   let axs0 = substT (TVar ax) s0
       resT = Func axs0 t0 (AVar b0)
@@ -190,8 +240,8 @@ infer' e (LFun l f v e0) = do
   ax <- getTV
   a0 <- getTV
   b0 <- getAV
-  let e' = M.insert v (TVar ax) e
-      e'' = M.insert f (Func (TVar ax) (TVar a0)  (AVar b0)) e'
+  let e' = M.insert v (ST (TVar ax)) e
+      e'' = M.insert f (ST (Func (TVar ax) (TVar a0)  (AVar b0))) e'
   (t0, s0, c0) <- infer e'' e0
   let s1 = unify t0 (substT (TVar a0) s0)
       resT = Func (substT (substT (TVar ax) s0) s1) (substT t0 s1) (AVar (substA (substA b0 s0) s1))
@@ -220,7 +270,8 @@ infer' e (LIf l e0 e1 e2) = do
 
 infer' e (LLet l v e1 e2) = do
   (t1, s1, c1) <- infer e e1
-  (t2, s2, c2) <- infer (M.insert v t1 (substEnv e s1)) e2
+  generalised <- generalise e t1
+  (t2, s2, c2) <- infer (M.insert v generalised (substEnv e s1)) e2
   return (t2, combine s2 s1, (substC c1 s2) ++ c2)
 
 infer' e (LBinop l o e1 e2) = do
@@ -245,8 +296,8 @@ infer' e (LPCase l e1 v1 v2 e2) = do
   a1 <- getTV
   a2 <- getTV
   b <- getAV
-  let e' = M.insert v1 (TVar a1) e
-      e'' = M.insert v2 (TVar a2) e'
+  let e' = M.insert v1 (ST (TVar a1)) e
+      e'' = M.insert v2 (ST (TVar a2)) e'
   (t2, s2, c2) <- infer (substEnv e'' s1) e2
   let s3 = unify (PairT (substT (substT (TVar a1) s2) s1) (substT (substT (TVar a2) s2) s1) (AVar b)) t1
   return (substT t2 s3, combine s3 (combine s2 s1), (substC (substC c1 s2) s3) ++ (substC c2 s3)) -- TODO
@@ -270,8 +321,8 @@ infer' e (LListCase l e0 v1 v2 e1 e2) = do
   bv1 <- getAV
   bv2 <- getAV
   let s4 = unify t0 (ListT (TVar av1) (AVar bv1))
-      e' = M.insert v1 (substT (TVar av1) s4) (substEnv e s0)
-      e'' = M.insert v2 (ListT (substT (TVar av1) s4) (AVar bv2)) e'
+      e' = M.insert v1 (ST (substT (TVar av1) s4)) (substEnv e s0)
+      e'' = M.insert v2 (ST (ListT (substT (TVar av1) s4) (AVar bv2))) e'
   (t1, s1, c1) <- infer e'' e1
   (t2, s2, c2) <- infer (substEnv (substEnv (substEnv e s0) s1) s4) e2
   let s5 = unify t1 t2
