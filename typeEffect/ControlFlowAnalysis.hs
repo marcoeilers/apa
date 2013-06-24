@@ -74,12 +74,16 @@ type TSubst = (M.Map TVar SType, M.Map AVar AVar)
 -- to annotations (ALWAYS Ann l, no vars or sets)
 type Constraint = [(AVar, SAnn)]
 
+
+-- Abstracts over all type vars in the type which are not
+-- bound in the environment
 generalise :: TEnv -> SType -> LS TScheme
 generalise e t = do
   let free = findFreeVars e t
       freel = S.toList free
   generalise' t freel
 
+-- Abstracts over a list of type vars
 generalise' :: SType -> [TVar] -> LS TScheme
 generalise' t [] = return $ ST t
 generalise' t (tvar : vars) = do
@@ -89,6 +93,8 @@ generalise' t (tvar : vars) = do
       res = substScheme ts s
   return $ Scheme a res
 
+
+-- Finds the type vars in a type that are not bound in an environment
 findFreeVars :: TEnv -> SType -> S.Set TVar
 findFreeVars e (Func t1 t2 _) = S.union (findFreeVars e t1) (findFreeVars e t2)
 findFreeVars e (PairT t1 t2 _) = S.union (findFreeVars e t1) (findFreeVars e t2)
@@ -96,7 +102,7 @@ findFreeVars e (ListT t _) = findFreeVars e t
 findFreeVars e (TVar tv) = if envContains tv (M.toList e) then S.empty else S.singleton tv
 findFreeVars _ _ = S.empty
 
-
+-- Checks if an environment contains a given type var
 envContains :: TVar -> [(Var, TScheme)] -> Bool
 envContains tvar [] = False
 envContains tvar ((v, (Scheme var ts)):maps) = if tvar == var 
@@ -104,7 +110,8 @@ envContains tvar ((v, (Scheme var ts)):maps) = if tvar == var
                                               else envContains tvar ((v, ts) : maps)
 envContains tvar ((v, ST t) : maps) = (contains t tvar) || (envContains tvar maps)
 
-
+-- Instantiates a type scheme, i.e. replaces all quantified vars
+-- with fresh type vars
 instantiate :: TScheme -> LS SType
 instantiate (Scheme tvar t) = do
   a <- getTV
@@ -121,6 +128,7 @@ idSubst = (M.empty, M.empty)
 substEnv :: TEnv -> TSubst -> TEnv
 substEnv e s = M.fromList $ Prelude.map (\(k, a) -> (k, substScheme a s)) (M.toList e)
 
+-- Applies a substitution to a type scheme
 substScheme :: TScheme -> TSubst -> TScheme
 substScheme (Scheme tvar s) sub = Scheme tvar (substScheme s sub)
 substScheme (ST t) sub = ST $ substT t sub 
