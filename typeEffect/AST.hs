@@ -39,6 +39,22 @@ data LTerm =
   | LNil Lab 
   | LListCase Lab LTerm Var Var LTerm LTerm deriving (Show, Eq)
 
+getLabel :: LTerm -> Int
+getLabel (LConst l _) = l
+getLabel (LIdent l _) = l
+getLabel (LFn l _ _) = l
+getLabel (LFun l _ _ _) = l
+getLabel (LApp l _ _) = l
+getLabel (LIf l _ _ _) = l
+getLabel (LLet l _ _ _) = l
+getLabel (LBinop l _ _ _) = l
+getLabel (LTPair l _ _) = l
+getLabel (LPCase l _ _ _ _) = l
+getLabel (LCons l _ _) = l
+getLabel (LNil l) = l
+getLabel (LListCase l _ _ _ _ _) = l
+
+
 lconvert :: Int -> Term -> (Int, LTerm)
 lconvert i t = lconvert' i t --trace ("Label "++ (show i) ++ " : "++ (show t)) (lconvert' i t)
 

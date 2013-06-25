@@ -15,20 +15,20 @@ import Control.Monad.State
 -- First element of the pair denotes next type var, second
 -- next annotation var.
 -- Type vars are strings of format 'a, annotation vars '1 
-type LS = State (Int, Int)
+type LS = State (Int, Int, M.Map Int (SType, TSubst, Constraint))
 
 -- Gets a fresh annotation variable
 getAV :: LS AVar
 getAV = do
-  (curTV, curAV) <- get
-  put (curTV, curAV + 1)
+  (curTV, curAV, m) <- get
+  put (curTV, curAV + 1, m)
   return $ AV ("'" ++ (show curAV))
   
 -- Gets a fresh type variable
 getTV :: LS TVar
 getTV = do
-  (curTV, curAV) <- get
-  put (curTV + 1, curAV)
+  (curTV, curAV, m) <- get
+  put (curTV + 1, curAV, m)
   let varString = getTVarString curTV
   return $ TV varString
 
@@ -51,8 +51,9 @@ data SType = Int
 -- Type variables
 data TVar = TV String deriving (Eq, Show, Ord)
 
-data TScheme = ST SType
-             | Scheme TVar TScheme
+data Scheme = ST SType
+             | TScheme TVar Scheme
+             | AScheme AVar Scheme
 
 -- Annotation variables
 data AVar = AV String deriving (Eq, Show, Ord)
@@ -64,7 +65,7 @@ data SAnn = EmptySet
           | Ann Int deriving (Eq, Show, Ord)
 
 -- Type environment maps variables (strings) to types
-type TEnv = M.Map Var TScheme 
+type TEnv = M.Map Var Scheme 
 
 -- Type substitution maps type vars to types  
 -- and annotation vars to annotation vars
@@ -77,45 +78,50 @@ type Constraint = [(AVar, SAnn)]
 
 -- Abstracts over all type vars in the type which are not
 -- bound in the environment
-generalise :: TEnv -> SType -> LS TScheme
+generalise :: TEnv -> SType -> LS Scheme
 generalise e t = do
-  let free = findFreeVars e t
+  let free = findFreeTVars e t
       freel = S.toList free
   generalise' t freel
 
 -- Abstracts over a list of type vars
-generalise' :: SType -> [TVar] -> LS TScheme
+generalise' :: SType -> [TVar] -> LS Scheme
 generalise' t [] = return $ ST t
 generalise' t (tvar : vars) = do
   a <- getTV
   ts <- generalise' t vars
   let s = (M.insert tvar (TVar a) M.empty, M.empty)
       res = substScheme ts s
-  return $ Scheme a res
+  return $ TScheme a res
 
 
 -- Finds the type vars in a type that are not bound in an environment
-findFreeVars :: TEnv -> SType -> S.Set TVar
-findFreeVars e (Func t1 t2 _) = S.union (findFreeVars e t1) (findFreeVars e t2)
-findFreeVars e (PairT t1 t2 _) = S.union (findFreeVars e t1) (findFreeVars e t2)
-findFreeVars e (ListT t _) = findFreeVars e t
-findFreeVars e (TVar tv) = if envContains tv (M.toList e) then S.empty else S.singleton tv
-findFreeVars _ _ = S.empty
+findFreeTVars :: TEnv -> SType -> S.Set TVar
+findFreeTVars e (Func t1 t2 _) = S.union (findFreeTVars e t1) (findFreeTVars e t2)
+findFreeTVars e (PairT t1 t2 _) = S.union (findFreeTVars e t1) (findFreeTVars e t2)
+findFreeTVars e (ListT t _) = findFreeTVars e t
+findFreeTVars e (TVar tv) = if envContains tv (M.toList e) then S.empty else S.singleton tv
+findFreeTVars _ _ = S.empty
 
 -- Checks if an environment contains a given type var
-envContains :: TVar -> [(Var, TScheme)] -> Bool
+envContains :: TVar -> [(Var, Scheme)] -> Bool
 envContains tvar [] = False
-envContains tvar ((v, (Scheme var ts)):maps) = if tvar == var 
+envContains tvar ((v, (TScheme var ts)):maps) = if tvar == var 
                                               then envContains tvar maps
                                               else envContains tvar ((v, ts) : maps)
 envContains tvar ((v, ST t) : maps) = (contains t tvar) || (envContains tvar maps)
 
 -- Instantiates a type scheme, i.e. replaces all quantified vars
 -- with fresh type vars
-instantiate :: TScheme -> LS SType
-instantiate (Scheme tvar t) = do
+instantiate :: Scheme -> LS SType
+instantiate (TScheme tvar t) = do
   a <- getTV
   let s = (M.insert tvar (TVar a) (M.empty), M.empty)
+  ti <- instantiate t
+  return $ substT ti s
+instantiate (AScheme avar t) = do
+  b <- getAV
+  let s = (M.empty, M.insert avar b M.empty)
   ti <- instantiate t
   return $ substT ti s
 instantiate (ST t) = return t
@@ -129,8 +135,8 @@ substEnv :: TEnv -> TSubst -> TEnv
 substEnv e s = M.fromList $ Prelude.map (\(k, a) -> (k, substScheme a s)) (M.toList e)
 
 -- Applies a substitution to a type scheme
-substScheme :: TScheme -> TSubst -> TScheme
-substScheme (Scheme tvar s) sub = Scheme tvar (substScheme s sub)
+substScheme :: Scheme -> TSubst -> Scheme
+substScheme (TScheme tvar s) sub = TScheme tvar (substScheme s sub)
 substScheme (ST t) sub = ST $ substT t sub 
 
 -- Applies a substitution to a type
@@ -221,6 +227,8 @@ unify t1 t2 = error $ "Error in unify: other case" ++ (show t1) ++ "  " ++ (show
 infer :: TEnv -> LTerm -> LS (SType, TSubst, Constraint)
 infer e t = do
   (ty, sub, constr) <- infer' e t
+  (n, m, map) <- get
+  put (n, m, M.insert (getLabel t) (ty, sub, constr) map)
   let res = solveConstr constr
       finTy = applyConstr ty res
   return $ trace ("\n\nFor term " ++ (show t) ++ " get Type " ++ (show ty) ++ " and final type " ++ (show finTy) ++ " and substT " ++ (show sub) ++" and constr " ++ (show constr)) (ty, sub, constr)
@@ -343,7 +351,7 @@ infer' e (LListCase l e0 v1 v2 e1 e2) = do
 -- Calls infer with an empty environment  
 runInfer :: LTerm -> (SType, TSubst, Constraint)
 runInfer t = let res = infer (M.empty) t
-             in evalState res (0, 0)
+             in evalState res (0, 0, M.empty)
 
 
 -- Translates a constraint set into a mapping from annotation vars
