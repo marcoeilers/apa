@@ -100,7 +100,7 @@ generalise' t (tvar : vars) = do
 -- Abstracts over a list of annotation vars
 generalise'' :: Scheme -> [AVar] -> LS Scheme
 generalise'' s [] = return s
-generalise'' s (avar : vars) = do
+generalise'' s (avar : vars) = do --TODO needs to take an additional param
   b <- getAV
   ts <- generalise'' s vars
   let s = (M.empty, M.insert avar b M.empty)
@@ -246,12 +246,12 @@ unify (Func t1 t2 (AVar b1)) (Func t3 t4 (AVar b2)) = combine s2 (combine s1 s0)
         s1 = unify (substT t1 s0) (substT t3 s0)
         s2 = unify (substT (substT t2 s0) s1) (substT (substT t4 s0) s1)
 unify (PairT t1 t2 (AVar b1)) (PairT t3 t4 (AVar b2)) = combine s2 (combine s1 s0)
-  where s0 = (M.empty, M.insert b2 b1 M.empty) -- TODO
-        s1 = unify (substT t1 s0) (substT t3 s0) -- TODO
-        s2 = unify (substT (substT t2 s0) s1) (substT (substT t4 s0) s1) -- TODO
+  where s0 = (M.empty, M.insert b2 b1 M.empty) 
+        s1 = unify (substT t1 s0) (substT t3 s0) 
+        s2 = unify (substT (substT t2 s0) s1) (substT (substT t4 s0) s1)
 unify (ListT t1 (AVar b1)) (ListT t2 (AVar b2)) = combine s1 s0
-  where s0 = (M.empty, M.insert b2 b1 M.empty) -- TODO
-        s1 = unify (substT t1 s0) (substT t2 s0) -- TODO
+  where s0 = (M.empty, M.insert b2 b1 M.empty) 
+        s1 = unify (substT t1 s0) (substT t2 s0) 
 unify (TVar v) t = if t == (TVar v) 
                    then result
                    else if not (contains t v) 
@@ -329,7 +329,7 @@ infer' e (LIf l e0 e1 e2) = do
 
 infer' e (LLet l v e1 e2) = do
   (t1, s1, c1) <- infer e e1
-  generalised <- generalise e t1
+  generalised <- generalise e t1 -- TODO do not quantify over top level annotation of t1?
   (t2, s2, c2) <- infer (M.insert v generalised (substEnv e s1)) e2
   return (t2, combine s2 s1, (substC c1 s2) ++ c2)
 
@@ -348,7 +348,7 @@ infer' e (LTPair l e1 e2) = do
   (t1, s1, c1) <- infer e e1
   (t2, s2, c2) <- infer (substEnv e s1) e2
   b <- getAV
-  return (PairT t1 t2 (AVar b), combine s1 s2, (b, Ann l) : ((substC c1 s2) ++ c2)) -- TODO
+  return (PairT t1 t2 (AVar b), combine s1 s2, (b, Ann l) : ((substC c1 s2) ++ c2)) 
 
 infer' e (LPCase l e1 v1 v2 e2) = do
   (t1, s1, c1) <- infer e e1
@@ -359,20 +359,20 @@ infer' e (LPCase l e1 v1 v2 e2) = do
       e'' = M.insert v2 (ST (TVar a2)) e'
   (t2, s2, c2) <- infer (substEnv e'' s1) e2
   let s3 = unify (PairT (substT (substT (TVar a1) s2) s1) (substT (substT (TVar a2) s2) s1) (AVar b)) t1
-  return (substT t2 s3, combine s3 (combine s2 s1), (substC (substC c1 s2) s3) ++ (substC c2 s3)) -- TODO
+  return (substT t2 s3, combine s3 (combine s2 s1), (substC (substC c1 s2) s3) ++ (substC c2 s3)) 
 
 infer' e (LNil l) = do
   a <- getTV
   b <- getAV
-  return (ListT (TVar a) (AVar b), idSubst, [(b, Ann l)]) -- TODO
+  return (ListT (TVar a) (AVar b), idSubst, [(b, Ann l)]) 
 
 infer' e (LCons l e1 e2) = do
   (t1, s1, c1) <- infer e e1
   (t2, s2, c2) <- infer (substEnv e s1) e2
   b <- getAV
-  let s3 = unify (ListT t1 (AVar b)) t2
+  let s3 = unify (ListT t1 (AVar b)) t2 --TODO either unify doesnt unify the annotations or ???
       resC = (b, Ann l) : ((substC (substC c1 s2) s3) ++ (substC c2 s3))
-  return (substT t2 s3, combine s3 (combine s2 s1), resC) --TODO
+  return (substT t2 s3, combine s3 (combine s2 s1), resC) 
 
 infer' e (LListCase l e0 v1 v2 e1 e2) = do
   (t0, s0, c0) <- infer e e0
@@ -389,7 +389,7 @@ infer' e (LListCase l e0 v1 v2 e1 e2) = do
       resC0 = (substC (substC (substC (substC c0 s1) s2) s4) s5)
       resC1 = (substC (substC (substC c1 s2) s4) s5)
       resC2 = (substC (substC c2 s4) s5)
-  return (substT t2 s5, resS, resC0 ++ resC1 ++ resC2) --TODO
+  return (substT t2 s5, resS, resC0 ++ resC1 ++ resC2) 
   
 -- Calls infer with an empty environment  
 runInfer :: LTerm -> (SType, TSubst, Constraint)
