@@ -76,13 +76,16 @@ type TSubst = (M.Map TVar SType, M.Map AVar AVar)
 type Constraint = [(AVar, SAnn)]
 
 
--- Abstracts over all type vars in the type which are not
--- bound in the environment
+-- Abstracts over all type & annotation vars in the type 
+-- which are not bound in the environment
 generalise :: TEnv -> SType -> LS Scheme
 generalise e t = do
-  let free = findFreeTVars e t
-      freel = S.toList free
-  generalise' t freel
+  let freeT = findFreeTVars e t
+      freeTl = S.toList freeT
+      freeA = findFreeAVars e t
+      freeAl = S.toList freeA
+  genT <- generalise' t freeTl
+  generalise'' genT freeAl
 
 -- Abstracts over a list of type vars
 generalise' :: SType -> [TVar] -> LS Scheme
@@ -94,6 +97,16 @@ generalise' t (tvar : vars) = do
       res = substScheme ts s
   return $ TScheme a res
 
+-- Abstracts over a list of annotation vars
+generalise'' :: Scheme -> [AVar] -> LS Scheme
+generalise'' s [] = return s
+generalise'' s (avar : vars) = do
+  b <- getAV
+  ts <- generalise'' s vars
+  let s = (M.empty, M.insert avar b M.empty)
+      res = substScheme ts s
+  return $ AScheme b res
+
 
 -- Finds the type vars in a type that are not bound in an environment
 findFreeTVars :: TEnv -> SType -> S.Set TVar
@@ -103,13 +116,35 @@ findFreeTVars e (ListT t _) = findFreeTVars e t
 findFreeTVars e (TVar tv) = if envContains tv (M.toList e) then S.empty else S.singleton tv
 findFreeTVars _ _ = S.empty
 
+findFreeAVars :: TEnv -> SType -> S.Set AVar
+findFreeAVars e (Func t1 t2 (AVar a)) = if envContainsA a (M.toList e) 
+                                 then sub else S.insert a sub
+  where sub = (S.union (findFreeAVars e t1) (findFreeAVars e t2))
+findFreeAVars e (PairT t1 t2 (AVar a)) = if envContainsA a (M.toList e) 
+                                  then sub else S.insert a sub
+  where sub = (S.union (findFreeAVars e t1) (findFreeAVars e t2))
+findFreeAVars e (ListT t1 (AVar a)) = if envContainsA a (M.toList e) 
+                               then sub else S.insert a sub
+  where sub = (findFreeAVars e t1)
+findFreeAVars _ _ = S.empty
+
 -- Checks if an environment contains a given type var
 envContains :: TVar -> [(Var, Scheme)] -> Bool
 envContains tvar [] = False
 envContains tvar ((v, (TScheme var ts)):maps) = if tvar == var 
                                               then envContains tvar maps
                                               else envContains tvar ((v, ts) : maps)
-envContains tvar ((v, ST t) : maps) = (contains t tvar) || (envContains tvar maps)
+envContains tvar ((v, (AScheme _ ts)):maps) = envContains tvar ((v, ts) : maps)
+envContains tvar ((_, ST t) : maps) = (contains t tvar) || (envContains tvar maps)
+
+-- Checks if an environment contains a given annotation var
+envContainsA :: AVar -> [(Var, Scheme)] -> Bool
+envContainsA avar [] = False
+envContainsA avar ((v, (TScheme _ ts)):maps) = envContainsA avar ((v, ts) : maps)
+envContainsA avar ((v, (AScheme var ts)):maps) = if avar == var
+                                                 then envContainsA avar maps
+                                                 else envContainsA avar ((v, ts) : maps)
+envContainsA avar ((_, ST t) : maps) = (containsA t avar) || (envContainsA avar maps)
 
 -- Instantiates a type scheme, i.e. replaces all quantified vars
 -- with fresh type vars
@@ -137,6 +172,7 @@ substEnv e s = M.fromList $ Prelude.map (\(k, a) -> (k, substScheme a s)) (M.toL
 -- Applies a substitution to a type scheme
 substScheme :: Scheme -> TSubst -> Scheme
 substScheme (TScheme tvar s) sub = TScheme tvar (substScheme s sub)
+substScheme (AScheme avar s) sub = AScheme avar (substScheme s sub)
 substScheme (ST t) sub = ST $ substT t sub 
 
 -- Applies a substitution to a type
@@ -177,6 +213,13 @@ contains (Func t1 t2 _) v = contains t1 v || contains t2 v
 contains (PairT t1 t2 _) v = contains t1 v || contains t2 v
 contains (ListT t _) v = contains t v
 contains _ _ = False
+
+-- Checks if a type contains a given annotation variable
+containsA :: SType -> AVar -> Bool
+containsA (Func t1 t2 (AVar a)) v = (a == v) || (containsA t1 v) || (containsA t2 v)
+containsA (PairT t1 t2 (AVar a)) v = (a == v) || (containsA t1 v) || (containsA t2 v)
+containsA (ListT t1 (AVar a)) v = (a == v) || (containsA t1 v)
+containsA _ _ = False
 
 -- Gets the type of both inputs to a given operator
 argType :: Op -> SType
