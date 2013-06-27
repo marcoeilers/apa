@@ -89,6 +89,7 @@ generalise e t a = do
   genT <- generalise' t freeTl
   generalise'' genT freeAl notGen
   
+-- Extracts all annotation variables used in an annotation
 extractAnnVars :: SAnn -> [AVar]
 extractAnnVars (AVar a) = [a]
 extractAnnVars (Union a1 a2) = (extractAnnVars a1) ++ (extractAnnVars a2)
@@ -242,6 +243,7 @@ resType Minus = Int
 resType Times = Int
 resType _ = Bool
 
+-- Gets the top level annotation of a type, if any
 getTopAnn :: SType -> SAnn
 getTopAnn (Func _ _ a) = a
 getTopAnn (PairT _ _ a) = a
@@ -385,7 +387,7 @@ infer' e (LCons l e1 e2) = do
   (t1, s1, c1) <- infer e e1
   (t2, s2, c2) <- infer (substEnv e s1) e2
   b <- getAV
-  let s3 = unify (ListT t1 (AVar b)) t2 --TODO either unify doesnt unify the annotations or ???
+  let s3 = unify (ListT t1 (AVar b)) t2
       resC = (b, Ann l) : ((substC (substC c1 s2) s3) ++ (substC c2 s3))
   return (ListT (substT t1 s3) (AVar b), combine s3 (combine s2 s1), resC) 
 
