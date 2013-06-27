@@ -3,6 +3,7 @@ module ControlFlowAnalysis where
 
 import Data.Map as M
 import Data.Set as S
+import Data.List as L
 import Data.Maybe
 import Debug.Trace
 
@@ -78,14 +79,21 @@ type Constraint = [(AVar, SAnn)]
 
 -- Abstracts over all type & annotation vars in the type 
 -- which are not bound in the environment
-generalise :: TEnv -> SType -> LS Scheme
-generalise e t = do
+generalise :: TEnv -> SType -> SAnn -> LS Scheme
+generalise e t a = do
   let freeT = findFreeTVars e t
       freeTl = S.toList freeT
+      notGen = extractAnnVars a
       freeA = findFreeAVars e t
       freeAl = S.toList freeA
   genT <- generalise' t freeTl
-  generalise'' genT freeAl
+  generalise'' genT freeAl notGen
+  
+extractAnnVars :: SAnn -> [AVar]
+extractAnnVars (AVar a) = [a]
+extractAnnVars (Union a1 a2) = (extractAnnVars a1) ++ (extractAnnVars a2)
+extractAnnVars _ = []
+
 
 -- Abstracts over a list of type vars
 generalise' :: SType -> [TVar] -> LS Scheme
@@ -98,11 +106,11 @@ generalise' t (tvar : vars) = do
   return $ TScheme a res
 
 -- Abstracts over a list of annotation vars
-generalise'' :: Scheme -> [AVar] -> LS Scheme
-generalise'' s [] = return s
-generalise'' s (avar : vars) = do --TODO needs to take an additional param
+generalise'' :: Scheme -> [AVar] -> [AVar] -> LS Scheme
+generalise'' s [] not = return s
+generalise'' s (avar : vars) not = if L.elem avar not then return s else do
   b <- getAV
-  ts <- generalise'' s vars
+  ts <- generalise'' s vars not
   let s = (M.empty, M.insert avar b M.empty)
       res = substScheme ts s
   return $ AScheme b res
@@ -234,6 +242,13 @@ resType Minus = Int
 resType Times = Int
 resType _ = Bool
 
+getTopAnn :: SType -> SAnn
+getTopAnn (Func _ _ a) = a
+getTopAnn (PairT _ _ a) = a
+getTopAnn (ListT _ a) = a
+getTopAnn _ = EmptySet
+
+
 -- Generates a type substitution which unifies two given types
 -- Fails if impossible
 -- Corresponds to U_CFA in NNH (p. 307) extended with cases for
@@ -329,7 +344,7 @@ infer' e (LIf l e0 e1 e2) = do
 
 infer' e (LLet l v e1 e2) = do
   (t1, s1, c1) <- infer e e1
-  generalised <- generalise e t1 -- TODO do not quantify over top level annotation of t1?
+  generalised <- generalise e t1 (getTopAnn t1) -- TODO do not quantify over top level annotation of t1?
   (t2, s2, c2) <- infer (M.insert v generalised (substEnv e s1)) e2
   return (t2, combine s2 s1, (substC c1 s2) ++ c2)
 
@@ -372,7 +387,7 @@ infer' e (LCons l e1 e2) = do
   b <- getAV
   let s3 = unify (ListT t1 (AVar b)) t2 --TODO either unify doesnt unify the annotations or ???
       resC = (b, Ann l) : ((substC (substC c1 s2) s3) ++ (substC c2 s3))
-  return (substT t2 s3, combine s3 (combine s2 s1), resC) 
+  return (ListT (substT t1 s3) (AVar b), combine s3 (combine s2 s1), resC) 
 
 infer' e (LListCase l e0 v1 v2 e1 e2) = do
   (t0, s0, c0) <- infer e e0
