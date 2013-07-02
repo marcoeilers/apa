@@ -9,14 +9,16 @@ import System.Environment
 -- test it
 main :: IO ()
 main = do 
-        fname <- getArgs
-        input <- readFile (head fname)
+        args <- getArgs
+        let fname = if (length args) > 0 then args !! 0 else error "please provide a file name"
+            level = if (length args) > 1 then read (args !! 1) else 2
+        input <- readFile fname
         let res = parseString input
         case res of
          Left errs -> putStrLn $ errs
          Right tree -> do 
            let (_, ltree) = lconvert 0 tree
-               ((ty, sub, constr), map) = runInfer ltree
+               ((ty, sub, constr), map) = runInfer level ltree
                res = solveConstr constr
                resTy = applyConstr ty res
            putStrLn "success"

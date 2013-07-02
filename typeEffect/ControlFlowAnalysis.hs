@@ -82,13 +82,13 @@ type Constraint = [(AVar, SAnn)]
 
 -- Abstracts over all type & annotation vars in the type 
 -- which are not bound in the environment
-generalise :: TEnv -> SType -> SAnn -> Constraint -> LS Scheme
-generalise e t a c = do
+generalise :: Int -> TEnv -> SType -> SAnn -> Constraint -> LS Scheme
+generalise level e t a c = do
   let freeT = findFreeTVars e t
-      freeTl = S.toList freeT
+      freeTl = if level > 0 then S.toList freeT else []
       notGen = extractAnnVars a
       freeA = findFreeAVars e t
-      freeAl = S.toList freeA
+      freeAl = if level > 1 then S.toList freeA else []
   genT <- generalise' t c freeTl
   generalise'' genT freeAl notGen
   
@@ -298,56 +298,56 @@ unify t1 t2 = error $ "Error in unify: other case" ++ (show t1) ++ "  " ++ (show
 -- Prints results
 -- Corresponds to W_CFA in NNH (p. 310) extended with cases for
 -- lists and pairs
-infer :: TEnv -> LTerm -> LS (SType, TSubst, Constraint)
-infer e t = do
-  (ty, sub, constr) <- infer' e t
+infer :: Int -> TEnv -> LTerm -> LS (SType, TSubst, Constraint)
+infer lv e t = do
+  (ty, sub, constr) <- infer' lv e t
   (n, m, map) <- get
   put (n, m, M.insert (getLabel t) (t, ty, sub, constr) map)
   return $ (ty, sub, constr)
 
-infer' :: TEnv -> LTerm -> LS (SType, TSubst, Constraint)
-infer' _ (LConst _ (CNum _)) = return (Int, idSubst, [])
-infer' _ (LConst _ CTrue) = return (Bool, idSubst, [])
-infer' _ (LConst _ CFalse) = return (Bool, idSubst, [])
-infer' e (LIdent _ v) = 
+infer' :: Int -> TEnv -> LTerm -> LS (SType, TSubst, Constraint)
+infer' _ _ (LConst _ (CNum _)) = return (Int, idSubst, [])
+infer' _ _ (LConst _ CTrue) = return (Bool, idSubst, [])
+infer' _ _ (LConst _ CFalse) = return (Bool, idSubst, [])
+infer' _ e (LIdent _ v) = 
   if M.member v e
   then do
     (c, resT) <- instantiate (fromJust (M.lookup v e))
     return (resT, idSubst, c)
   else error $ "Var not found in environment: " ++ (show v)
 
-infer' e (LFn l v e0) = do
+infer' lv e (LFn l v e0) = do
   ax <- getTV
-  (t0, s0, c0) <- infer (M.insert v (QT (SType (TVar ax))) e) e0
+  (t0, s0, c0) <- infer lv (M.insert v (QT (SType (TVar ax))) e) e0
   b0 <- getAV
   let axs0 = substT (TVar ax) s0
       resT = Func axs0 t0 (AVar b0)
   return (resT, s0, (b0, Ann l) : c0 )
 
-infer' e (LFun l f v e0) = do
+infer' lv e (LFun l f v e0) = do
   ax <- getTV
   a0 <- getTV
   b0 <- getAV
   let e' = M.insert v (QT (SType (TVar ax))) e
       e'' = M.insert f (QT (SType (Func (TVar ax) (TVar a0)  (AVar b0)))) e'
-  (t0, s0, c0) <- infer e'' e0
+  (t0, s0, c0) <- infer lv e'' e0
   let s1 = unify t0 (substT (TVar a0) s0)
       resT = Func (substT (substT (TVar ax) s0) s1) (substT t0 s1) (AVar (substA (substA b0 s0) s1))
       resC = (substA (substA b0 s0) s1, Ann l) : (substC c0 s1)
   return (resT, combine s1 s0, resC)
 
-infer' e (LApp l e1 e2) = do
-  (t1, s1, c1) <- infer e e1
-  (t2, s2, c2) <- infer (substEnv e s1) e2
+infer' lv e (LApp l e1 e2) = do
+  (t1, s1, c1) <- infer lv e e1
+  (t2, s2, c2) <- infer lv (substEnv e s1) e2
   a <- getTV
   b <- getAV
   let s3 = unify (substT t1 s2) (Func t2 (TVar a) (AVar b))
   return (substT (TVar a) s3, combine s3 (combine s2 s1), (substC (substC c1 s2) s3) ++ (substC c2 s3))
 
-infer' e (LIf l e0 e1 e2) = do
-  (t0, s0, c0) <- infer e e0
-  (t1, s1, c1) <- infer (substEnv e s0) e1
-  (t2, s2, c2) <- infer (substEnv (substEnv e s0) s1) e2
+infer' lv e (LIf l e0 e1 e2) = do
+  (t0, s0, c0) <- infer lv e e0
+  (t1, s1, c1) <- infer lv (substEnv e s0) e1
+  (t2, s2, c2) <- infer lv (substEnv (substEnv e s0) s1) e2
   let s3 = unify (substT (substT t0 s1) s2) Bool
       s4 = unify (substT t2 s3) (substT (substT t1 s2) s3)
       retS = combine s4 (combine s3 (combine s2 (combine s1 s0)))
@@ -356,15 +356,15 @@ infer' e (LIf l e0 e1 e2) = do
       retC2 = substC (substC c2 s3) s4
   return (substT (substT t2 s3) s4, retS, retC0 ++ retC1 ++ retC2)
 
-infer' e (LLet l v e1 e2) = do
-  (t1, s1, c1) <- infer e e1
-  generalised <- generalise e (trace ("to generalize: " ++ (show t1)) t1) (getTopAnn t1) c1
-  (t2, s2, c2) <- infer (M.insert v (trace ("generalized is " ++ show generalised) generalised) (substEnv e s1)) e2
+infer' lv e (LLet l v e1 e2) = do
+  (t1, s1, c1) <- infer lv e e1
+  generalised <- generalise lv e (trace ("to generalize: " ++ (show t1)) t1) (getTopAnn t1) c1
+  (t2, s2, c2) <- infer lv (M.insert v (trace ("generalized is " ++ show generalised) generalised) (substEnv e s1)) e2
   return (t2, combine s2 s1, trace ("constraints from let are " ++ show ((substC c1 s2) ++ c2)) ((substC c1 s2) ++ c2))
 
-infer' e (LBinop l o e1 e2) = do
-  (t1, s1, c1) <- infer e e1
-  (t2, s2, c2) <- infer (substEnv e s1) e2
+infer' lv e (LBinop l o e1 e2) = do
+  (t1, s1, c1) <- infer lv e e1
+  (t2, s2, c2) <- infer lv (substEnv e s1) e2
   let s3 = unify (substT t1 s2) (argType o)
       s4 = unify (substT t2 s3) (argType o)
       resS = combine s4 (combine s3 (combine s2 s1))
@@ -373,46 +373,46 @@ infer' e (LBinop l o e1 e2) = do
   return (resType o, resS, resC1 ++ resC2)
 
 -- Added: cases for lists and pairs
-infer' e (LTPair l e1 e2) = do
-  (t1, s1, c1) <- infer e e1
-  (t2, s2, c2) <- infer (substEnv e s1) e2
+infer' lv e (LTPair l e1 e2) = do
+  (t1, s1, c1) <- infer lv e e1
+  (t2, s2, c2) <- infer lv (substEnv e s1) e2
   b <- getAV
   return (PairT t1 t2 (AVar b), combine s1 s2, (b, Ann l) : ((substC c1 s2) ++ c2)) 
 
-infer' e (LPCase l e1 v1 v2 e2) = do
-  (t1, s1, c1) <- infer e e1
+infer' lv e (LPCase l e1 v1 v2 e2) = do
+  (t1, s1, c1) <- infer lv e e1
   a1 <- getTV
   a2 <- getTV
   b <- getAV
   let e' = M.insert v1 (QT (SType (TVar a1))) e
       e'' = M.insert v2 (QT (SType (TVar a2))) e'
-  (t2, s2, c2) <- infer (substEnv e'' s1) e2
+  (t2, s2, c2) <- infer lv (substEnv e'' s1) e2
   let s3 = unify (PairT (substT (substT (TVar a1) s2) s1) (substT (substT (TVar a2) s2) s1) (AVar b)) t1
   return (substT t2 s3, combine s3 (combine s2 s1), (substC (substC c1 s2) s3) ++ (substC c2 s3)) 
 
-infer' e (LNil l) = do
+infer' lv e (LNil l) = do
   a <- getTV
   b <- getAV
   return (ListT (TVar a) (AVar b), idSubst, [(b, Ann l)]) 
 
-infer' e (LCons l e1 e2) = do
-  (t1, s1, c1) <- infer e e1
-  (t2, s2, c2) <- infer (substEnv e s1) e2
+infer' lv e (LCons l e1 e2) = do
+  (t1, s1, c1) <- infer lv e e1
+  (t2, s2, c2) <- infer lv (substEnv e s1) e2
   b <- getAV
   let s3 = unify (ListT t1 (AVar b)) t2
       resC = (b, Ann l) : ((substC (substC c1 s2) s3) ++ (substC c2 s3))
   return (ListT (substT t1 s3) (AVar b), combine s3 (combine s2 s1), resC) 
 
-infer' e (LListCase l e0 v1 v2 e1 e2) = do
-  (t0, s0, c0) <- infer e e0
+infer' lv e (LListCase l e0 v1 v2 e1 e2) = do
+  (t0, s0, c0) <- infer lv e e0
   av1 <- getTV
   bv1 <- getAV
   bv2 <- getAV
   let s4 = unify t0 (ListT (TVar av1) (AVar bv1))
       e' = M.insert v1 (QT (SType (substT (TVar av1) s4))) (substEnv e s0)
       e'' = M.insert v2 (QT (SType (ListT (substT (TVar av1) s4) (AVar bv2)))) e'
-  (t1, s1, c1) <- infer e'' e1
-  (t2, s2, c2) <- infer (substEnv (substEnv (substEnv e s0) s1) s4) e2
+  (t1, s1, c1) <- infer lv e'' e1
+  (t2, s2, c2) <- infer lv (substEnv (substEnv (substEnv e s0) s1) s4) e2
   let s5 = unify t1 t2
       resS = combine s5 (combine s4 (combine s2 (combine s1 s0)))
       resC0 = (substC (substC (substC (substC c0 s1) s2) s4) s5)
@@ -421,9 +421,9 @@ infer' e (LListCase l e0 v1 v2 e1 e2) = do
   return (substT t2 s5, resS, resC0 ++ resC1 ++ resC2) 
   
 -- Calls infer with an empty environment  
-runInfer :: LTerm -> ((SType, TSubst, Constraint), M.Map Int (LTerm, SType, TSubst, Constraint))
-runInfer t = (last, all)
-  where res = infer (M.empty) t
+runInfer :: Int -> LTerm -> ((SType, TSubst, Constraint), M.Map Int (LTerm, SType, TSubst, Constraint))
+runInfer lv t = (last, all)
+  where res = infer lv (M.empty) t
         (last, (_, _, all)) = runState res (0, 0, M.empty)
         
 
