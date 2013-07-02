@@ -49,12 +49,14 @@ data SType = Int
            | ListT SType SAnn 
            | TVar TVar deriving (Eq, Show, Ord)
 
+-- Qualified types
 data QualType = SType SType
               | ConstrType Constraint SType deriving (Eq, Show, Ord)
 
 -- Type variables
 data TVar = TV String deriving (Eq, Show, Ord)
 
+-- Type schemes
 data Scheme =  QT QualType
              | TScheme TVar Scheme
              | AScheme AVar Scheme deriving (Eq, Show, Ord)
@@ -62,17 +64,19 @@ data Scheme =  QT QualType
 -- Annotation variables
 data AVar = AV String deriving (Eq, Show, Ord)
 
+-- Simple Annotations
 data SAnn = Set (S.Set SAnn)
           | AVar AVar
           | Ann Int deriving (Eq, Show, Ord)
 
+-- Computes the union of two annotations
 unionSAnn :: SAnn -> SAnn -> SAnn
 unionSAnn (Set s1) (Set s2) = Set $ S.union s1 s2
 unionSAnn (Set s) a = Set $ S.insert a s
 unionSAnn a (Set s) = Set $ S.insert a s
 unionSAnn a1 a2 = Set $ S.insert a1 (S.singleton a2)
 
--- Type environment maps variables (strings) to types
+-- Type environment maps variables (strings) to type schemes
 type TEnv = M.Map Var Scheme 
 
 -- Type substitution maps type vars to types  
@@ -86,6 +90,8 @@ type Constraint = [(AVar, SAnn)]
 
 -- Abstracts over all type & annotation vars in the type 
 -- which are not bound in the environment
+-- if level = 0, does nothing at all, if level = 1, only
+-- abstracts over type vars
 generalise :: Int -> TEnv -> SType -> SAnn -> Constraint -> LS Scheme
 generalise level e t a c = do
   let freeT = findFreeTVars e t
@@ -133,6 +139,8 @@ findFreeTVars e (ListT t _) = findFreeTVars e t
 findFreeTVars e (TVar tv) = if envContains tv (M.toList e) then S.empty else S.singleton tv
 findFreeTVars _ _ = S.empty
 
+
+-- Finds the annotation vars in a type that are not boung in an environment
 findFreeAVars :: TEnv -> SType -> S.Set AVar
 findFreeAVars e (Func t1 t2 (AVar a)) = if envContainsA a (M.toList e) 
                                  then sub else S.insert a sub
@@ -165,6 +173,8 @@ envContainsA avar ((v, (AScheme var ts)):maps) = if avar == var
 envContainsA avar ((_, QT (SType t)) : maps) = (containsA t avar) || (envContainsA avar maps)
 envContainsA avar ((_, QT (ConstrType c t)) : maps) = (containsA t avar) || (envContainsA avar maps) || (constrContainsA avar c)
 
+
+-- Checks if a constraint contains a reference to a given annotation var
 constrContainsA :: AVar -> Constraint -> Bool
 constrContainsA avar [] = False
 constrContainsA avar ((a1, _) : rest) = (avar == a1) || (constrContainsA avar rest)
@@ -278,7 +288,7 @@ unify :: SType -> SType -> TSubst
 unify Int Int = idSubst
 unify Bool Bool = idSubst
 unify (Func t1 t2 (AVar b1)) (Func t3 t4 (AVar b2)) = combine s2 (combine s1 s0)
-  where s0 = (M.empty, M.insert b2 b1 M.empty)
+  where s0 = (M.empty, M.insert b2 b1 M.empty) -- TODO is this correct?
         s1 = unify (substT t1 s0) (substT t3 s0)
         s2 = unify (substT (substT t2 s0) s1) (substT (substT t4 s0) s1)
 unify (PairT t1 t2 (AVar b1)) (PairT t3 t4 (AVar b2)) = combine s2 (combine s1 s0)
@@ -288,7 +298,7 @@ unify (PairT t1 t2 (AVar b1)) (PairT t3 t4 (AVar b2)) = combine s2 (combine s1 s
 unify (ListT t1 (AVar b1)) (ListT t2 (AVar b2)) = combine s1 s0
   where s0 = (M.empty, M.insert b2 b1 M.empty) 
         s1 = unify (substT t1 s0) (substT t2 s0) 
-unify (TVar v) t = if t == (TVar v) 
+unify (TVar v) t = if t == (TVar v) -- TODO maybe abstract over ann vars here?
                    then result
                    else if not (contains t v) 
                         then result
@@ -300,7 +310,9 @@ unify t1 t2 = error $ "Error in unify: other case" ++ (show t1) ++ "  " ++ (show
 
 -- For a given term in a given environment,
 -- infers its type, generated substitutions and constraints
--- Prints results
+-- Inserts results into a map in the state
+-- First parameter is the level of the analysis 
+-- (monomorphic, polymorphic, polymorphic & polyvariant)
 -- Corresponds to W_CFA in NNH (p. 310) extended with cases for
 -- lists and pairs
 infer :: Int -> TEnv -> LTerm -> LS (SType, TSubst, Constraint)
@@ -354,15 +366,15 @@ infer' lv e (LIf l e0 e1 e2) = do
   (t1, s1, c1) <- infer lv (substEnv e s0) e1
   (t2, s2, c2) <- infer lv (substEnv (substEnv e s0) s1) e2
   let s3 = unify (substT (substT t0 s1) s2) Bool
-      s4 = unify (substT t2 s3) (substT (substT t1 s2) s3)
+      s4 = unify (substT t2 s3) (substT (substT t1 s2) s3) -- TODO do we need to change this?
       retS = combine s4 (combine s3 (combine s2 (combine s1 s0)))
-      retC0 = substC (substC (substC (substC c0 s1) s2) s3) (trace ("-------------!" ++ (show s4)) s4)
+      retC0 = substC (substC (substC (substC c0 s1) s2) s3) s4
       retC1 = substC (substC (substC c1 s2) s3) s4
       retC2 = substC (substC c2 s3) s4
   return (substT (substT t2 s3) s4, retS, retC0 ++ retC1 ++ retC2)
 
 infer' lv e (LLet l v e1 e2) = do
-  (t1, s1, c1) <- infer lv e e1
+  (t1, s1, c1) <- infer lv e e1 -- TODO is this working?
   generalised <- generalise lv e t1 (getTopAnn t1) c1
   (t2, s2, c2) <- infer lv (M.insert v generalised (substEnv e s1)) e2
   return (t2, combine s2 s1, (substC c1 s2) ++ c2)
