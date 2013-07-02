@@ -16,7 +16,7 @@ import Control.Monad.State
 -- First element of the pair denotes next type var, second
 -- next annotation var.
 -- Type vars are strings of format 'a, annotation vars '1 
-type LS = State (Int, Int, M.Map Int (SType, TSubst, Constraint))
+type LS = State (Int, Int, M.Map Int (LTerm, SType, TSubst, Constraint))
 
 -- Gets a fresh annotation variable
 getAV :: LS AVar
@@ -49,12 +49,15 @@ data SType = Int
            | ListT SType SAnn 
            | TVar TVar deriving (Eq, Show, Ord)
 
+data QualType = SType SType
+              | ConstrType Constraint SType deriving (Eq, Show, Ord)
+
 -- Type variables
 data TVar = TV String deriving (Eq, Show, Ord)
 
-data Scheme = ST SType
+data Scheme =  QT QualType
              | TScheme TVar Scheme
-             | AScheme AVar Scheme
+             | AScheme AVar Scheme deriving (Eq, Show, Ord)
 
 -- Annotation variables
 data AVar = AV String deriving (Eq, Show, Ord)
@@ -79,14 +82,14 @@ type Constraint = [(AVar, SAnn)]
 
 -- Abstracts over all type & annotation vars in the type 
 -- which are not bound in the environment
-generalise :: TEnv -> SType -> SAnn -> LS Scheme
-generalise e t a = do
+generalise :: TEnv -> SType -> SAnn -> Constraint -> LS Scheme
+generalise e t a c = do
   let freeT = findFreeTVars e t
       freeTl = S.toList freeT
       notGen = extractAnnVars a
       freeA = findFreeAVars e t
       freeAl = S.toList freeA
-  genT <- generalise' t freeTl
+  genT <- generalise' t c freeTl
   generalise'' genT freeAl notGen
   
 -- Extracts all annotation variables used in an annotation
@@ -97,21 +100,22 @@ extractAnnVars _ = []
 
 
 -- Abstracts over a list of type vars
-generalise' :: SType -> [TVar] -> LS Scheme
-generalise' t [] = return $ ST t
-generalise' t (tvar : vars) = do
+generalise' :: SType -> Constraint -> [TVar] -> LS Scheme
+generalise' t [] [] = return $ QT (SType t)
+generalise' t cs [] = return $ QT (ConstrType cs t)
+generalise' t cs (tvar : vars) = do
   a <- getTV
-  ts <- generalise' t vars
+  ts <- generalise' t cs vars
   let s = (M.insert tvar (TVar a) M.empty, M.empty)
       res = substScheme ts s
   return $ TScheme a res
 
 -- Abstracts over a list of annotation vars
 generalise'' :: Scheme -> [AVar] -> [AVar] -> LS Scheme
-generalise'' s [] not = return s
-generalise'' s (avar : vars) not = if L.elem avar not then return s else do
+generalise'' s [] exempt = return s
+generalise'' s (avar : vars) exempt = if L.elem avar exempt then return s else do
   b <- getAV
-  ts <- generalise'' s vars not
+  ts <- generalise'' s vars exempt
   let s = (M.empty, M.insert avar b M.empty)
       res = substScheme ts s
   return $ AScheme b res
@@ -144,7 +148,8 @@ envContains tvar ((v, (TScheme var ts)):maps) = if tvar == var
                                               then envContains tvar maps
                                               else envContains tvar ((v, ts) : maps)
 envContains tvar ((v, (AScheme _ ts)):maps) = envContains tvar ((v, ts) : maps)
-envContains tvar ((_, ST t) : maps) = (contains t tvar) || (envContains tvar maps)
+envContains tvar ((_, QT (SType t)) : maps) = (contains t tvar) || (envContains tvar maps)
+envContains tvar ((_, QT (ConstrType _ t)) : maps) = (contains t tvar) || (envContains tvar maps)
 
 -- Checks if an environment contains a given annotation var
 envContainsA :: AVar -> [(Var, Scheme)] -> Bool
@@ -153,22 +158,28 @@ envContainsA avar ((v, (TScheme _ ts)):maps) = envContainsA avar ((v, ts) : maps
 envContainsA avar ((v, (AScheme var ts)):maps) = if avar == var
                                                  then envContainsA avar maps
                                                  else envContainsA avar ((v, ts) : maps)
-envContainsA avar ((_, ST t) : maps) = (containsA t avar) || (envContainsA avar maps)
+envContainsA avar ((_, QT (SType t)) : maps) = (containsA t avar) || (envContainsA avar maps)
+envContainsA avar ((_, QT (ConstrType c t)) : maps) = (containsA t avar) || (envContainsA avar maps) || (constrContainsA avar c)
+
+constrContainsA :: AVar -> Constraint -> Bool
+constrContainsA avar [] = False
+constrContainsA avar ((a1, _) : rest) = (avar == a1) || (constrContainsA avar rest)
 
 -- Instantiates a type scheme, i.e. replaces all quantified vars
 -- with fresh type vars
-instantiate :: Scheme -> LS SType
+instantiate :: Scheme -> LS (Constraint, SType)
 instantiate (TScheme tvar t) = do
   a <- getTV
   let s = (M.insert tvar (TVar a) (M.empty), M.empty)
-  ti <- instantiate t
-  return $ substT ti s
+  (ct, ti) <- instantiate t
+  return $ (substC ct s, substT ti s)
 instantiate (AScheme avar t) = do
   b <- getAV
   let s = (M.empty, M.insert avar b M.empty)
-  ti <- instantiate t
-  return $ substT ti s
-instantiate (ST t) = return t
+  (ct, ti) <- instantiate t
+  return $ (substC ct s, substT ti s)
+instantiate (QT (SType t)) = return ([], t)
+instantiate (QT (ConstrType c t)) = return (c, t)
 
 -- Type substitution corresponding to the identity function
 idSubst :: TSubst
@@ -182,7 +193,8 @@ substEnv e s = M.fromList $ Prelude.map (\(k, a) -> (k, substScheme a s)) (M.toL
 substScheme :: Scheme -> TSubst -> Scheme
 substScheme (TScheme tvar s) sub = TScheme tvar (substScheme s sub)
 substScheme (AScheme avar s) sub = AScheme avar (substScheme s sub)
-substScheme (ST t) sub = ST $ substT t sub 
+substScheme (QT (SType t)) sub = QT $ SType $ substT t sub 
+substScheme (QT (ConstrType c t)) sub = QT $ ConstrType (substC c sub) (substT t sub) 
 
 -- Applies a substitution to a type
 substT :: SType -> TSubst -> SType
@@ -243,11 +255,13 @@ resType Minus = Int
 resType Times = Int
 resType _ = Bool
 
--- Gets the top level annotation of a type, if any
+-- Gets the top level annotation variable of a type, if any
 getTopAnn :: SType -> SAnn
-getTopAnn (Func _ _ a) = a
-getTopAnn (PairT _ _ a) = a
-getTopAnn (ListT _ a) = a
+getTopAnn (Func _ _ a) = case a of
+  (AVar av) -> AVar av
+  _ -> EmptySet
+getTopAnn (PairT _ _ a) = EmptySet
+getTopAnn (ListT _ a) = EmptySet
 getTopAnn _ = EmptySet
 
 
@@ -288,10 +302,8 @@ infer :: TEnv -> LTerm -> LS (SType, TSubst, Constraint)
 infer e t = do
   (ty, sub, constr) <- infer' e t
   (n, m, map) <- get
-  put (n, m, M.insert (getLabel t) (ty, sub, constr) map)
-  let res = solveConstr constr
-      finTy = applyConstr ty res
-  return $ trace ("\n\nFor term " ++ (show t) ++ " get Type " ++ (show ty) ++ " and final type " ++ (show finTy) ++ " and substT " ++ (show sub) ++" and constr " ++ (show constr)) (ty, sub, constr)
+  put (n, m, M.insert (getLabel t) (t, ty, sub, constr) map)
+  return $ (ty, sub, constr)
 
 infer' :: TEnv -> LTerm -> LS (SType, TSubst, Constraint)
 infer' _ (LConst _ (CNum _)) = return (Int, idSubst, [])
@@ -300,13 +312,13 @@ infer' _ (LConst _ CFalse) = return (Bool, idSubst, [])
 infer' e (LIdent _ v) = 
   if M.member v e
   then do
-    resT <- instantiate (fromJust (M.lookup v e))
-    return (resT, idSubst, [])
+    (c, resT) <- instantiate (fromJust (M.lookup v e))
+    return (resT, idSubst, c)
   else error $ "Var not found in environment: " ++ (show v)
 
 infer' e (LFn l v e0) = do
   ax <- getTV
-  (t0, s0, c0) <- infer (M.insert v (ST (TVar ax)) e) e0
+  (t0, s0, c0) <- infer (M.insert v (QT (SType (TVar ax))) e) e0
   b0 <- getAV
   let axs0 = substT (TVar ax) s0
       resT = Func axs0 t0 (AVar b0)
@@ -316,8 +328,8 @@ infer' e (LFun l f v e0) = do
   ax <- getTV
   a0 <- getTV
   b0 <- getAV
-  let e' = M.insert v (ST (TVar ax)) e
-      e'' = M.insert f (ST (Func (TVar ax) (TVar a0)  (AVar b0))) e'
+  let e' = M.insert v (QT (SType (TVar ax))) e
+      e'' = M.insert f (QT (SType (Func (TVar ax) (TVar a0)  (AVar b0)))) e'
   (t0, s0, c0) <- infer e'' e0
   let s1 = unify t0 (substT (TVar a0) s0)
       resT = Func (substT (substT (TVar ax) s0) s1) (substT t0 s1) (AVar (substA (substA b0 s0) s1))
@@ -346,9 +358,9 @@ infer' e (LIf l e0 e1 e2) = do
 
 infer' e (LLet l v e1 e2) = do
   (t1, s1, c1) <- infer e e1
-  generalised <- generalise e t1 (getTopAnn t1) -- TODO do not quantify over top level annotation of t1?
-  (t2, s2, c2) <- infer (M.insert v generalised (substEnv e s1)) e2
-  return (t2, combine s2 s1, (substC c1 s2) ++ c2)
+  generalised <- generalise e (trace ("to generalize: " ++ (show t1)) t1) (getTopAnn t1) c1
+  (t2, s2, c2) <- infer (M.insert v (trace ("generalized is " ++ show generalised) generalised) (substEnv e s1)) e2
+  return (t2, combine s2 s1, trace ("constraints from let are " ++ show ((substC c1 s2) ++ c2)) ((substC c1 s2) ++ c2))
 
 infer' e (LBinop l o e1 e2) = do
   (t1, s1, c1) <- infer e e1
@@ -372,8 +384,8 @@ infer' e (LPCase l e1 v1 v2 e2) = do
   a1 <- getTV
   a2 <- getTV
   b <- getAV
-  let e' = M.insert v1 (ST (TVar a1)) e
-      e'' = M.insert v2 (ST (TVar a2)) e'
+  let e' = M.insert v1 (QT (SType (TVar a1))) e
+      e'' = M.insert v2 (QT (SType (TVar a2))) e'
   (t2, s2, c2) <- infer (substEnv e'' s1) e2
   let s3 = unify (PairT (substT (substT (TVar a1) s2) s1) (substT (substT (TVar a2) s2) s1) (AVar b)) t1
   return (substT t2 s3, combine s3 (combine s2 s1), (substC (substC c1 s2) s3) ++ (substC c2 s3)) 
@@ -397,8 +409,8 @@ infer' e (LListCase l e0 v1 v2 e1 e2) = do
   bv1 <- getAV
   bv2 <- getAV
   let s4 = unify t0 (ListT (TVar av1) (AVar bv1))
-      e' = M.insert v1 (ST (substT (TVar av1) s4)) (substEnv e s0)
-      e'' = M.insert v2 (ST (ListT (substT (TVar av1) s4) (AVar bv2))) e'
+      e' = M.insert v1 (QT (SType (substT (TVar av1) s4))) (substEnv e s0)
+      e'' = M.insert v2 (QT (SType (ListT (substT (TVar av1) s4) (AVar bv2)))) e'
   (t1, s1, c1) <- infer e'' e1
   (t2, s2, c2) <- infer (substEnv (substEnv (substEnv e s0) s1) s4) e2
   let s5 = unify t1 t2
@@ -409,9 +421,11 @@ infer' e (LListCase l e0 v1 v2 e1 e2) = do
   return (substT t2 s5, resS, resC0 ++ resC1 ++ resC2) 
   
 -- Calls infer with an empty environment  
-runInfer :: LTerm -> (SType, TSubst, Constraint)
-runInfer t = let res = infer (M.empty) t
-             in evalState res (0, 0, M.empty)
+runInfer :: LTerm -> ((SType, TSubst, Constraint), M.Map Int (LTerm, SType, TSubst, Constraint))
+runInfer t = (last, all)
+  where res = infer (M.empty) t
+        (last, (_, _, all)) = runState res (0, 0, M.empty)
+        
 
 
 -- Translates a constraint set into a mapping from annotation vars
