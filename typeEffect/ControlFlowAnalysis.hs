@@ -16,7 +16,7 @@ import Control.Monad.State
 -- First element of the pair denotes next type var, second
 -- next annotation var.
 -- Type vars are strings of format 'a, annotation vars '1 
-type LS = State (Int, Int, M.Map Int (LTerm, SType, TSubst, Constraint))
+type LS = State (Int, Int, M.Map Int (LTerm, TEnv, SType, TSubst, Constraint))
 
 -- Gets a fresh annotation variable
 getAV :: LS AVar
@@ -62,11 +62,15 @@ data Scheme =  QT QualType
 -- Annotation variables
 data AVar = AV String deriving (Eq, Show, Ord)
 
--- Simple Annotations
-data SAnn = EmptySet
-          | Union SAnn SAnn
+data SAnn = Set (S.Set SAnn)
           | AVar AVar
           | Ann Int deriving (Eq, Show, Ord)
+
+unionSAnn :: SAnn -> SAnn -> SAnn
+unionSAnn (Set s1) (Set s2) = Set $ S.union s1 s2
+unionSAnn (Set s) a = Set $ S.insert a s
+unionSAnn a (Set s) = Set $ S.insert a s
+unionSAnn a1 a2 = Set $ S.insert a1 (S.singleton a2)
 
 -- Type environment maps variables (strings) to types
 type TEnv = M.Map Var Scheme 
@@ -95,8 +99,8 @@ generalise level e t a c = do
 -- Extracts all annotation variables used in an annotation
 extractAnnVars :: SAnn -> [AVar]
 extractAnnVars (AVar a) = [a]
-extractAnnVars (Union a1 a2) = (extractAnnVars a1) ++ (extractAnnVars a2)
-extractAnnVars _ = []
+extractAnnVars (Ann _) = []
+extractAnnVars (Set anns) = L.concat $ L.map extractAnnVars (S.toList anns)
 
 
 -- Abstracts over a list of type vars
@@ -201,9 +205,9 @@ substT :: SType -> TSubst -> SType
 substT (TVar v) (ts, _) = if M.member v ts 
                               then fromJust (M.lookup v ts) 
                               else (TVar v)
-substT (Func t1 t2 a) ts = Func (substT t1 ts) (substT t2 ts) (substAnn a ts)
-substT (PairT t1 t2 a) ts = PairT (substT t1 ts) (substT t2 ts) (substAnn a ts)
-substT (ListT t a) ts = ListT (substT t ts) (substAnn a ts)
+substT (Func t1 t2 a) ts = Func (substT t1 ts) (substT t2 ts) (substAnn ts a)
+substT (PairT t1 t2 a) ts = PairT (substT t1 ts) (substT t2 ts) (substAnn ts a)
+substT (ListT t a) ts = ListT (substT t ts) (substAnn ts a)
 substT t _ = t
 
 -- Applies a substitution to an annotation var
@@ -215,13 +219,14 @@ substA v (_, as) = if M.member v as
 -- Applies a substitution to a constraint set
 substC :: Constraint -> TSubst -> Constraint
 substC [] _ = []
-substC ((b, p):cs) s = (substA b s, substAnn p s) : (substC cs s)
+substC ((b, p):cs) s = (substA b s, substAnn s p) : (substC cs s)
   
 -- Applies a substitution to an annotation
-substAnn :: SAnn -> TSubst -> SAnn
-substAnn (Union a1 a2) s = Union (substAnn a1 s) (substAnn a2 s)
-substAnn (AVar a) s = AVar $ substA a s
-substAnn a _ = a
+substAnn :: TSubst -> SAnn -> SAnn
+substAnn s (AVar a) = AVar $ (substA a s)
+substAnn s (Set anns) = Set $ S.map (substAnn s) anns
+substAnn s ann = ann
+
 
 -- Combines two substitution into a new one
 combine :: TSubst -> TSubst -> TSubst
@@ -259,10 +264,10 @@ resType _ = Bool
 getTopAnn :: SType -> SAnn
 getTopAnn (Func _ _ a) = case a of
   (AVar av) -> AVar av
-  _ -> EmptySet
-getTopAnn (PairT _ _ a) = EmptySet
-getTopAnn (ListT _ a) = EmptySet
-getTopAnn _ = EmptySet
+  _ -> Set S.empty
+getTopAnn (PairT _ _ a) = Set S.empty
+getTopAnn (ListT _ a) = Set S.empty
+getTopAnn _ = Set S.empty
 
 
 -- Generates a type substitution which unifies two given types
@@ -302,7 +307,7 @@ infer :: Int -> TEnv -> LTerm -> LS (SType, TSubst, Constraint)
 infer lv e t = do
   (ty, sub, constr) <- infer' lv e t
   (n, m, map) <- get
-  put (n, m, M.insert (getLabel t) (t, ty, sub, constr) map)
+  put (n, m, M.insert (getLabel t) (t, e, ty, sub, constr) map)
   return $ (ty, sub, constr)
 
 infer' :: Int -> TEnv -> LTerm -> LS (SType, TSubst, Constraint)
@@ -351,16 +356,16 @@ infer' lv e (LIf l e0 e1 e2) = do
   let s3 = unify (substT (substT t0 s1) s2) Bool
       s4 = unify (substT t2 s3) (substT (substT t1 s2) s3)
       retS = combine s4 (combine s3 (combine s2 (combine s1 s0)))
-      retC0 = substC (substC (substC (substC c0 s1) s2) s3) s4
+      retC0 = substC (substC (substC (substC c0 s1) s2) s3) (trace ("-------------!" ++ (show s4)) s4)
       retC1 = substC (substC (substC c1 s2) s3) s4
       retC2 = substC (substC c2 s3) s4
   return (substT (substT t2 s3) s4, retS, retC0 ++ retC1 ++ retC2)
 
 infer' lv e (LLet l v e1 e2) = do
   (t1, s1, c1) <- infer lv e e1
-  generalised <- generalise lv e (trace ("to generalize: " ++ (show t1)) t1) (getTopAnn t1) c1
-  (t2, s2, c2) <- infer lv (M.insert v (trace ("generalized is " ++ show generalised) generalised) (substEnv e s1)) e2
-  return (t2, combine s2 s1, trace ("constraints from let are " ++ show ((substC c1 s2) ++ c2)) ((substC c1 s2) ++ c2))
+  generalised <- generalise lv e t1 (getTopAnn t1) c1
+  (t2, s2, c2) <- infer lv (M.insert v generalised (substEnv e s1)) e2
+  return (t2, combine s2 s1, (substC c1 s2) ++ c2)
 
 infer' lv e (LBinop l o e1 e2) = do
   (t1, s1, c1) <- infer lv e e1
@@ -421,7 +426,7 @@ infer' lv e (LListCase l e0 v1 v2 e1 e2) = do
   return (substT t2 s5, resS, resC0 ++ resC1 ++ resC2) 
   
 -- Calls infer with an empty environment  
-runInfer :: Int -> LTerm -> ((SType, TSubst, Constraint), M.Map Int (LTerm, SType, TSubst, Constraint))
+runInfer :: Int -> LTerm -> ((SType, TSubst, Constraint), M.Map Int (LTerm, TEnv, SType, TSubst, Constraint))
 runInfer lv t = (last, all)
   where res = infer lv (M.empty) t
         (last, (_, _, all)) = runState res (0, 0, M.empty)
@@ -438,7 +443,9 @@ solveConstr' [] m = m
 solveConstr' ((avar, Ann l) : cs) m = 
   case M.lookup avar m of
   Nothing -> solveConstr' cs (M.insert avar (Ann l) m)
-  Just sann -> solveConstr' cs (M.insert avar (Union sann (Ann l)) m)
+  Just sann -> solveConstr' cs (M.insert avar (unionSAnn sann (Ann l)) m)
+
+
 
 -- Applies a mapping generated by solveConstr to a type 
 -- to get the final type
