@@ -4,12 +4,13 @@ import AST
 import MyParser
 import ControlFlowAnalysis
 import Data.Map as M
+import System.Environment
 
 -- test it
 main :: IO ()
 main = do 
-        let fname = "examples/ex2.fun"
-        input <- readFile fname
+        fname <- getArgs
+        input <- readFile (head fname)
         let res = parseString input
         case res of
          Left errs -> putStrLn $ errs
