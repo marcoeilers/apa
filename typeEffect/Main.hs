@@ -31,12 +31,12 @@ main = do
            putStrLn "\n\ntypes for other labels:"
            printAll $ M.toList map
 
-printAll :: [(Int, (LTerm, SType, TSubst, Constraint))] -> IO ()
+printAll :: [(Int, (LTerm, TEnv, SType, TSubst, Constraint))] -> IO ()
 printAll [] = return ()
-printAll ((l, (tm, ty, sub, constr)):rest) = do
+printAll ((l, (tm, tenv, ty, sub, constr)):rest) = do
   let constrSolvd = solveConstr constr
       resTy = applyConstr ty constrSolvd
-  putStrLn $ "Label " ++ (show l) ++ " is term " ++ (show tm) ++ ",\nhas type " ++ (show resTy)
+  putStrLn $ "Label " ++ (show l) ++ " is term " ++ (show tm) ++ " with constr " ++ (show constr) ++ ",\nhas type " ++ (show resTy)
   printAll rest
 
 
