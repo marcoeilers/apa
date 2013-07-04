@@ -44,6 +44,36 @@
 
 \section{Language to be Analyzed}
 
+For our assignment, we decided to use the \emph{FUN} language, as described in \emph{Nielson, Nielson \& Hankin}, chapter 5.1.
+The \emph{FUN} language is an untyped lambda calculus, with operators for recursion, and conditional and local definitions.
+Program fragments with labels are \emph{expressions}, and program fragments without labels are \emph{terms}.
+Below is a general overview of the syntax of this language:
+\\
+\\
+\begin{tabular}{l l}
+Expressions: &	$e \in \textbf{Exp}$ \\
+Terms: &		$t \in \textbf{Term}$ \\
+ & \\
+Variables: &		$f,x \in \textbf{Var}$ \\
+Constants &		$c \in \textbf{Const} $ \\
+Binary operators &	$op \in \textbf{Op} $ \\
+Labels &		$l \in \textbf{Lab} $ \\
+\end{tabular}
+\\
+\\
+The \emph{abstract syntax} is:
+\\
+\\
+\begin{tabular}{l}
+$e ::= t^l$ \\
+$t ::= c\:|\:x\:|\:\text{fn}\:x\:=>\:e_0\:|\:\text{fun}\:f\:x\:=>\:e_0\:|\:e_1\:e_2\:|$ \\
+$\:\:\:\text{if}\:e_0\:\text{then}\:e_1\:\text{else}\:e_2\:|\:\text{let}\:x\:=\:e_1\:\text{in}\:e_2\:|\:e_1\:\text{op}\:e_2$ \\
+\end{tabular}
+\\
+\\
+In this syntax, there are two distinct function definitions: $\text{fn}\:x\:=>\:e_0$ is a normal function definition, and $\text{fun}\:f\:x\:=>\:e_0$ is its recursive variant.
+In the latter, any free occurrence of $f$ in $e_0$ refers to $\text{fun}\:f\:x\:=>\:e_0$.
+Finally, $\text{let}\:x\:=\:e_1\:\text{in}\:e_2$ is a local definition.
 
 \section{Control Flow Analysis}
 \subsection{Annotated Type System}
