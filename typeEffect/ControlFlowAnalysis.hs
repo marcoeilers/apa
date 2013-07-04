@@ -341,46 +341,6 @@ unify lv (TVar v) t = if t == (TVar v) -- TODO maybe abstract over ann vars here
 
 unify _ t1 t2 = error $ "Error in unify: other case" ++ (show t1) ++ "  " ++ (show t2)
 
-unify' :: Int -> SType -> SType -> LS (TSubst, Constraint)
-unify' _ Int Int = return (idSubst, [])
-unify' _ Bool Bool = return (idSubst, [])
-unify' lv (Func t1 t2 (AVar b1)) (Func t3 t4 (AVar b2)) = do
-  (s1, c1) <- unify' lv t3 t1
-  (s2, c2) <- unify' lv (substT t2 s1) (substT t4 s1)
-  return (combine s2 s1, [])
-  
-unify' lv (PairT t1 t2 (AVar b1)) (PairT t3 t4 (AVar b2)) = do
-  (s1, c1) <- unify' lv t1 t3
-  (s2, c2) <- unify' lv (substT t2 s1) (substT t4 s1)
-  return (combine s2 s1, [])
-
-unify' lv (ListT t1 (AVar b1)) (ListT t2 (AVar b2)) = do
-  (s1, c1) <- unify' lv t1 t2 
-  return (s1, [])
-
-unify' lv t (TVar v) = if t == (TVar v) -- TODO maybe abstract over ann vars here?
-                   then result
-                   else if not (contains t v) 
-                        then result
-                        else error "Error in unify: var t case"
-  where result = do 
-        (repT, c) <- replaceAnnVarsR (trace ("old type is " ++ show t) t)
-        return ((M.insert v (trace ("replaced type is " ++ show repT) repT) M.empty, M.empty), [])
-
-unify' lv (TVar v) t = if t == (TVar v) -- TODO maybe abstract over ann vars here?
-                   then result
-                   else if not (contains t v) 
-                        then result
-                        else error "Error in unify: var t case"
-  where result = do 
-        (repT, c) <- replaceAnnVars t
-        return ((M.insert v repT M.empty, M.empty), [])
-
-unify' _ t1 t2 = error $ "Error in unify: other case" ++ (show t1) ++ "  " ++ (show t2)
-
- 
-
-
 -- Replaces all annotation vars in a given type by fresh ones
 replaceAnnVars :: SType -> LS (SType, Constraint)
 replaceAnnVars (Func t1 t2 (AVar a)) = do 
@@ -476,7 +436,7 @@ infer' lv e (LIf l e0 e1 e2) = do
   (t1, s1, c1) <- infer lv (substEnv e s0) e1
   (t2, s2, c2) <- infer lv (substEnv (substEnv e s0) s1) e2
   (s3, c3) <- unify lv (substT (substT t0 s1) s2) Bool
-  (s4, _) <- unify' lv (substT (substT t1 s2) s3) (substT t2 s3)
+  (s4, _) <- unify lv (substT (substT t1 s2) s3) (substT t2 s3)
   a <- getTV 
   (s5, _) <- unify lv (substT (substT t2 s3) s4) (TVar a)
   (_, c6) <- unify lv (substT (substT (substT (substT t1 s2) s3) s4) s5) (substT (TVar a) s5)
@@ -548,7 +508,7 @@ infer' lv e (LListCase l e0 v1 v2 e1 e2) = do
       e'' = M.insert v2 (QT (SType (ListT (substT (TVar av1) s4) (AVar bv2)))) e'
   (t1, s1, c1) <- infer lv e'' e1
   (t2, s2, c2) <- infer lv (substEnv (substEnv (substEnv e s0) s1) s4) e2
-  (s5, _) <- unify' lv (substT t1 s2) t2
+  (s5, _) <- unify lv (substT t1 s2) t2
   a <- getTV
   (s6, _) <- unify lv (trace ("t2 with s5 is " ++ show (substT t2 s5)) (substT t2 s5)) (TVar a)
   (_, c7) <- unify lv (substT (substT (substT t1 s2) s5) s6) (substT (TVar a) s6)
