@@ -533,9 +533,10 @@ infer' lv e (LCons l e1 e2) = do
   (t1, s1, c1) <- infer lv e e1
   (t2, s2, c2) <- infer lv (substEnv e s1) e2
   b <- getAV
+  b' <- getAV
   (s3, c3) <- unify lv t2 (ListT t1 (AVar b))
-  let resC = (b, Ann l) : ((substC (substC c1 s2) s3) ++ (substC c2 s3)) ++ c3
-  return (ListT (substT t1 s3) (AVar b), combine s3 (combine s2 s1), resC) 
+  let resC = (b', Ann l) : ((substC (substC c1 s2) s3) ++ (substC c2 s3)) ++ c3
+  return (ListT (substT t1 s3) (AVar b'), combine s3 (combine s2 s1), resC) 
 
 infer' lv e (LListCase l e0 v1 v2 e1 e2) = do
   (t0, s0, c0) <- infer lv e e0
