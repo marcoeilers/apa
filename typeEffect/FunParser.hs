@@ -1,4 +1,4 @@
-module MyParser where
+module FunParser where
 
 import Text.ParserCombinators.ReadP
 import Data.Char(isSpace,isLower,isUpper,isDigit,isAlpha,isAlphaNum)

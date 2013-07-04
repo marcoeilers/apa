@@ -1,7 +1,7 @@
 module Main where
 
 import AST
-import MyParser
+import FunParser
 import ControlFlowAnalysis
 import Data.Map as M
 import System.Environment
@@ -19,7 +19,7 @@ main = do
          Right tree -> do 
            let (_, ltree) = lconvert 0 tree
                ((ty, sub, constr), map) = runInfer level ltree
-               res = solveConstr constr
+               res = solveConstr ty constr
                resTy = applyConstr ty res
            putStrLn "success"
            putStrLn "type of the entire expression:"
@@ -34,9 +34,9 @@ main = do
 printAll :: [(Int, (LTerm, TEnv, SType, TSubst, Constraint))] -> IO ()
 printAll [] = return ()
 printAll ((l, (tm, tenv, ty, sub, constr)):rest) = do
-  let constrSolvd = solveConstr constr
+  let constrSolvd = solveConstr ty constr
       resTy = applyConstr ty constrSolvd
-  putStrLn $ "Label " ++ (show l) ++ " is term " ++ (show tm) ++ " with constr " ++ (show constr) ++ ",\nhas type " ++ (show resTy)
+  putStrLn $ "Label " ++ (show l) ++ " is term " ++ (show tm) ++ {-" with constr " ++ (show constr) ++ -}  ",\nhas type " ++ (show resTy)
   printAll rest
 
 
