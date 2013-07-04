@@ -13,9 +13,11 @@ import Control.Monad.State
 
 -- We use the state monad to keep track of already used
 -- type and annotation variable names.
--- First element of the pair denotes next type var, second
+-- First element of the tuple denotes next type var, second
 -- next annotation var.
 -- Type vars are strings of format 'a, annotation vars '1 
+-- Third element of the tuple is a map that stores types for 
+-- all subexpressions.
 type LS = State (Int, Int, M.Map Int (LTerm, TEnv, SType, TSubst, Constraint))
 
 -- Gets a fresh annotation variable
@@ -108,7 +110,7 @@ type TEnv = M.Map Var Scheme
 type TSubst = (M.Map TVar SType, M.Map AVar AVar)
 
 -- A constraint set is a list of mappings from annotation vars
--- to annotations (ALWAYS Ann l, no vars or sets)
+-- to annotations (ALWAYS Ann l or AVar a, no sets)
 type Constraint = [(AVar, SAnn)]
 
 
@@ -158,7 +160,7 @@ findFreeTVars e (TVar tv) = if envContains tv (M.toList e) then S.empty else S.s
 findFreeTVars _ _ = S.empty
 
 
--- Finds the annotation vars in a type that are not boung in an environment
+-- Finds the annotation vars in a type that are not bound in an environment
 findFreeAVars :: TEnv -> SType -> S.Set AVar
 findFreeAVars e (Func t1 t2 (AVar a)) = if envContainsA a (M.toList e) 
                                  then sub else S.insert a sub
@@ -198,7 +200,7 @@ constrContainsA avar [] = False
 constrContainsA avar ((a1, _) : rest) = (avar == a1) || (constrContainsA avar rest)
 
 -- Instantiates a type scheme, i.e. replaces all quantified vars
--- with fresh type vars
+-- with fresh type and annotation vars
 instantiate :: Scheme -> LS (Constraint, SType)
 instantiate (TScheme tvar t) = do
   a <- getTV
@@ -303,12 +305,12 @@ getTopAnn _ = Set S.empty
 -- Corresponds to U_CFA in NNH (p. 307) extended with cases for
 -- lists and pairs
 -- regarding annotations: constrains are generated so that
--- left <= right, so right >= left
+-- first <= second, so second >= first
 unify :: Int -> SType -> SType -> LS (TSubst, Constraint)
 unify _ Int Int = return (idSubst, [])
 unify _ Bool Bool = return (idSubst, [])
 unify lv (Func t1 t2 (AVar b1)) (Func t3 t4 (AVar b2)) = do
-  (s1, c1) <- unify lv t3 t1
+  (s1, c1) <- unify lv t3 t1 -- contravariant
   (s2, c2) <- unify lv (substT t2 s1) (substT t4 s1)
   return (combine s2 s1, (b2, AVar b1) : (c1 ++ c2))
   
@@ -321,7 +323,7 @@ unify lv (ListT t1 (AVar b1)) (ListT t2 (AVar b2)) = do
   (s1, c1) <- unify lv t1 t2 
   return (s1, (b2, AVar b1):c1)
 
-unify lv t (TVar v) = if t == (TVar v) -- TODO maybe abstract over ann vars here?
+unify lv t (TVar v) = if t == (TVar v)
                    then result
                    else if not (contains t v) 
                         then result
@@ -330,7 +332,7 @@ unify lv t (TVar v) = if t == (TVar v) -- TODO maybe abstract over ann vars here
         (repT, c) <- replaceAnnVarsR t
         return ((M.insert v repT M.empty, M.empty), c)
 
-unify lv (TVar v) t = if t == (TVar v) -- TODO maybe abstract over ann vars here?
+unify lv (TVar v) t = if t == (TVar v) 
                    then result
                    else if not (contains t v) 
                         then result
@@ -342,6 +344,7 @@ unify lv (TVar v) t = if t == (TVar v) -- TODO maybe abstract over ann vars here
 unify _ t1 t2 = error $ "Error in unify: other case" ++ (show t1) ++ "  " ++ (show t2)
 
 -- Replaces all annotation vars in a given type by fresh ones
+-- so that annotations in returned type <= input type
 replaceAnnVars :: SType -> LS (SType, Constraint)
 replaceAnnVars (Func t1 t2 (AVar a)) = do 
   (rt1, c1) <- replaceAnnVars t1
@@ -359,6 +362,7 @@ replaceAnnVars (ListT t1 (AVar a)) = do
   return (ListT rt1 (AVar a'), (a, AVar a') : c1)
 replaceAnnVars t = return (t, [])
 
+-- Like replaceAnnVars, but annotations in returned type >= input type
 replaceAnnVarsR :: SType -> LS (SType, Constraint)
 replaceAnnVarsR (Func t1 t2 (AVar a)) = do 
   (rt1, c1) <- replaceAnnVarsR t1
@@ -392,6 +396,8 @@ infer lv e t = do
   put (n, m, M.insert (getLabel t) (t, e, ty, sub, constr) map)
   return $ (ty, sub, constr)
 
+
+-- infer' does the actual work for infer
 infer' :: Int -> TEnv -> LTerm -> LS (SType, TSubst, Constraint)
 infer' _ _ (LConst _ (CNum _)) = return (Int, idSubst, [])
 infer' _ _ (LConst _ CTrue) = return (Bool, idSubst, [])
@@ -436,9 +442,12 @@ infer' lv e (LIf l e0 e1 e2) = do
   (t1, s1, c1) <- infer lv (substEnv e s0) e1
   (t2, s2, c2) <- infer lv (substEnv (substEnv e s0) s1) e2
   (s3, c3) <- unify lv (substT (substT t0 s1) s2) Bool
-  (s4, _) <- unify lv (substT (substT t1 s2) s3) (substT t2 s3)
+  -- get common type for e1 and e2
+  (s4, _) <- unify lv (substT (substT t1 s2) s3) (substT t2 s3) 
   a <- getTV 
-  (s5, _) <- unify lv (substT (substT t2 s3) s4) (TVar a)
+  -- assign common type with fresh ann vars to a
+  (s5, _) <- unify lv (substT (substT t2 s3) s4) (TVar a) 
+  -- create constraints s.t. annotations in a >= t1 & t2
   (_, c6) <- unify lv (substT (substT (substT (substT t1 s2) s3) s4) s5) (substT (TVar a) s5)
   (_, c7) <- unify lv (substT (substT (substT t2 s3) s4) s5) (substT (TVar a) s5)
   let retS = combine s5 (combine s4 (combine s3 (combine s2 (combine s1 s0))))
@@ -450,7 +459,7 @@ infer' lv e (LIf l e0 e1 e2) = do
   return (substT (TVar a) s5, retS, retC)
 
 infer' lv e (LLet l v e1 e2) = do
-  (t1, s1, c1) <- infer lv e e1 -- TODO is this working?
+  (t1, s1, c1) <- infer lv e e1 
   generalised <- generalise lv e t1 (getTopAnn t1) c1
   (t2, s2, c2) <- infer lv (M.insert v generalised (substEnv e s1)) e2
   return (t2, combine s2 s1, (substC c1 s2) ++ c2)
@@ -507,6 +516,7 @@ infer' lv e (LListCase l e0 v1 v2 e1 e2) = do
   let e' = M.insert v1 (QT (SType (substT (TVar av1) s4))) (substEnv e s0)
       e'' = M.insert v2 (QT (SType (ListT (substT (TVar av1) s4) (AVar bv2)))) e'
   (t1, s1, c1) <- infer lv e'' e1
+  -- proceed as for if-then-else
   (t2, s2, c2) <- infer lv (substEnv (substEnv (substEnv e s0) s1) s4) e2
   (s5, _) <- unify lv (substT t1 s2) t2
   a <- getTV
@@ -521,13 +531,13 @@ infer' lv e (LListCase l e0 v1 v2 e1 e2) = do
   return (substT (TVar a) s6, resS, resC0 ++ resC1 ++ resC2 ++ resC4 ++ c7 ++ c8) 
 
   
--- Calls infer with an empty environment  
+-- Calls infer with an empty environment 
+-- First parameter is the level (0 = monomorphic, 1 = polymorphic, 2 = polym. & polyvariant)
 runInfer :: Int -> LTerm -> ((SType, TSubst, Constraint), M.Map Int (LTerm, TEnv, SType, TSubst, Constraint))
 runInfer lv t = (last, all)
   where res = infer lv (M.empty) t
         (last, (_, _, all)) = runState res (0, 0, M.empty)
         
-
 
 -- Translates a constraint set into a mapping from annotation vars
 -- to annotations
@@ -536,6 +546,10 @@ solveConstr t cs = solveConstrFinal t cs fixPoint
   where oneRun = (solveConstr' cs M.empty)
         fixPoint = fpSolveConstr cs oneRun
 
+
+-- Applies the constraints to the input map one time
+-- ignores beta >= beta' if we know nothing about beta'
+-- (to prevent messing up the result with ann vars)
 solveConstr' :: Constraint -> M.Map AVar SAnn -> M.Map AVar SAnn
 solveConstr' [] m = m
 solveConstr' ((avar, sann) : cs) m = 
@@ -550,6 +564,9 @@ solveConstr' ((avar, sann) : cs) m =
                  (Ann l) -> Just $ Set (S.singleton (Ann l))
                  (Set s) -> Just $ Set s
 
+-- like solveConstr', but inserts beta' for the constraint beta >= beta'
+-- IF the given type contains beta'
+-- is used as the final step after fpSolveConstr has found a fix point
 solveConstrFinal :: SType -> Constraint -> M.Map AVar SAnn -> M.Map AVar SAnn
 solveConstrFinal _ [] m = m
 solveConstrFinal t ((avar, sann) : cs) m = 
@@ -566,6 +583,7 @@ solveConstrFinal t ((avar, sann) : cs) m =
                  (Ann l) -> Just $ Set (S.singleton (Ann l))
                  (Set s) -> Just $ Set s
 
+-- Performas fix point iteration to get minimal solution for constraints
 fpSolveConstr :: Constraint -> M.Map AVar SAnn -> M.Map AVar SAnn
 fpSolveConstr cs m = if new == m then new else fpSolveConstr cs new
   where new = solveConstr' cs m
