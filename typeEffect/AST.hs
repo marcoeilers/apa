@@ -1,3 +1,8 @@
+-- | AST.hs
+--   Authors:
+--   Marco Eilers
+--   Bas in het Veld
+
 module AST where
 
 import Test.QuickCheck

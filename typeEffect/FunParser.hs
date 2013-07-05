@@ -1,3 +1,9 @@
+-- | FunParser.hs
+--   Authors:
+--   Marco Eilers
+--   Bas in het Veld
+
+-- A parser for the Fun language
 module FunParser where
 
 import Text.ParserCombinators.ReadP
@@ -132,7 +138,7 @@ pLet = do
   return $ Let v t1 t2
 
 pApp :: Parser Term
-pApp = --chainl1 simpleTerm (symbol "" >> return App)
+pApp =
   do
   t1 <- simpleTerm
   t2 <- simpleTerm
@@ -198,17 +204,7 @@ pAnd = (chainl1 pComp (symbol "&&" >> return (Binop And)))
 
 pComp = (chainl1 pPlus ((symbol ">" <|> symbol "<") >> return (Binop Gt)))
 
-
 pPlus = (chainl1 pTimes ((symbol "+" <|> symbol "-") >> return (Binop Plus))) 
 
-
 pTimes = (chainl1 pSingle (symbol "*" >> return (Binop Times)))
-
-
-
-
-  
-  
-  
-
 

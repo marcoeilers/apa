@@ -1,4 +1,4 @@
--- | Modified version of SimpleReadP from the lectures.
+-- | Adapted from a file from Ken Friis Larsen, Department of Computer Science, University of Copenhagen.
 --   Makes ReadP similar to SimpleParse 
 
 module SimpleReadP where

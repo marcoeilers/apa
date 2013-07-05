@@ -1,3 +1,7 @@
+-- | ControlFlowAnalysis.hs
+--   Authors:
+--   Marco Eilers
+--   Bas in het Veld
 
 module ControlFlowAnalysis where
 
