@@ -96,7 +96,28 @@ The data structures used for storing programs can be found in the file \texttt{A
 \subsection{Annotated Type System}
 We perform our analysis using an annotated type system that looks like this: TODO
 
+\begin{tabular}{l l}
+Annotations: & $\varphi \in \textbf{Ann}$ \\
+Annotation Variables: &	$\beta  \in \textbf{AVar}$ \\
+Simple Types: &		$\hat{\tau} \in \textbf{SType}$ \\
+Qualified Types & $\hat{\rho} \in \textbf{QualType}$\\
+Simple Type Schemes: &		$\hat{\sigma} \in \textbf{TScheme}$ \\
+Simple Type Environments &		$\hat{\Gamma} \in \textbf{TEnv} $ \\
+Type Substitution & $\hat{\theta} \in \textbf{TSubst}$\\
+Constraints &	$C \in \textbf{Constraint}$ \\
+\end{tabular}
 
+where
+
+\begin{tabular}{l}
+$\varphi ::= \emptyset\:|\:\{\pi\}\:|\:\varphi_1 \cup \varphi_2$\\
+$\hat{\tau} ::= \alpha\:|\:Nat\:|\:Bool\:|\:(\hat{\tau_1}\xrightarrow{\beta}\hat{\tau_2})\:|\:(\hat{\tau_1} \times^\beta \hat{\tau_2})\:|\:(\hat{\tau_1}\:list^\beta)$ \\
+$\hat{\sigma} ::= \hat{\tau}\:|\:\forall \alpha.\hat{\sigma_1}\:|\:\forall \beta.\hat{\sigma_1}$ \\
+$\hat{\Gamma} ::= []\:|\:\hat{\Gamma_1}[x \mapsto \hat{\sigma}]$ \\
+$C ::= \emptyset\:|\:\{\beta \supseteq \varphi\}\:|\:C_1 \cup C_2$
+\end{tabular}
+
+The (non syntax directed) inference rules for our type system are the following:
 
 \begin{prooftree}
 \AxiomC{}
@@ -163,12 +184,12 @@ We perform our analysis using an annotated type system that looks like this: TOD
 \begin{prooftree}
 \AxiomC{$\hat{\Gamma} \vdash_{CFA} t_1 : \hat{\tau}$}
 \AxiomC{$\hat{\Gamma} \vdash_{CFA} t_1 : \hat{\tau} \textbf{ }list^{\varphi}$}
-\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{Cons}_\pi(t_1, t_2) :  \hat{\tau} \textbf{ }list^{\{\pi\}}$}
+\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{Cons}_\pi(t_1, t_2) :  \hat{\tau} \textbf{ }list^{\{\pi\} \cup \varphi}$}
 \end{prooftree}
 
 \begin{prooftree}
 \AxiomC{}
-\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{Nil}_\pi : \forall \alpha. \alpha \textbf{ } list^{\{\pi\}}$}
+\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{Nil}_\pi : \hat{\tau} \textbf{ } list^{\{\pi\}}$}
 \end{prooftree}
 
 \begin{prooftree}
@@ -184,8 +205,16 @@ We perform our analysis using an annotated type system that looks like this: TOD
 \TrinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{case }t_0 \textbf{ of Cons}(x_1, x_2) => t_1 \textbf{ or }t_2 : \hat{\tau}$}
 \end{prooftree}
 
+TODO comment
+
 \subsection{Algorithm}
-Our algorithm is a modified version of Algorithm W as used in NNH. 
+Our algorithm is a modified version of Algorithm W. We adapted the algorithm from NNH (p. 306 ff) to achieve polymorphism, polyvariance and better subeffecting. 
+
+The algorithm centers around the functions $\mathcal{U}_{CFA}$ and $\mathcal{W}_{CFA}$. Their types are the following:
+\begin{tabular}{l l l l}
+$\mathcal{U}_{CFA}$ & : & 
+
+\end{tabular}
 
 TODO
 
