@@ -42,6 +42,9 @@
 
 \maketitle
 
+\section{Introduction}
+We implemented a Control Flow Analysis for the \emph{FUN} language (described in the next section), extended with syntax for basic data structures. The analysis tracks the creation points of both functions and data structures, and is both polymorphic and polyvariant. Our implementation is written in Haskell. 
+
 \section{Language to be Analyzed}
 
 For our assignment, we decided to use the \emph{FUN} language, as described in \emph{Nielson, Nielson \& Hankin}, chapter 5.1.
@@ -56,8 +59,8 @@ Terms: &		$t \in \textbf{Term}$ \\
  & \\
 Variables: &		$f,x \in \textbf{Var}$ \\
 Constants &		$c \in \textbf{Const} $ \\
-Binary operators &	$op \in \textbf{Op} $ \\
-Labels &		$l \in \textbf{Lab} $ \\
+Binary operators &	$\oplus \in \textbf{Op} $ \\
+Labels &		$\pi \in \textbf{Lab} $ \\
 \end{tabular}
 \\
 \\
@@ -65,18 +68,72 @@ The \emph{abstract syntax} is:
 \\
 \\
 \begin{tabular}{l}
-$e ::= t^l$ \\
-$t ::= c\:|\:x\:|\:\text{fn}\:x\:=>\:e_0\:|\:\text{fun}\:f\:x\:=>\:e_0\:|\:e_1\:e_2\:|$ \\
-$\:\:\:\text{if}\:e_0\:\text{then}\:e_1\:\text{else}\:e_2\:|\:\text{let}\:x\:=\:e_1\:\text{in}\:e_2\:|\:e_1\:\text{op}\:e_2$ \\
+$e ::= t_\pi$ \\
+$t ::= c\:|\:x\:|\:\textbf{fn}\:x\:=>\:(e_0)\:|\:\textbf{fun}\:f\:x\:=>\:(e_0)\:|\:e_1\:e_2\:|$ \\
+$\:\:\:\textbf{if}\:e_0\:\textbf{then}\:e_1\:\textbf{else}\:e_2\:|\:\textbf{let}\:x\:=\:e_1\:\textbf{in}\:e_2\:|\:e_1\:\oplus\:e_2\:|$\\
+$\:\:\:\textbf{Pair}(e_1,\:e_2)\:|\: \textbf{case}\:e_0\:\textbf{of Pair}(x_1,\:x_2)\:=>\:e_1\:|$ \\
+$\:\:\:\textbf{Nil}\:|\:\textbf{Cons}(e_1,\:e_2)\:|\:\textbf{case}\:e_0\:\textbf{of Cons}(x_1,\:x_2)\:=>\:e_1\:\textbf{or}\:e_2$ \\
+$c ::= n\:|\:\textbf{true}\:|\:\textbf{false}$ \\
+$\oplus ::= +\:|\:-\:|\:*\:|\:\&\&\:|\:||\:|\:<\:|\:>$
 \end{tabular}
 \\
 \\
-In this syntax, there are two distinct function definitions: $\text{fn}\:x\:=>\:e_0$ is a normal function definition, and $\text{fun}\:f\:x\:=>\:e_0$ is its recursive variant.
-In the latter, any free occurrence of $f$ in $e_0$ refers to $\text{fun}\:f\:x\:=>\:e_0$.
-Finally, $\text{let}\:x\:=\:e_1\:\text{in}\:e_2$ is a local definition.
+In this syntax, there are two distinct function definitions: $\text{fn}\:x\:=>\:(e_0)$ is a normal function definition, and $\text{fun}\:f\:x\:=>\:(e_0)$ is its recursive variant.
+In the latter, any free occurrence of $f$ in $e_0$ refers to $\text{fun}\:f\:x\:=>\:(e_0)$.
+Finally, $\text{let}\:x\:=\:e_1\:\text{in}\:e_2$ is a local definition. 
+
+This concludes the original language described in NNH. Since we wanted to include data structures for our analyses, we added five more constructs. For pairs, we have the constructor $\textbf{Pair}(e_1,\:e_2)$, which creates a pair of two expressions, and the case statement $\textbf{case}\:e_0\:\textbf{of Pair}(x_1,\:x_2)\:=>\:e_1$, where $e_0$ must evaluate to a pair and $e_1$ may use the variables $x_1$ and $x_2$. The constructs for lists are similar. We have the constructors \textbf{Nil}, which creates an empty list, and $\textbf{Cons}(e_1,\:e_2)$, which prepends $e_1$ to the list $e_2$. Finally, we have the case statement $\textbf{case}\:e_0\:\textbf{of Cons}(x_1,\:x_2)\:=>\:e_1\:\textbf{or}\:e_2$, where $e_0$ must evaluate to a list, $e_1$ may refer to the variables $x_1$ and $x_2$ and is evaluated if $e_0$ evaluates to a non-empty list, and $e_2$ is evaluated if the list is empty (and may not refer to the variables).
+
+While we were initially planning to include the possibility to add user-defined data structures, we decided to focus on the actual analysis first and finally had no time to add more features to the language.
+
+We wrote our own parser for \emph{FUN}, which can be found in the file \texttt{FunParser.hs}. It works fine for most examples we tried, but since we did not want to spend too much time on the parser, it is not perfect. Therefore it is sometimes necessary to add seemingly superfluous parentheses around expressions (see for example the syntax for functions above). In particular, there must be parentheses around every function application. 
+
+The data structures used for storing programs can be found in the file \texttt{AST.hs}.
 
 \section{Control Flow Analysis}
+
+
 \subsection{Annotated Type System}
+We perform our analysis using an annotated type system that looks like this: TODO
+
+
+
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} n : Int$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{true} : Bool$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{false} : Bool$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$\hat{\Gamma}(x) = \hat{\sigma}$}
+\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} x : \hat{\sigma}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$\hat{\Gamma}[x \mapsto \hat{\tau_1}] \vdash_{CFA} t_1 : \hat{\tau_2}$}
+\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{fn}_\pi \texttt{ }x => (t_1) : \hat{\tau_1} \xrightarrow{\{\pi\}}\hat{\tau_2}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$\hat{\Gamma}[f \mapsto (\hat{\tau_1} \xrightarrow{\{\pi\}}\hat{\tau_2})][x \mapsto \hat{\tau_1}] \vdash_{CFA} t_1 : \hat{\tau_2}$}
+\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{fun}_\pi \textbf{ }f \textbf{ }x => (t_1) : \hat{\tau_1} \xrightarrow{\{\pi\}}\hat{\tau_2}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_1 : \hat{\tau_2} \xrightarrow{\varphi} \hat{\tau}$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_2 : \hat{\tau_2}$}
+\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} t_1 t_2 : \hat{\tau}$}
+\end{prooftree}
+
 \begin{prooftree}
 \AxiomC{$\hat{\Gamma} \vdash_{CFA} t_1 : \hat{\sigma_1}$}
 \AxiomC{$\hat{\Gamma}[x \mapsto \hat{\sigma_1}] \vdash_{CFA} t_2 : \hat{\tau}$}
@@ -96,41 +153,6 @@ Finally, $\text{let}\:x\:=\:e_1\:\text{in}\:e_2$ is a local definition.
 \TrinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{if } t_0 \textbf{ then }t_1 \textbf{ else } t_2 : \hat{\tau}$}
 \end{prooftree}
 
-\begin{prooftree}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_1 : \hat{\tau_2} \xrightarrow{\varphi} \hat{\tau}$}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_2 : \hat{\tau_2}$}
-\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} t_1 t_2 : \hat{\tau}$}
-\end{prooftree}
-
-\begin{prooftree}
-\AxiomC{$\hat{\Gamma}[x \mapsto \hat{\tau_1}] \vdash_{CFA} t_1 : \hat{\tau_2}$}
-\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{fn}_\pi \texttt{ }x => (t_1) : \hat{\tau_1} \xrightarrow{\{\pi\}}\hat{\tau_2}$}
-\end{prooftree}
-
-\begin{prooftree}
-\AxiomC{$\hat{\Gamma}[f \mapsto (\hat{\tau_1} \xrightarrow{\{\pi\}}\hat{\tau_2})][x \mapsto \hat{\tau_1}] \vdash_{CFA} t_1 : \hat{\tau_2}$}
-\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{fun}_\pi \textbf{ }f \textbf{ }x => (t_1) : \hat{\tau_1} \xrightarrow{\{\pi\}}\hat{\tau_2}$}
-\end{prooftree}
-
-\begin{prooftree}
-\AxiomC{$\hat{\Gamma}(x) = \hat{\sigma}$}
-\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} x : \hat{\sigma}$}
-\end{prooftree}
-
-\begin{prooftree}
-\AxiomC{}
-\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} n : Int$}
-\end{prooftree}
-
-\begin{prooftree}
-\AxiomC{}
-\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{true} : Bool$}
-\end{prooftree}
-
-\begin{prooftree}
-\AxiomC{}
-\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{false} : Bool$}
-\end{prooftree}
 
 \begin{prooftree}
 \AxiomC{$\hat{\Gamma} \vdash_{CFA} t_1 : \hat{\tau_1}$}
@@ -163,7 +185,15 @@ Finally, $\text{let}\:x\:=\:e_1\:\text{in}\:e_2$ is a local definition.
 \end{prooftree}
 
 \subsection{Algorithm}
-\subsection{Polymorphism}
+Our algorithm is a modified version of Algorithm W as used in NNH. 
+
+TODO
+
+\subsection{Implementation}
+The implementation of the algorithm can be found in the file \texttt{ControlFlowAnalysis.hs}. 
+
+TODO
+
 \subsection{Polyvariance}
 
 
