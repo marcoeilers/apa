@@ -111,7 +111,7 @@ type TEnv = M.Map Var Scheme
 
 -- Type substitution maps type vars to types  
 -- and annotation vars to annotation vars
-type TSubst = (M.Map TVar SType, M.Map AVar AVar)
+type TSubst = M.Map TVar SType
 
 -- A constraint set is a list of mappings from annotation vars
 -- to annotations (ALWAYS Ann l or AVar a, no sets)
@@ -208,20 +208,20 @@ constrContainsA avar ((a1, _) : rest) = (avar == a1) || (constrContainsA avar re
 instantiate :: Scheme -> LS (Constraint, SType)
 instantiate (TScheme tvar t) = do
   a <- getTV
-  let s = (M.insert tvar (TVar a) (M.empty), M.empty)
+  let s = M.insert tvar (TVar a) (M.empty)
   (ct, ti) <- instantiate t
-  return $ (substC ct s, substT ti s)
+  return $ (ct, substT ti s)
 instantiate (AScheme avar t) = do
   b <- getAV
-  let s = (M.empty, M.insert avar b M.empty)
+  --let s = (M.empty, M.insert avar b M.empty) --TODO
   (ct, ti) <- instantiate t
-  return $ (substC ct s, substT ti s)
+  return $ (substC ct avar b, substTA ti avar b)
 instantiate (QT (SType t)) = return ([], t)
 instantiate (QT (ConstrType c t)) = return (c, t)
 
 -- Type substitution corresponding to the identity function
 idSubst :: TSubst
-idSubst = (M.empty, M.empty)
+idSubst = M.empty
 
 -- Applies a substitution to an environment
 substEnv :: TEnv -> TSubst -> TEnv
@@ -232,39 +232,45 @@ substScheme :: Scheme -> TSubst -> Scheme
 substScheme (TScheme tvar s) sub = TScheme tvar (substScheme s sub)
 substScheme (AScheme avar s) sub = AScheme avar (substScheme s sub)
 substScheme (QT (SType t)) sub = QT $ SType $ substT t sub 
-substScheme (QT (ConstrType c t)) sub = QT $ ConstrType (substC c sub) (substT t sub) 
+substScheme (QT (ConstrType c t)) sub = QT $ ConstrType c (substT t sub) 
 
 -- Applies a substitution to a type
 substT :: SType -> TSubst -> SType
-substT (TVar v) (ts, _) = if M.member v ts 
+substT (TVar v) ts = if M.member v ts 
                               then fromJust (M.lookup v ts) 
                               else (TVar v)
-substT (Func t1 t2 a) ts = Func (substT t1 ts) (substT t2 ts) (substAnn ts a)
-substT (PairT t1 t2 a) ts = PairT (substT t1 ts) (substT t2 ts) (substAnn ts a)
-substT (ListT t a) ts = ListT (substT t ts) (substAnn ts a)
+substT (Func t1 t2 a) ts = Func (substT t1 ts) (substT t2 ts) a
+substT (PairT t1 t2 a) ts = PairT (substT t1 ts) (substT t2 ts) a
+substT (ListT t a) ts = ListT (substT t ts) a
 substT t _ = t
 
+substTA :: SType -> AVar -> AVar -> SType
+substTA (Func t1 t2 a) a1 a2 = Func (substTA t1 a1 a2) (substTA t2 a1 a2) (substAnn a1 a2 a)
+substTA (PairT t1 t2 a) a1 a2 = PairT (substTA t1 a1 a2) (substTA t2 a1 a2) (substAnn a1 a2 a)
+substTA (ListT t a) a1 a2 = ListT (substTA t a1 a2) (substAnn a1 a2 a)
+substTA t _ _ = t
+
 -- Applies a substitution to an annotation var
-substA :: AVar -> TSubst -> AVar
-substA v (_, as) = if M.member v as 
-                   then fromJust (M.lookup v as)
-                   else v
+substA :: AVar -> AVar -> AVar -> AVar
+substA v a1 a2 = if v == a1
+                 then a2
+                 else v
                         
 -- Applies a substitution to a constraint set
-substC :: Constraint -> TSubst -> Constraint
-substC [] _ = []
-substC ((b, p):cs) s = (substA b s, substAnn s p) : (substC cs s)
+substC :: Constraint -> AVar -> AVar -> Constraint
+substC [] _ _ = []
+substC ((b, p):cs) a1 a2 = (substA b a1 a1, substAnn a1 a2 p) : (substC cs a1 a2)
   
 -- Applies a substitution to an annotation
-substAnn :: TSubst -> SAnn -> SAnn
-substAnn s (AVar a) = AVar $ (substA a s)
-substAnn s (Set anns) = Set $ S.map (substAnn s) anns
-substAnn s ann = ann
+substAnn :: AVar -> AVar -> SAnn -> SAnn
+substAnn a1 a2 (AVar a) = AVar $ (substA a1 a2 a)
+substAnn a1 a2 (Set anns) = Set $ S.map (substAnn a1 a2) anns
+substAnn _ _ ann = ann
 
 
 -- Combines two substitution into a new one
 combine :: TSubst -> TSubst -> TSubst
-combine (ts1, as1) (ts2, as2) = (M.union ts1 ts2, M.union as1 as2)
+combine ts1 ts2 = M.union ts1 ts2
 
 -- Checks if a type contains a given type variable
 contains :: SType -> TVar -> Bool
@@ -334,7 +340,7 @@ unify lv t (TVar v) = if t == (TVar v)
                         else error "Error in unify: var t case"
   where result = do 
         (repT, c) <- replaceAnnVarsR t
-        return ((M.insert v repT M.empty, M.empty), c)
+        return (M.insert v repT M.empty, c)
 
 unify lv (TVar v) t = if t == (TVar v) 
                    then result
@@ -343,7 +349,7 @@ unify lv (TVar v) t = if t == (TVar v)
                         else error "Error in unify: var t case"
   where result = do 
         (repT, c) <- replaceAnnVars t
-        return ((M.insert v repT M.empty, M.empty), c)
+        return (M.insert v repT M.empty, c)
 
 unify _ t1 t2 = error $ "Error in unify: other case" ++ (show t1) ++ "  " ++ (show t2)
 
@@ -429,8 +435,8 @@ infer' lv e (LFun l f v e0) = do
       e'' = M.insert f (QT (SType (Func (TVar ax) (TVar a0)  (AVar b0)))) e'
   (t0, s0, c0) <- infer lv e'' e0
   (s1, c1) <- unify lv t0 (substT (TVar a0) s0)
-  let resT = Func (substT (substT (TVar ax) s0) s1) (substT t0 s1) (AVar (substA (substA b0 s0) s1))
-      resC = (substA (substA b0 s0) s1, Ann l) : ((substC c0 s1) ++ c1)
+  let resT = Func (substT (substT (TVar ax) s0) s1) (substT t0 s1) (AVar b0)
+      resC = (b0, Ann l) : (c0 ++ c1)
   return (resT, combine s1 s0, resC)
 
 infer' lv e (LApp l e1 e2) = do
@@ -439,7 +445,7 @@ infer' lv e (LApp l e1 e2) = do
   a <- getTV
   b <- getAV
   (s3, c3) <- unify lv (substT t1 s2) (Func t2 (TVar a) (AVar b))
-  return (substT (TVar a) s3, combine s3 (combine s2 s1), (substC (substC c1 s2) s3) ++ (substC c2 s3) ++ c3)
+  return (substT (TVar a) s3, combine s3 (combine s2 s1), c1 ++ c2 ++ c3)
 
 infer' lv e (LIf l e0 e1 e2) = do
   (t0, s0, c0) <- infer lv e e0
@@ -455,18 +461,14 @@ infer' lv e (LIf l e0 e1 e2) = do
   (_, c6) <- unify lv (substT (substT (substT (substT t1 s2) s3) s4) s5) (substT (TVar a) s5)
   (_, c7) <- unify lv (substT (substT (substT t2 s3) s4) s5) (substT (TVar a) s5)
   let retS = combine s5 (combine s4 (combine s3 (combine s2 (combine s1 s0))))
-      retC0 = substC (substC (substC (substC (substC c0 s1) s2) s3) s4) s5
-      retC1 = substC (substC (substC (substC c1 s2) s3) s4) s5
-      retC2 = substC (substC (substC c2 s3) s4) s5
-      retC3 = substC (substC c3 s4) s5
-      retC = retC0 ++ retC1 ++ retC2 ++ retC3 ++ c6 ++ c7
+      retC = c0 ++ c1 ++ c2 ++ c3 ++ c6 ++ c7
   return (substT (TVar a) s5, retS, retC)
 
 infer' lv e (LLet l v e1 e2) = do
   (t1, s1, c1) <- infer lv e e1 
   generalised <- generalise lv e t1 (getTopAnn t1) c1
   (t2, s2, c2) <- infer lv (M.insert v generalised (substEnv e s1)) e2
-  return (t2, combine s2 s1, (substC c1 s2) ++ c2)
+  return (t2, combine s2 s1, c1 ++ c2)
 
 infer' lv e (LBinop l o e1 e2) = do
   (t1, s1, c1) <- infer lv e e1
@@ -474,17 +476,14 @@ infer' lv e (LBinop l o e1 e2) = do
   (s3, c3) <- unify lv (argType o) (substT t1 s2)
   (s4, c4) <- unify lv (argType o) (substT t2 s3)
   let resS = combine s4 (combine s3 (combine s2 s1))
-      resC1 = substC (substC (substC c1 s2) s3) s4 
-      resC2 = substC (substC c2 s3) s4
-      resC3 = substC c3 s4
-  return (resType o, resS, resC1 ++ resC2 ++ resC3 ++ c4)
+  return (resType o, resS, c1 ++ c2 ++ c3 ++ c4)
 
 -- Added: cases for lists and pairs
 infer' lv e (LTPair l e1 e2) = do
   (t1, s1, c1) <- infer lv e e1
   (t2, s2, c2) <- infer lv (substEnv e s1) e2
   b <- getAV
-  return (PairT t1 t2 (AVar b), combine s1 s2, (b, Ann l) : ((substC c1 s2) ++ c2)) 
+  return (PairT t1 t2 (AVar b), combine s1 s2, (b, Ann l) : (c1 ++ c2)) 
 
 infer' lv e (LPCase l e1 v1 v2 e2) = do
   (t1, s1, c1) <- infer lv e e1
@@ -495,7 +494,7 @@ infer' lv e (LPCase l e1 v1 v2 e2) = do
       e'' = M.insert v2 (QT (SType (TVar a2))) e'
   (t2, s2, c2) <- infer lv (substEnv e'' s1) e2
   (s3, c3) <- unify lv t1 (PairT (substT (substT (TVar a1) s2) s1) (substT (substT (TVar a2) s2) s1) (AVar b))
-  return (substT t2 s3, combine s3 (combine s2 s1), (substC (substC c1 s2) s3) ++ (substC c2 s3) ++ c3) 
+  return (substT t2 s3, combine s3 (combine s2 s1), c1 ++ c2 ++ c3) 
 
 infer' lv e (LNil l) = do
   a <- getTV
@@ -508,7 +507,7 @@ infer' lv e (LCons l e1 e2) = do
   b <- getAV
   b' <- getAV
   (s3, c3) <- unify lv t2 (ListT t1 (AVar b))
-  let resC = (b', Ann l) : ((substC (substC c1 s2) s3) ++ (substC c2 s3)) ++ c3
+  let resC = (b', Ann l) : (c1 ++ c2 ++ c3)
   return (ListT (substT t1 s3) (AVar b'), combine s3 (combine s2 s1), resC) 
 
 infer' lv e (LListCase l e0 v1 v2 e1 e2) = do
@@ -528,11 +527,7 @@ infer' lv e (LListCase l e0 v1 v2 e1 e2) = do
   (_, c7) <- unify lv (substT (substT (substT t1 s2) s5) s6) (substT (TVar a) s6)
   (_, c8) <- unify lv (substT (substT t2 s5) s6) (substT (TVar a) s6)
   let resS = combine s6 (combine s5 (combine s4 (combine s2 (combine s1 s0))))
-      resC0 = substC (substC (substC (substC (substC c0 s1) s2) s4) s5) s6
-      resC1 = substC (substC (substC (substC c1 s2) s4) s5) s6
-      resC2 = substC (substC (substC c2 s4) s5) s6
-      resC4 = substC (substC (substC (substC c4 s5) s2) s1) s6
-  return (substT (TVar a) s6, resS, resC0 ++ resC1 ++ resC2 ++ resC4 ++ c7 ++ c8) 
+  return (substT (TVar a) s6, resS, c0 ++ c1 ++ c2 ++ c4 ++ c7 ++ c8) 
 
   
 -- Calls infer with an empty environment 
