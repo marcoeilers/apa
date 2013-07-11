@@ -36,8 +36,14 @@ printAll db ((l, (tm, tenv, ty, sub, constr)):rest) = do
   let constrSolvd = solveConstr ty constr
       resTy = applyConstr ty constrSolvd
   putStrLn $ if db > 0 
-             then "Label " ++ (show l) ++ " is term " ++ (show tm) ++ ",\nhas preliminary type "++ (show ty) ++ " and constraints " ++ (show constr) ++ ",\nfinal type is " ++ (show resTy)
-             else "Label " ++ (show l) ++ " is term " ++ (show tm) ++ ",\nhas type " ++ (show resTy)
+             then "Label " ++ (show l) ++ 
+                  " is term " ++ (show tm) ++ 
+                  ",\nhas preliminary type "++ (show ty) ++ 
+                  " and constraints " ++ (show constr) ++ 
+                  ",\nfinal type is " ++ (show resTy)
+             else "Label " ++ (show l) ++ 
+                  " is term " ++ (show tm) ++ 
+                  ",\nhas type " ++ (show resTy)
   printAll db rest
 
 

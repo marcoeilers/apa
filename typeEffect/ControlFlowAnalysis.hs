@@ -11,9 +11,9 @@ import Data.List as L
 import Data.Maybe
 import Debug.Trace
 
-import AST
-
 import Control.Monad.State
+
+import AST
 
 -- We use the state monad to keep track of already used
 -- type and annotation variable names.
@@ -39,6 +39,9 @@ getTV = do
   let varString = getTVarString curTV
   return $ TV varString
   
+-- Gets the level of the analysis from the state
+-- A level of 0 means monomorphic, 1 = polymorphic,
+-- 2 = polymorphic and polyvariant
 getLevel :: LS Int
 getLevel = do
   (lv, _, _, _) <- get
@@ -49,6 +52,7 @@ getTVarString :: Int -> String
 getTVarString i = if i < 26
                   then ("'" ++ [['a'..'z'] !! i])
                   else ("'" ++ getTVarString (i - 26))
+
 
 -- Data type definitions follow NNH p. 306f
 
@@ -115,7 +119,6 @@ unionSAnn a1 a2 = Set $ S.insert a1 (S.singleton a2)
 type TEnv = M.Map Var Scheme 
 
 -- Type substitution maps type vars to types  
--- and annotation vars to annotation vars
 type TSubst = M.Map TVar SType
 
 -- A constraint set is a list of mappings from annotation vars
@@ -123,8 +126,12 @@ type TSubst = M.Map TVar SType
 type Constraint = [(AVar, SAnn)]
 
 
+-- Functions used by the algorithm
+
 -- Abstracts over all type & annotation vars in the type 
--- which are not bound in the environment
+-- which are not bound in the environment and, for
+-- annotation vars, do not occur in the SAnn (third arg),
+-- putting the given constraint, if any, in the type
 -- if level = 0, does nothing at all, if level = 1, only
 -- abstracts over type vars
 generalise :: TEnv -> SType -> SAnn -> Constraint -> LS Scheme
@@ -144,8 +151,8 @@ extractAnnVars (AVar a) = [a]
 extractAnnVars (Ann _) = []
 extractAnnVars (Set anns) = L.concat $ L.map extractAnnVars (S.toList anns)
 
-
 -- Abstracts over a list of type vars
+-- putting the given constraints, if any, in the type
 generalise' :: SType -> Constraint -> [TVar] -> LS Scheme
 generalise' t [] [] = return $ QT (SType t)
 generalise' t cs [] = return $ QT (ConstrType cs t)
@@ -154,12 +161,12 @@ generalise' t cs (tvar : vars) = do
   return $ TScheme tvar ts
 
 -- Abstracts over a list of annotation vars
+-- except the annotation vars in the second list
 generalise'' :: Scheme -> [AVar] -> [AVar] -> LS Scheme
 generalise'' s [] exempt = return s
 generalise'' s (avar : vars) exempt = if L.elem avar exempt then (generalise'' s vars exempt) else do
   ts <- generalise'' s vars exempt
   return $ AScheme avar ts
-
 
 -- Finds the type vars in a type that are not bound in an environment
 findFreeTVars :: TEnv -> SType -> S.Set TVar
@@ -168,7 +175,6 @@ findFreeTVars e (PairT t1 t2 _) = S.union (findFreeTVars e t1) (findFreeTVars e 
 findFreeTVars e (ListT t _) = findFreeTVars e t
 findFreeTVars e (TVar tv) = if envContains tv (M.toList e) then S.empty else S.singleton tv
 findFreeTVars _ _ = S.empty
-
 
 -- Finds the annotation vars in a type that are not bound in an environment
 findFreeAVars :: TEnv -> SType -> S.Set AVar
@@ -202,7 +208,6 @@ envContainsA avar ((v, (AScheme var ts)):maps) = if avar == var
                                                  else envContainsA avar ((v, ts) : maps)
 envContainsA avar ((_, QT (SType t)) : maps) = (containsA t avar) || (envContainsA avar maps)
 envContainsA avar ((_, QT (ConstrType c t)) : maps) = (containsA t avar) || (envContainsA avar maps) || (constrContainsA avar c)
-
 
 -- Checks if a constraint contains a reference to a given annotation var
 constrContainsA :: AVar -> Constraint -> Bool
@@ -249,29 +254,33 @@ substT (PairT t1 t2 a) ts = PairT (substT t1 ts) (substT t2 ts) a
 substT (ListT t a) ts = ListT (substT t ts) a
 substT t _ = t
 
+-- Substitutes a given annotation var by a different one
+-- in a type
 substTA :: SType -> AVar -> AVar -> SType
 substTA (Func t1 t2 a) a1 a2 = Func (substTA t1 a1 a2) (substTA t2 a1 a2) (substAnn a1 a2 a)
 substTA (PairT t1 t2 a) a1 a2 = PairT (substTA t1 a1 a2) (substTA t2 a1 a2) (substAnn a1 a2 a)
 substTA (ListT t a) a1 a2 = ListT (substTA t a1 a2) (substAnn a1 a2 a)
 substTA t _ _ = t
 
--- Applies a substitution to an annotation var
+-- If a given annotation var (arg 1) is equal to another one (arg 2),
+-- replaces it by a different one (arg 3), otherwise returns the initial var 
 substA :: AVar -> AVar -> AVar -> AVar
 substA v a1 a2 = if v == a1
                  then a2
                  else v
                         
--- Applies a substitution to a constraint set
+-- Substitutes a given annotation var by a different one
+-- in a constraint set
 substC :: Constraint -> AVar -> AVar -> Constraint
 substC [] _ _ = []
 substC ((b, p):cs) a1 a2 = (substA b a1 a1, substAnn a1 a2 p) : (substC cs a1 a2)
   
--- Applies a substitution to an annotation
+-- Substitutes a given annotation var by a different one
+-- in an annotation
 substAnn :: AVar -> AVar -> SAnn -> SAnn
 substAnn a1 a2 (AVar a) = AVar $ (substA a1 a2 a)
 substAnn a1 a2 (Set anns) = Set $ S.map (substAnn a1 a2) anns
 substAnn _ _ ann = ann
-
 
 -- Combines two substitution into a new one
 combine :: TSubst -> TSubst -> TSubst
@@ -314,12 +323,14 @@ getTopAnn (PairT _ _ a) = Set S.empty
 getTopAnn (ListT _ a) = Set S.empty
 getTopAnn _ = Set S.empty
 
-
 -- Generates a type substitution which unifies two given types
--- Fails if impossible
+-- and a constraint relating the annotation vars in the input
+-- types and the generated substitution.
+-- Fails if impossible.
 -- Corresponds to U_CFA in NNH (p. 307) extended with cases for
--- lists and pairs
--- regarding annotations: constrains are generated so that
+-- lists and pairs, improved with regard for handling
+-- annotation vars.
+-- Regarding annotations: constrains are generated so that
 -- first <= second, so second >= first
 unify :: SType -> SType -> LS (TSubst, Constraint)
 unify Int Int = return (idSubst, [])
@@ -358,6 +369,7 @@ unify (TVar v) t = if t == (TVar v)
 
 unify t1 t2 = error $ "Error in unify: other case" ++ (show t1) ++ "  " ++ (show t2)
 
+
 -- Replaces all annotation vars in a given type by fresh ones
 -- so that annotations in returned type <= input type
 replaceAnnVars :: SType -> LS (SType, Constraint)
@@ -393,24 +405,20 @@ replaceAnnVarsR (ListT t1 (AVar a)) = do
   (rt1, c1) <- replaceAnnVarsR t1
   a' <- getAV
   return (ListT rt1 (AVar a'), (a', AVar a) : c1)
-replaceAnnVarsR t = return (t, [])
-
-  
+replaceAnnVarsR t = return (t, [])  
 
 -- For a given term in a given environment,
--- infers its type, generated substitutions and constraints
--- Inserts results into a map in the state
--- First parameter is the level of the analysis 
--- (monomorphic, polymorphic, polymorphic & polyvariant)
+-- infers its type, generated substitutions and constraints.
+-- Inserts results into a map in the state.
 -- Corresponds to W_CFA in NNH (p. 310) extended with cases for
--- lists and pairs
+-- lists and pairs, adapted to work with the different unification
+-- function, improved for better subeffecting.
 infer :: TEnv -> LTerm -> LS (SType, TSubst, Constraint)
 infer e t = do
   (ty, sub, constr) <- infer' e t
   (lv, n, m, map) <- get
   put (lv, n, m, M.insert (getLabel t) (t, e, ty, sub, constr) map)
   return $ (ty, sub, constr)
-
 
 -- infer' does the actual work for infer
 infer' :: TEnv -> LTerm -> LS (SType, TSubst, Constraint)
@@ -542,6 +550,8 @@ runInfer lv t = (last, all)
         (last, (_, _, _, all)) = runState res (lv, 0, 0, M.empty)
         
 
+-- The following functions handle the solving of generated constraints
+
 -- Translates a constraint set into a mapping from annotation vars
 -- to annotations
 solveConstr :: SType -> Constraint -> M.Map AVar SAnn
@@ -549,10 +559,10 @@ solveConstr t cs = solveConstrFinal t cs fixPoint
   where oneRun = (solveConstr' cs M.empty)
         fixPoint = fpSolveConstr cs oneRun
 
-
 -- Applies the constraints to the input map one time
 -- ignores beta >= beta' if we know nothing about beta'
--- (to prevent messing up the result with ann vars)
+-- (so we do not put any annotation vars in the result just yet,
+-- only concrete annotations)
 solveConstr' :: Constraint -> M.Map AVar SAnn -> M.Map AVar SAnn
 solveConstr' [] m = m
 solveConstr' ((avar, sann) : cs) m = 
@@ -567,9 +577,9 @@ solveConstr' ((avar, sann) : cs) m =
                  (Ann l) -> Just $ Set (S.singleton (Ann l))
                  (Set s) -> Just $ Set s
 
--- like solveConstr', but inserts beta' for the constraint beta >= beta'
--- IF the given type contains beta'
--- is used as the final step after fpSolveConstr has found a fix point
+-- Like solveConstr', but inserts beta' for the constraint beta >= beta'
+-- IF the given type contains beta'.
+-- Is used as the final step after fpSolveConstr has found a fix point
 solveConstrFinal :: SType -> Constraint -> M.Map AVar SAnn -> M.Map AVar SAnn
 solveConstrFinal _ [] m = m
 solveConstrFinal t ((avar, sann) : cs) m = 
@@ -586,12 +596,10 @@ solveConstrFinal t ((avar, sann) : cs) m =
                  (Ann l) -> Just $ Set (S.singleton (Ann l))
                  (Set s) -> Just $ Set s
 
--- Performas fix point iteration to get minimal solution for constraints
+-- Performs fix point iteration to get minimal solution for constraints
 fpSolveConstr :: Constraint -> M.Map AVar SAnn -> M.Map AVar SAnn
 fpSolveConstr cs m = if new == m then new else fpSolveConstr cs new
   where new = solveConstr' cs m
-
-
 
 -- Applies a mapping generated by solveConstr to a type 
 -- to get the final type
@@ -614,4 +622,3 @@ applyConstr (ListT t1 (AVar a)) m =
   Just a' -> ListT t1' a'
   where t1' = applyConstr t1 m
 applyConstr t _ = t
-
