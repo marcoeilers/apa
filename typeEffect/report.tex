@@ -13,12 +13,15 @@
 \usepackage{tikz}
 \usepackage{listings}
 \usepackage{mathtools}
+\usepackage{xspace}
 
 \usepackage{hyperref}  
+
+\allowdisplaybreaks
 \newcommand{\wpe}[2]{\texttt{wp }#1\texttt{ }#2}
 \newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
-\newcommand{\bigU}{\ensuremath{\mathcal{U}_{CFA}}}
-\newcommand{\bigW}{\ensuremath{\mathcal{W}_{CFA}}}
+\newcommand{\bigU}{\ensuremath{\mathcal{U}_{CFA}}\xspace}
+\newcommand{\bigW}{\ensuremath{\mathcal{W}_{CFA}}\xspace}
 
 \headsep1cm
 
@@ -231,14 +234,14 @@ The (non syntax directed) inference rules for our type system are the following.
 \begin{prooftree}
 \AxiomC{}
 \RightLabel{[\textsc{T-Gen}]}
-\UnaryInfC{}
+\UnaryInfC{TODO}
 \end{prooftree}
 
 %ann gen
 \begin{prooftree}
 \AxiomC{}
 \RightLabel{[\textsc{T-Gen-Ann}]}
-\UnaryInfC{}
+\UnaryInfC{TODO}
 \end{prooftree}
 
 
@@ -264,13 +267,13 @@ The (non syntax directed) inference rules for our type system are the following.
 \begin{prooftree}
 \AxiomC{}
 \RightLabel{[\textsc{T-Qual}]}
-\UnaryInfC{}
+\UnaryInfC{TODO}
 \end{prooftree}
 
 \begin{prooftree}
 \AxiomC{}
 \RightLabel{[\textsc{T-Res}]}
-\UnaryInfC{}
+\UnaryInfC{TODO}
 \end{prooftree}
 
 Most of the rules have the same or almost the same form as discussed in the lectures and in NNH. 
@@ -329,35 +332,141 @@ The function \bigW performs the actual inference of annotated types. It is defin
 
 \begin{align*}
   \bigW (\hat{\Gamma}, n) &= (Int, [], \emptyset)\\
+  \\
   \bigW (\hat{\Gamma}, \textbf{true}) &= (Bool, [], \emptyset)\\
+  \\
   \bigW (\hat{\Gamma}, \textbf{false}) &= (Bool, [], \emptyset)\\
+  \\
   \bigW (\hat{\Gamma}, x) &= (\hat{\tau}, [], C)\\ 
-  \text{where}\\
-  (\hat{\tau}, C) &= instantiate (\hat{\Gamma}(x))\\
-  \bigW (\hat{\Gamma}, \textbf{fn }x=> (e_0)) &= ((\theta_0 \alpha_x \xrightarrow{\beta_0} \hat{\tau_0}, \theta_0 \{\beta_0 \supseteq \{\pi\}\} \cup C_0)\\
-  \text{where}\\
-  \alpha_x, \beta_0 & ~are fresh\\
-  (\hat{\tau_0}, \theta_0, C_0) &= \bigW (\hat{\Gamma}[x \mapsto \alpha_x], e_0)
+  \text{where }(\hat{\tau}, C) &= instantiate (\hat{\Gamma}(x))\\
+  \\
+  \bigW (\hat{\Gamma}, \textbf{fn}_\pi ~x => (e_0)) &= (\hat{\tau_{res}}, \theta_0, C_{res})\\
+  \text{where }\alpha_x, \beta_0 & ~are~fresh\\
+  (\hat{\tau_0}, \theta_0, C_0) &= \bigW (\hat{\Gamma}[x \mapsto \alpha_x], e_0)\\
+  \hat{\tau_{res}} &= (\theta_0 \alpha_x) \xrightarrow{\beta_0} \hat{\tau_0}\\
+  C_{res} &= \{\beta_0 \supseteq \{\pi\}\} \cup C_0\\
+  \\
+  \bigW (\hat{\Gamma}, \textbf{fun}_\pi ~f~x => (e_0)) &= (\hat{\tau_{res}}, \theta_0 \circ \theta_1, C_{res})\\
+  \text{where }\alpha_x, \alpha_0, \beta_0 & ~are fresh\\
+  (\hat{\tau_0}, \theta_0, C_0) &= \bigW (\hat{\Gamma}[x \mapsto \alpha_x][f \mapsto (\alpha_x \xrightarrow{\beta_0} \alpha_0)], e_0)\\
+  (\theta_1, C_1) &= \bigU (\hat{\tau_0}, \theta_0\alpha_0)\\
+  \hat{\tau_{res}} &= \theta_0\theta_1\alpha_x \xrightarrow{\beta_0} \theta_1\hat{\tau_0}\\
+  C_{res} &= \{\beta_0 \supseteq \{\pi\}\} \cup C_0 \cup C_1\\
+  \\
+  \bigW (\hat{\Gamma}, e_1 ~ e_2) &= (\theta_3 \alpha, \theta_3 \circ \theta_2 \circ \theta_1, C_1 \cup C_2 \cup C_3)\\
+  \text{where }\alpha, \beta & ~are~fresh\\
+  (\hat{\tau_1}, \theta_1, C_1) &= \bigW (\hat{\Gamma}, e_1)\\
+  (\hat{\tau_2}, \theta_2, C_2) &= \bigW (\theta_1 \hat{\Gamma}, e_2)\\
+  (\theta_3, C_3) &= \bigU (\theta_2 \hat{\tau_1}, (\hat{\tau_2} \xrightarrow{\beta} \alpha))\\
+  \\
+  \bigW (\hat{\Gamma}, \textbf{if }e_0 \textbf{ then }e_1 \textbf{ else }e_2) &= (\theta_5 \alpha, \theta_{res}, C_{res})\\
+  \text{where }\alpha & ~is~fresh\\
+  (\hat{\tau_0}, \theta_0, C_0) &= \bigW (\hat{\Gamma}, e_0)\\
+  (\hat{\tau_1}, \theta_1, C_1) &= \bigW (\theta_0 \hat{\Gamma}, e_1)\\
+  (\hat{\tau_2}, \theta_2, C_2) &= \bigW (\theta_1 \theta_0 \hat{\Gamma}, e_2)\\
+  (\theta_3, C_3) &= \bigU (\theta_2 \theta_1 \hat{\tau_0}, Bool)\\
+  (\theta_4, \_) &= \bigU (\theta_3 \theta_2 \hat{\tau_1}, \theta_3 \hat{\tau_2})\\
+  (\theta_5, \_) &= \bigU (\theta_4 \theta_3 \hat{\tau_2}, \alpha)\\
+  (\_, C_6) &= \bigU (\theta_5 \theta_4 \theta_3 \theta_2 \hat{\tau_1}, \theta_5 \alpha)\\
+  (\_, C_7) &= \bigU (\theta_5 \theta_4 \theta_3 \hat{\tau_2}, \theta_5 \alpha)\\
+  \theta_{res} &= \theta_5 \circ \theta_4 \circ \theta_3 \circ \theta_2 \circ \theta_1 \circ \theta_0\\
+  C_{res} &= C_0 \cup C_1 \cup C_2 \cup C_3 \cup C_6 \cup C_7\\
+  \\
+  \bigW (\hat{\Gamma}, \textbf{let }x = e_1 \textbf{ in }e_2) &= (\hat{\tau_2}, \theta_2 \circ \theta_1, C_1 \cup C_2)\\
+  \text{where }(\hat{\tau_1}, \theta_1, C_1) &= \bigW (\hat{\Gamma}, e_1)\\
+  \hat{\sigma} &= generalise (\hat{\Gamma}, \hat{\tau_1}, top(\hat{\tau_1}), C_1)\\
+  (\hat{\tau_2}, \theta_2, C_2) &= \bigW (\theta_1 \hat{\Gamma}[x \mapsto \hat{\sigma}], e_2)\\
+  \\ 
+  \bigW (\hat{\Gamma}, e_1 \oplus e_2) &= (\hat{\tau_\oplus}, \theta_{res}, C_{res}) \\
+  \text{where }(\hat{\tau_1}, \theta_1, C_1) &= \bigW (\hat{\Gamma}, e_1)\\
+  (\hat{\tau_2}, \theta_2, C_2) &= \bigW (\theta_1 \hat{\Gamma}, e_2)\\
+  (\theta_3, C_3) &= \bigU (\oplus_1, \theta_2 \hat{\tau_1})\\
+  (\theta_4, C_4) &= \bigU (\oplus_2, \theta_3 \hat{\tau_2})\\
+  \theta_{res} &= \theta_4 \circ \theta_3 \circ \theta_2 \circ \theta_1\\
+  C_{res} &= C_1 \cup C_2 \cup C_3 \cup C_4\\
+  \\
+  \bigW (\hat{\Gamma}, \textbf{Pair}_\pi (e_1, e_2)) &= ((\hat{\tau_1} \times^{\beta} \hat{\tau_2}), \theta_2 \circ \theta_1, C_{res}) \\
+  \text{where }\beta & ~is~fresh\\
+  (\hat{\tau_1}, \theta_1, C_1) &= \bigW (\hat{\Gamma}, e_1)\\
+  (\hat{\tau_2}, \theta_2, C_2) &= \bigW (\theta_1 \hat{\Gamma}, e_2)\\
+  C_{res} &= \{\beta \supseteq \{\pi\}\} \cup C_1 \cup C_2 \\
+  \\
+  \bigW (\hat{\Gamma}, \textbf{case }e_1\textbf{ of}\\\textbf{Pair}(x_1,x_2) => e_2) &= (\theta_3 \hat{\tau_2}, \theta_3 \circ \theta_2 \circ \theta_1, C_1 \cup C_2 \cup C_3)\\
+  \text{where }\alpha_1, \alpha_2, \beta & ~are~fresh\\
+  (\hat{\tau_1}, \theta_1, C_1) &= \bigW (\hat{\Gamma}, e_1)\\
+  (\hat{\tau_2}, \theta_2, C_2) &= \bigW (\theta_1 \hat{\Gamma}[x_1 \mapsto \alpha_1][x_2 \mapsto \alpha_2], e_2)\\
+  (\theta_3, C_3) &= \bigU (\hat{\tau_1}, (\theta_2 \theta_1 \alpha_1 \times^\beta \theta_2 \theta_1 \alpha_2))\\
+  \\
+  \bigW (\hat{\Gamma}, \textbf{Nil}_\pi) &= (\alpha~list^\beta, [], \{\beta \supseteq \{\pi\}\})\\
+  \text{where }\alpha, \beta & ~are~fresh\\
+  \\
+  \bigW (\hat{\Gamma}, \textbf{Cons}_\pi (e_1, e_2)) &= ((\theta_3 \hat{\tau_1}) ~ list^\beta, \theta_{res}, C_{res})\\
+  \text{where }\beta & ~is~fresh\\
+  (\hat{\tau_1}, \theta_1, C_1) &= \bigW (\hat{\Gamma}, e_1)\\
+  (\hat{\tau_2}, \theta_2, C_2) &= \bigW (\theta_1 \hat{\Gamma}, e_2)\\
+  (\theta_3, C_3) &= \bigU (\hat{\tau_2}, \hat{\tau_1} ~ list^\beta)\\
+  \theta_{res} &= \theta_3 \circ \theta_2 \circ \theta_1\\
+  C_{res} &= \{\beta \supseteq \{\pi\}\} \cup C_1 \cup C_2 \cup C_3\\
+  \\
+  \bigW (\hat{\Gamma}, \textbf{case }e_0\textbf{ of Cons}\\(x_1,x_2) => e_1\textbf{ or }e_2) &= (\theta_6 \alpha, \theta_{res}, C_{res})\\
+  \text{where }\alpha_{x_1}, \beta_{x_1}, \beta_{x_2}, \alpha & ~are~fresh\\
+  (\hat{\tau_0}, \theta_0, C_0) &= \bigW (\hat{\Gamma}, e_0) \\
+  (\theta_4, C_4) &= \bigU (\hat{\tau_0}, \alpha_{x_1} ~ list^{\beta_{x_1}})\\
+  (\hat{\tau_1}, \theta_1, C_1) &= \bigW (\theta_0 \hat{\Gamma}[x_1 \mapsto (\theta_4 \alpha_{x_1})][x_2 \mapsto (\theta_4 \alpha_{x_1}) ~ list^{\beta_{x_2}}])\\
+  (\hat{\tau_2}, \theta_2, C_2) &= \bigW (\theta_4 \theta_1 \theta_0 \hat{\Gamma}, e_2)\\
+  (\theta_5, \_) &= \bigU (\theta_2 \hat{\tau_1}, \hat{\tau_2})\\
+  (\theta_6, \_) &= \bigU (\theta_5 \hat{\tau_2}, \alpha)\\
+  (\_, C_7) &= \bigU (\theta_6 \theta_5 \theta_2 \hat{\tau_1}, \theta_6 \alpha)\\
+  (\_, C_8) &= \bigU (\theta_6 \theta_5 \hat{\tau_2}, \theta_6 \alpha)\\
+  \theta_{res} &= \theta_6 \circ \theta_5 \circ \theta_4 \circ \theta_2 \circ \theta_1 \circ \theta_0\\
+  C_{res} &= C_0 \cup C_1 \cup C_2 \cup C_4 \cup C_7 \cup C_8
 \end{align*}
 
+TODO mostly like NNH except +lists +pairs +different unification 
 
-TODO
+TODO generalisation and instantiation
+
+TODO topAnn
+
+TODO explain ifthenElse or a different example 
 
 \subsection{Implementation}
 The implementation of the algorithm can be found in the file \texttt{ControlFlowAnalysis.hs}. 
 
-TODO
+TODO apology for bad haskell
 
-\subsection{Polyvariance}
+TODO Monad
+
+TODO types (substs, SAnns (sets))
+
+TODO which function does what
+
+TODO constraints only in types in env, no simplification
 
 
 \section{Evaluation of our Solution}
+TODO works, polymorphic, polyvariant
+
+TODO sensible implementation of lists and pairs
+
+TODO no own data types
+
+TODO no simplification
+
+TODO consequent use of constraints
+
+TODO maybe slightly clumsy haskell
 
 
 \section{Compiling and Running our Code}
+TODO compile
+
+TODO run: command line options
 
 
 \section{Example Programs and Results}
+
+TODO
 
 
 \end{document}
