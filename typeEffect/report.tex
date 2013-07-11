@@ -17,6 +17,8 @@
 \usepackage{hyperref}  
 \newcommand{\wpe}[2]{\texttt{wp }#1\texttt{ }#2}
 \newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+\newcommand{\bigU}{\ensuremath{\mathcal{U}_{CFA}}}
+\newcommand{\bigW}{\ensuremath{\mathcal{W}_{CFA}}}
 
 \headsep1cm
 
@@ -100,6 +102,7 @@ We perform our analysis using an annotated type system that looks like this:
 Annotations: & $\varphi \in \textbf{Ann}$ \\
 Annotation Variables: &	$\beta  \in \textbf{AVar}$ \\
 Simple Types: &		$\hat{\tau} \in \textbf{SType}$ \\
+Type Variables: & $\alpha \in \textbf{TVar}$ \\
 Qualified Types & $\hat{\rho} \in \textbf{QualType}$\\
 Simple Type Schemes: &		$\hat{\sigma} \in \textbf{TScheme}$ \\
 Simple Type Environments &		$\hat{\Gamma} \in \textbf{TEnv} $ \\
@@ -110,11 +113,12 @@ Constraints &	$C \in \textbf{Constraint}$ \\
 where
 
 \begin{tabular}{l}
-$\varphi ::= \emptyset\:|\:\{\pi\}\:|\:\varphi_1 \cup \varphi_2$\\
+$\varphi ::= \emptyset\:|\:\beta\:|\:\{\pi\}\:|\:\varphi_1 \cup \varphi_2$\\
 $\hat{\tau} ::= \alpha\:|\:Nat\:|\:Bool\:|\:(\hat{\tau_1}\xrightarrow{\beta}\hat{\tau_2})\:|\:(\hat{\tau_1} \times^\beta \hat{\tau_2})\:|\:(\hat{\tau_1}\:list^\beta)$ \\
 $\hat{\rho} ::= \hat{\tau}\:|\:C\Rightarrow \hat{\tau}$ \\
 $\hat{\sigma} ::= \hat{\rho}\:|\:\forall \alpha.\hat{\sigma_1}\:|\:\forall \beta.\hat{\sigma_1}$ \\
 $\hat{\Gamma} ::= []\:|\:\hat{\Gamma_1}[x \mapsto \hat{\sigma}]$ \\
+$\hat{\theta} ::= []\:|\:\hat{\theta}[\alpha \mapsto \hat{\tau}] $ \\
 $C ::= \emptyset\:|\:\{\beta \supseteq \varphi\}\:|\:C_1 \cup C_2$
 \end{tabular}
 
@@ -124,117 +128,149 @@ The (non syntax directed) inference rules for our type system are the following.
 
 \begin{prooftree}
 \AxiomC{}
+\RightLabel{[\textsc{T-Int}]}
 \UnaryInfC{$\hat{\Gamma} \vdash_{CFA} n : Int$}
 \end{prooftree}
 
 \begin{prooftree}
 \AxiomC{}
+\RightLabel{[\textsc{T-True}]}
 \UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{true} : Bool$}
 \end{prooftree}
 
 \begin{prooftree}
 \AxiomC{}
+\RightLabel{[\textsc{T-False}]}
 \UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{false} : Bool$}
 \end{prooftree}
 
 \begin{prooftree}
 \AxiomC{$\hat{\Gamma}(x) = \hat{\sigma}$}
+\RightLabel{[\textsc{T-Var}]}
 \UnaryInfC{$\hat{\Gamma} \vdash_{CFA} x : \hat{\sigma}$}
 \end{prooftree}
 
 \begin{prooftree}
-\AxiomC{$\hat{\Gamma}[x \mapsto \hat{\tau_1}] \vdash_{CFA} t_1 : \hat{\tau_2}$}
-\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{fn}_\pi \texttt{ }x => (t_1) : \hat{\tau_1} \xrightarrow{\{\pi\}}\hat{\tau_2}$}
+\AxiomC{$\hat{\Gamma}[x \mapsto \hat{\tau_1}] \vdash_{CFA} e_1 : \hat{\tau_2}$}
+\RightLabel{[\textsc{T-Fn}]}
+\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{fn}_\pi \texttt{ }x => (e_1) : \hat{\tau_1} \xrightarrow{\{\pi\}}\hat{\tau_2}$}
 \end{prooftree}
 
 \begin{prooftree}
-\AxiomC{$\hat{\Gamma}[f \mapsto (\hat{\tau_1} \xrightarrow{\{\pi\}}\hat{\tau_2})][x \mapsto \hat{\tau_1}] \vdash_{CFA} t_1 : \hat{\tau_2}$}
-\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{fun}_\pi \textbf{ }f \textbf{ }x => (t_1) : \hat{\tau_1} \xrightarrow{\{\pi\}}\hat{\tau_2}$}
+\AxiomC{$\hat{\Gamma}[f \mapsto (\hat{\tau_1} \xrightarrow{\{\pi\}}\hat{\tau_2})][x \mapsto \hat{\tau_1}] \vdash_{CFA} e_1 : \hat{\tau_2}$}
+\RightLabel{[\textsc{T-Fun}]}
+\UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{fun}_\pi \textbf{ }f \textbf{ }x => (e_1) : \hat{\tau_1} \xrightarrow{\{\pi\}}\hat{\tau_2}$}
 \end{prooftree}
 
 \begin{prooftree}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_1 : \hat{\tau_2} \xrightarrow{\varphi} \hat{\tau}$}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_2 : \hat{\tau_2}$}
-\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} t_1 t_2 : \hat{\tau}$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_1 : \hat{\tau_2} \xrightarrow{\varphi} \hat{\tau}$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_2 : \hat{\tau_2}$}
+\RightLabel{[\textsc{T-App}]}
+\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} e_1 e_2 : \hat{\tau}$}
 \end{prooftree}
 
 \begin{prooftree}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_1 : \hat{\sigma_1}$}
-\AxiomC{$\hat{\Gamma}[x \mapsto \hat{\sigma_1}] \vdash_{CFA} t_2 : \hat{\tau}$}
-\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{let }x = t_1 \textbf{ in } t_2 : \hat{\tau}$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_1 : \hat{\sigma_1}$}
+\AxiomC{$\hat{\Gamma}[x \mapsto \hat{\sigma_1}] \vdash_{CFA} e_2 : \hat{\tau}$}
+\RightLabel{[\textsc{T-Let}]}
+\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{let }x = e_1 \textbf{ in } e_2 : \hat{\tau}$}
 \end{prooftree}
 
 \begin{prooftree}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_1 : \tau_\oplus^1 $}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_2 : \tau_\oplus^2 $}
-\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} t_1 \oplus t_2 : \tau_\oplus$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_1 : \tau_\oplus^1 $}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_2 : \tau_\oplus^2 $}
+\RightLabel{[\textsc{T-Op}]}
+\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} e_1 \oplus e_2 : \tau_\oplus$}
 \end{prooftree}
 
 \begin{prooftree}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_0 : \textbf{ } Bool$}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_1 : \hat{\tau}$}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_2 : \hat{\tau}$}
-\TrinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{if } t_0 \textbf{ then }t_1 \textbf{ else } t_2 : \hat{\tau}$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_0 : \textbf{ } Bool$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_1 : \hat{\tau}$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_2 : \hat{\tau}$}
+\RightLabel{[\textsc{T-If}]}
+\TrinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{if } e_0 \textbf{ then }e_1 \textbf{ else } e_2 : \hat{\tau}$}
 \end{prooftree}
 
 
 \begin{prooftree}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_1 : \hat{\tau_1}$}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_2 : \hat{\tau_2}$}
-\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{Pair}_\pi(t_1, t_2) : (\hat{\tau_1} \times^{\{\pi\}} \hat{\tau_2})$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_1 : \hat{\tau_1}$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_2 : \hat{\tau_2}$}
+\RightLabel{[\textsc{T-Pair}]}
+\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{Pair}_\pi(e_1, e_2) : (\hat{\tau_1} \times^{\{\pi\}} \hat{\tau_2})$}
 \end{prooftree}
 
 \begin{prooftree}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_1 : \hat{\tau}$}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_1 : \hat{\tau} \textbf{ }list^{\varphi}$}
-\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{Cons}_\pi(t_1, t_2) :  \hat{\tau} \textbf{ }list^{\{\pi\} \cup \varphi}$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_1 : \hat{\tau}$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_1 : \hat{\tau} \textbf{ }list^{\varphi}$}
+\RightLabel{[\textsc{T-Cons}]}
+\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{Cons}_\pi(e_1, e_2) :  \hat{\tau} \textbf{ }list^{\{\pi\} \cup \varphi}$}
 \end{prooftree}
 
 \begin{prooftree}
 \AxiomC{}
+\RightLabel{[\textsc{T-Nil}]}
 \UnaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{Nil}_\pi : \hat{\tau} \textbf{ } list^{\{\pi\}}$}
 \end{prooftree}
 
 \begin{prooftree}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_0 : (\hat{\tau_1} \times^\varphi \hat{\tau_2}) $}
-\AxiomC{$\hat{\Gamma}[x_1 \mapsto \hat{\tau_1}][x_2 \mapsto \hat{\tau_2}] \vdash_{CFA} t_1 : \hat{\tau}$}
-\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{case } t_0 \textbf{ of Pair}(x_1, x_2) => t_1 : \hat{\tau}$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_0 : (\hat{\tau_1} \times^\varphi \hat{\tau_2}) $}
+\AxiomC{$\hat{\Gamma}[x_1 \mapsto \hat{\tau_1}][x_2 \mapsto \hat{\tau_2}] \vdash_{CFA} e_1 : \hat{\tau}$}
+\RightLabel{[\textsc{T-Case-Pair}]}
+\BinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{case } e_0 \textbf{ of Pair}(x_1, x_2) => e_1 : \hat{\tau}$}
 \end{prooftree}
 
 \begin{prooftree}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_0 : \hat{\tau_0} \textbf{ }list^\varphi$}
-\AxiomC{$\hat{\Gamma}[x_1 \mapsto \hat{\tau_0}][x_2 \mapsto \hat{\tau_0}\textbf{ }list^\varphi ] \vdash_{CFA} t_1 : \hat{\tau}$}
-\AxiomC{$\hat{\Gamma} \vdash_{CFA} t_2 : \hat{\tau}$}
-\TrinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{case }t_0 \textbf{ of Cons}(x_1, x_2) => t_1 \textbf{ or }t_2 : \hat{\tau}$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_0 : \hat{\tau_0} \textbf{ }list^\varphi$}
+\AxiomC{$\hat{\Gamma}[x_1 \mapsto \hat{\tau_0}][x_2 \mapsto \hat{\tau_0}\textbf{ }list^\varphi ] \vdash_{CFA} e_1 : \hat{\tau}$}
+\AxiomC{$\hat{\Gamma} \vdash_{CFA} e_2 : \hat{\tau}$}
+\RightLabel{[\textsc{T-Case-List}]}
+\TrinaryInfC{$\hat{\Gamma} \vdash_{CFA} \textbf{case }e_0 \textbf{ of Cons}(x_1, x_2) => e_1 \textbf{ or }e_2 : \hat{\tau}$}
 \end{prooftree}
 
 %gen
 \begin{prooftree}
 \AxiomC{}
+\RightLabel{[\textsc{T-Gen}]}
 \UnaryInfC{}
 \end{prooftree}
 
 %ann gen
 \begin{prooftree}
 \AxiomC{}
+\RightLabel{[\textsc{T-Gen-Ann}]}
 \UnaryInfC{}
 \end{prooftree}
 
 
 \begin{prooftree}
 \AxiomC{$\hat{\Gamma} \vdash_{CFA} e : \forall \alpha. \hat{\sigma}$}
+\RightLabel{[\textsc{T-Inst}]}
 \UnaryInfC{$\hat{\Gamma} \vdash_{CFA} e : \hat{\sigma}[\hat{\tau} / \alpha]$}
 \end{prooftree}
 
 
 \begin{prooftree}
 \AxiomC{$\hat{\Gamma} \vdash_{CFA} e : \forall \beta. \hat{\sigma}$}
+\RightLabel{[\textsc{T-Inst-Ann}]}
 \UnaryInfC{$\hat{\Gamma} \vdash_{CFA} e : \hat{\sigma}[\varphi_1 / \beta]$}
 \end{prooftree}
 
 \begin{prooftree}
 \AxiomC{$\hat{\Gamma} \vdash_{CFA} e : \tau^\varphi$}
+\RightLabel{[\textsc{T-Sub}]}
 \UnaryInfC{$\hat{\Gamma} \vdash_{CFA} e : \tau^{\varphi \cup \varphi'}$}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\RightLabel{[\textsc{T-Qual}]}
+\UnaryInfC{}
+\end{prooftree}
+
+\begin{prooftree}
+\AxiomC{}
+\RightLabel{[\textsc{T-Res}]}
+\UnaryInfC{}
 \end{prooftree}
 
 Most of the rules have the same or almost the same form as discussed in the lectures and in NNH. 
@@ -252,10 +288,58 @@ In addition to that TODO
 Our algorithm is a modified version of Algorithm W. We adapted the algorithm from NNH (p. 306 ff) to achieve polymorphism, polyvariance and better subeffecting. 
 
 The algorithm centers around the functions $\mathcal{U}_{CFA}$ and $\mathcal{W}_{CFA}$. Their types are the following:
-\begin{tabular}{l l l l}
-$\mathcal{U}_{CFA}$ & : & 
 
+\begin{tabular}{l l l l}
+\bigU & : & $\textbf{SType} \rightarrow  \textbf{SType} \rightarrow (\textbf{TSubst} \times \textbf{Constraint}) $\\
+\bigW & : & $\textbf{TEnv} \rightarrow \textbf{SType} \rightarrow (\textbf{SType} \times \textbf{TSubst} \times \textbf{Constraint})$\\
+generalise & : & $\textbf{TEnv} \rightarrow \textbf{SType} \rightarrow \textbf{SAnn} \rightarrow \textbf{Constraint} \rightarrow \textbf{TScheme}$\\
+instantiate & : & $\textbf{TScheme} \rightarrow (\textbf{SType} \times \textbf{Constraint})$
 \end{tabular}
+
+The function \bigU takes two types $\hat{\tau_1}$ and $\hat{\tau_2}$ as inputs and generates a substitution $\theta$ such that $\theta\hat{\tau_1} = \theta \hat{\tau_2}$, and a constraint $C$ such that, for every annotation variable $\beta_1$ in $\hat{\tau_1}$ and the corresponding variable $\beta_2$ in $\hat{\tau_2}$, $\beta_2 \supseteq \beta_1$; i.e. $\beta_1$ flows into $\beta_2$. It is defined as follows:
+
+\begin{align*}
+\bigU (Nat, Nat) &= ([], \emptyset) \\
+\bigU (Bool, Bool) &= ([], \emptyset) \\
+\bigU (\hat{\tau_1} \xrightarrow{\beta_1} \hat{\tau_2}, \hat{\tau_3} \xrightarrow{\beta_2} \hat{\tau_4}) &= (\theta_1 \circ \theta_2, \{\beta_2 \supseteq \beta_1\} \cup C_1 \cup C_2)\\
+\text{where}\\
+(\theta_1,C_1) &= \bigU (\hat{\tau_3},\hat{\tau_1})\\
+(\theta_2,C_2) &= \bigU (\theta_1\hat{\tau_2},\theta_1\hat{\tau_4})\\
+\bigU ((\hat{\tau_1} \times^{\beta_1} \hat{\tau_2}),(\hat{\tau_3} \times^{\beta_2} \hat{\tau_4})) &= (\theta_1 \circ  \theta_2, \{\beta_2 \supseteq \beta_1\} \cup C_1 \cup C_2)\\
+\text{where}\\
+(\theta_1,C_1) &= \bigU (\hat{\tau_1},\hat{\tau_3})\\
+(\theta_2,C_2) &= \bigU (\theta_1\hat{\tau_2},\theta_1\hat{\tau_4})\\
+\bigU (\hat{\tau_1} ~ list^{\beta_1}, \hat{\tau_2} ~ list^{\beta_2}) &= (\theta_1, \{\beta_2 \supseteq \beta_1\} \cup C_1)\\
+\text{where}\\
+(\theta_1, C_1) &= \bigU (\hat{\tau_1}, \hat{\tau_2})\\
+\bigU (\hat{\tau}, \alpha) &= ([\alpha \mapsto \hat{\tau_R}], C)\text{ if }chk(\alpha, \hat{\tau})\\
+\text{where}\\
+(\hat{\tau_R}, C) &= repR(\hat{\tau})\\
+\bigU (\alpha, \hat{\tau}) &= ([\alpha \mapsto \hat{\tau_R}], C)\text{ if }chk (\alpha, \hat{\tau})\\
+\text{where}\\
+(\hat{\tau_R}, C) &= rep(\hat{\tau}) 
+\end{align*}
+
+Here, $chk (\alpha, \hat{\tau})$ is a function that returns true iff $\alpha = \hat{\tau}$ or $\alpha$ is not a free variable in $\hat{\tau}$.
+$rep (\hat{\tau})$ returns a type $\hat{\tau_R}$ and a substitution $C$ such that $\hat{\tau_R}$ is equal to $\hat{\tau}$, but has all annotation variables replaced by fresh ones, and the original annotation variables are constrained be greater or equal to their fresh counterparts. $repR$ does the same but has the constraints in the opposite direction.
+
+Note that recursive calls to \bigU preserve the order of the arguments in all cases except one: The order is reversed for the input type of a function, since function inputs are contravariant.
+
+The function \bigW performs the actual inference of annotated types. It is defined as follows:
+
+\begin{align*}
+  \bigW (\hat{\Gamma}, n) &= (Int, [], \emptyset)\\
+  \bigW (\hat{\Gamma}, \textbf{true}) &= (Bool, [], \emptyset)\\
+  \bigW (\hat{\Gamma}, \textbf{false}) &= (Bool, [], \emptyset)\\
+  \bigW (\hat{\Gamma}, x) &= (\hat{\tau}, [], C)\\ 
+  \text{where}\\
+  (\hat{\tau}, C) &= instantiate (\hat{\Gamma}(x))\\
+  \bigW (\hat{\Gamma}, \textbf{fn }x=> (e_0)) &= ((\theta_0 \alpha_x \xrightarrow{\beta_0} \hat{\tau_0}, \theta_0 \{\beta_0 \supseteq \{\pi\}\} \cup C_0)\\
+  \text{where}\\
+  \alpha_x, \beta_0 & ~are fresh\\
+  (\hat{\tau_0}, \theta_0, C_0) &= \bigW (\hat{\Gamma}[x \mapsto \alpha_x], e_0)
+\end{align*}
+
 
 TODO
 
