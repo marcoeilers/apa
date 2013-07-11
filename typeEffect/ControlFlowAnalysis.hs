@@ -527,7 +527,7 @@ infer' e (LListCase l e0 v1 v2 e1 e2) = do
   (t2, s2, c2) <- infer (substEnv (substEnv (substEnv e s0) s1) s4) e2
   (s5, _) <- unify (substT t1 s2) t2
   a <- getTV
-  (s6, _) <- unify (trace ("t2 with s5 is " ++ show (substT t2 s5)) (substT t2 s5)) (TVar a)
+  (s6, _) <- unify (substT t2 s5) (TVar a)
   (_, c7) <- unify (substT (substT (substT t1 s2) s5) s6) (substT (TVar a) s6)
   (_, c8) <- unify (substT (substT t2 s5) s6) (substT (TVar a) s6)
   let resS = combine s6 (combine s5 (combine s4 (combine s2 (combine s1 s0))))
